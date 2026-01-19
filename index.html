@@ -4,63 +4,63 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-/* PC에서는 기존 탭 버튼 유지, 드롭다운 숨김 */
-#mobile-location-select {
-    display: none;
-}
+/* PC에서는 드롭다운 숨김 */
+#mobile-location-select { display: none; }
 
-/* 모바일 전용 스타일 (768px 이하) */
 @media screen and (max-width: 768px) {
-    body { padding: 5px; font-size: 14px; }
+    body { padding: 0; margin: 0; font-size: 14px; overflow-x: hidden; }
 
-    /* 기존 탭 버튼 컨테이너 숨김 */
+    /* 탭 숨김 */
     .tabs { display: none !important; }
 
-    /* 드롭다운 표시 */
+    /* 드롭다운 스타일 */
     #mobile-location-select {
         display: block;
-        width: 100%;
+        width: 96%; /* 좌우 여백 */
+        margin: 10px auto;
         padding: 12px;
         font-size: 16px;
-        margin-bottom: 10px;
         border: 2px solid #ddd;
         border-radius: 8px;
         background-color: #fff;
-        font-weight: bold;
     }
 
-    /* 좌석 컨텐츠 영역 - 좌우 스크롤 */
+    /* [핵심 수정] 탭 컨텐츠 (좌석 영역) 스크롤 문제 해결 */
     .tab-content {
-        display: none; /* 기본 숨김 */
+        display: none;
+        width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        white-space: nowrap; /* 줄바꿈 방지 */
-        padding-bottom: 30px;
-        min-height: 300px; /* 스크롤 영역 확보 */
-        background: #f9f9f9; /* 영역 구분감 */
+        padding: 10px; /* 내부 여백 */
+
+        /* Flexbox 중앙 정렬 제거하고 시작점 정렬로 변경 (스크롤 잘림 방지 핵심) */
+        justify-content: flex-start !important; 
+        text-align: left !important;
     }
 
     .tab-content.active {
-        display: block;
+        display: flex; /* flex로 변경하여 내부 요소 정렬 제어 */
+        flex-direction: column; /* 세로 정렬이 안전 */
+        align-items: flex-start; /* 왼쪽 정렬 */
     }
 
-    /* 좌석 스타일 최적화 */
+    /* 테이블이나 그리드 래퍼가 있다면 fit-content 적용 */
+    .grid-wrapper, table {
+        min-width: 100%; 
+        width: max-content; /* 컨텐츠 크기만큼 늘어나게 하여 스크롤 유도 */
+        margin-left: 0 !important; /* 강제 왼쪽 정렬 */
+    }
+
     .seat {
-        display: inline-block; /* white-space nowrap과 함께 작동 */
+        display: inline-block;
         width: 40px; 
         height: 40px;
         line-height: 40px;
         margin: 2px;
         font-size: 14px;
-        vertical-align: top;
     }
 
-    /* 테이블 레이아웃 강제 유지 (기존 구조 호환) */
-    table {
-        min-width: 100%;
-    }
-
-    /* 모달 스타일 */
+    /* 모달 스타일 유지 */
     .modal-content { width: 95%; max-width: none; }
     .radio-group { grid-template-columns: 1fr 1fr; }
     input, select, textarea, button { font-size: 16px !important; padding: 10px !important; }
@@ -323,10 +323,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-<select id="mobile-location-select" onchange="handleMobileSelect(this.value)">
-    <option value="" disabled selected>🔽 관 선택 (터치)</option>
-    <!-- 옵션은 스크립트에서 자동 생성됨 -->
-</select>
+<div style="background:#f8f9fa; padding:10px; position:sticky; top:0; z-index:100; border-bottom:1px solid #ddd;">
+    <select id="mobile-location-select" onchange="handleMobileSelect(this.value)">
+        <option value="" disabled selected>🔽 관 선택 (터치)</option>
+    </select>
+</div>
 
 
 <div class="container">
@@ -3642,59 +3643,60 @@ const requestQueue = [];
 let isProcessing = false;
 
 // ==========================================
-// 모바일 드롭다운 초기화
+// 모바일 드롭다운
 // ==========================================
 function initMobileDropdown() {
     const select = document.getElementById('mobile-location-select');
     const buttons = document.querySelectorAll('.tab-button');
 
-    // 기존 탭 버튼에서 텍스트와 ID 추출하여 옵션 생성
+    // 중복 제거를 위한 Set (옵션)
+    const addedValues = new Set();
+
     buttons.forEach(btn => {
         const text = btn.innerText.trim();
-        // onclick="openTab(event, 'ID')" 파싱
         const match = btn.getAttribute('onclick').match(/'([^']+)'/);
         if (match) {
             const tabId = match[1];
-            const option = document.createElement('option');
-            option.value = tabId;
-            option.text = text;
-            select.appendChild(option);
+            if (!addedValues.has(tabId)) {
+                const option = document.createElement('option');
+                option.value = tabId;
+                option.text = text;
+                select.appendChild(option);
+                addedValues.add(tabId);
+            }
         }
     });
 }
 
 function handleMobileSelect(tabId) {
-    // 기존 openTab 함수 로직 흉내
-    // 모든 탭 숨기기
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.style.display = 'none';
         tab.classList.remove('active');
     });
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
 
-    // 선택된 탭 보이기
     const selectedTab = document.getElementById(tabId);
     if (selectedTab) {
-        selectedTab.style.display = 'block';
+        // display:flex !important 처리를 위해 클래스 토글 + 인라인 스타일 조정
+        selectedTab.style.display = 'block'; // 우선 block으로
         selectedTab.classList.add('active');
 
-        // 스크롤 맨 왼쪽으로 초기화
+        // 스크롤 초기화
         selectedTab.scrollLeft = 0;
+        window.scrollTo(0, 0);
     }
 }
 
 // ==========================================
-// 사용자명 입력 로직
+// 사용자명 입력
 // ==========================================
 function promptForUser() {
-    // 모바일 드롭다운 초기화 먼저 실행
     initMobileDropdown();
 
     let user = '';
     while (!user) {
         user = prompt("사용자 이름(감독관)을 입력해주세요:", "");
         if (user === null) {
-            alert("사용자 이름을 입력해야 사용할 수 있습니다.");
+            alert("필수 입력 사항입니다.");
         } else {
             user = user.trim();
         }
@@ -3702,7 +3704,7 @@ function promptForUser() {
     currentUser = user;
 
     const userInfoDiv = document.createElement('div');
-    userInfoDiv.style.cssText = "position:fixed; top:5px; right:5px; background:rgba(255,255,255,0.9); padding:5px 10px; border-radius:15px; font-size:12px; font-weight:bold; color:#333; z-index:9000; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border:1px solid #ddd;";
+    userInfoDiv.style.cssText = "position:fixed; top:60px; right:10px; background:rgba(255,255,255,0.8); padding:5px 10px; border-radius:15px; font-size:12px; font-weight:bold; color:#333; z-index:900; border:1px solid #ccc;";
     userInfoDiv.innerText = `👤 ${currentUser}`;
     document.body.appendChild(userInfoDiv);
 
