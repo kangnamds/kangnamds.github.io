@@ -7,63 +7,146 @@
 /* PC에서는 드롭다운 숨김 */
 #mobile-location-select { display: none; }
 
-@media screen and (max-width: 768px) {
-    body { padding: 0; margin: 0; font-size: 14px; overflow-x: hidden; }
+/* 공통 모달 스타일 */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 10000;
+    display: flex; justify-content: center; align-items: center;
+}
 
-    /* 탭 숨김 */
+.modal-content {
+    background: white; padding: 20px; border-radius: 12px;
+    width: 90%; max-width: 400px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+h3.modal-title {
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #333;
+    font-size: 18px;
+    text-align: center;
+}
+
+/* 폼 그룹 간격 축소 */
+.form-group { margin-bottom: 12px; }
+
+.form-label {
+    display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #555;
+}
+
+/* 학생 정보 그리드 레이아웃 (요청: 반 학번 이름 / 독서실 좌석) */
+.student-info-grid {
+    display: grid;
+    grid-template-columns: 0.8fr 1fr 1.5fr; /* 반 학번 이름 */
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.location-info-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* 독서실명 좌석 */
+    gap: 5px;
+}
+
+/* 입력 필드 스타일 */
+input.info-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    color: #333;
+    font-size: 14px;
+    text-align: center;
+}
+input.info-input::placeholder { color: #aaa; }
+input.info-input[readonly] { cursor: default; }
+
+/* 지도 항목 리스트 (요청: 세로 한 줄, 좌측 정렬, 간격 축소) */
+.guidance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* 항목 간 간격 */
+    border: 1px solid #eee;
+    padding: 8px;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.radio-item:hover { background-color: #f0f7ff; border-color: #cce5ff; }
+
+/* 라디오 버튼과 텍스트 사이 간격 최소화 */
+.radio-item input[type="radio"] {
+    margin: 0 8px 0 0; /* 우측 마진만 약간 줌 */
+    width: 18px; height: 18px;
+    cursor: pointer;
+}
+
+.radio-text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* 비고란 */
+textarea.note-input {
+    width: 100%; padding: 10px;
+    border: 1px solid #ddd; border-radius: 4px;
+    font-size: 14px; resize: none;
+    box-sizing: border-box;
+}
+
+/* 버튼 그룹 */
+.button-group {
+    display: flex; gap: 10px; margin-top: 20px;
+}
+.btn {
+    flex: 1; padding: 12px;
+    border: none; border-radius: 6px;
+    font-weight: bold; cursor: pointer;
+    font-size: 14px;
+}
+.btn-cancel { background: #e9ecef; color: #495057; }
+.btn-submit { background: #2ecc71; color: white; }
+
+/* 모바일 전용 미디어 쿼리 */
+@media screen and (max-width: 768px) {
+    body { padding: 0; margin: 0; }
     .tabs { display: none !important; }
 
-    /* 드롭다운 스타일 */
     #mobile-location-select {
-        display: block;
-        width: 96%; /* 좌우 여백 */
-        margin: 10px auto;
-        padding: 12px;
-        font-size: 16px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        background-color: #fff;
+        display: block; width: 96%; margin: 10px auto; padding: 12px;
+        font-size: 16px; border: 2px solid #ddd; border-radius: 8px; background: #fff;
     }
 
-    /* [핵심 수정] 탭 컨텐츠 (좌석 영역) 스크롤 문제 해결 */
     .tab-content {
-        display: none;
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 10px; /* 내부 여백 */
-
-        /* Flexbox 중앙 정렬 제거하고 시작점 정렬로 변경 (스크롤 잘림 방지 핵심) */
-        justify-content: flex-start !important; 
-        text-align: left !important;
+        display: none; width: 100%; overflow-x: auto;
+        justify-content: flex-start !important; text-align: left !important;
+        padding: 10px;
     }
 
     .tab-content.active {
-        display: flex; /* flex로 변경하여 내부 요소 정렬 제어 */
-        flex-direction: column; /* 세로 정렬이 안전 */
-        align-items: flex-start; /* 왼쪽 정렬 */
+        display: block; /* Flex 대신 Block으로 하여 스크롤 자연스럽게 */
     }
 
-    /* 테이블이나 그리드 래퍼가 있다면 fit-content 적용 */
-    .grid-wrapper, table {
-        min-width: 100%; 
-        width: max-content; /* 컨텐츠 크기만큼 늘어나게 하여 스크롤 유도 */
-        margin-left: 0 !important; /* 강제 왼쪽 정렬 */
-    }
+    .seat { display: inline-block; width: 40px; height: 40px; line-height: 40px; margin: 2px; }
 
-    .seat {
-        display: inline-block;
-        width: 40px; 
-        height: 40px;
-        line-height: 40px;
-        margin: 2px;
-        font-size: 14px;
-    }
-
-    /* 모달 스타일 유지 */
+    /* 모바일 폼 최적화 */
     .modal-content { width: 95%; max-width: none; }
-    .radio-group { grid-template-columns: 1fr 1fr; }
-    input, select, textarea, button { font-size: 16px !important; padding: 10px !important; }
+    input.info-input, textarea.note-input, .radio-text, .btn { font-size: 16px !important; }
+    .radio-item { padding: 10px; } /* 터치 영역 확보 */
 }
 </style>
 
@@ -3642,16 +3725,11 @@ let currentUser = '';
 const requestQueue = [];
 let isProcessing = false;
 
-// ==========================================
-// 모바일 드롭다운
-// ==========================================
+// ... (initMobileDropdown, handleMobileSelect, promptForUser, 큐 관련 함수들은 동일) ...
 function initMobileDropdown() {
     const select = document.getElementById('mobile-location-select');
     const buttons = document.querySelectorAll('.tab-button');
-
-    // 중복 제거를 위한 Set (옵션)
     const addedValues = new Set();
-
     buttons.forEach(btn => {
         const text = btn.innerText.trim();
         const match = btn.getAttribute('onclick').match(/'([^']+)'/);
@@ -3667,31 +3745,21 @@ function initMobileDropdown() {
         }
     });
 }
-
 function handleMobileSelect(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.style.display = 'none';
         tab.classList.remove('active');
     });
-
     const selectedTab = document.getElementById(tabId);
     if (selectedTab) {
-        // display:flex !important 처리를 위해 클래스 토글 + 인라인 스타일 조정
-        selectedTab.style.display = 'block'; // 우선 block으로
+        selectedTab.style.display = 'block';
         selectedTab.classList.add('active');
-
-        // 스크롤 초기화
         selectedTab.scrollLeft = 0;
         window.scrollTo(0, 0);
     }
 }
-
-// ==========================================
-// 사용자명 입력
-// ==========================================
 function promptForUser() {
     initMobileDropdown();
-
     let user = '';
     while (!user) {
         user = prompt("사용자 이름(감독관)을 입력해주세요:", "");
@@ -3702,152 +3770,81 @@ function promptForUser() {
         }
     }
     currentUser = user;
-
     const userInfoDiv = document.createElement('div');
     userInfoDiv.style.cssText = "position:fixed; top:60px; right:10px; background:rgba(255,255,255,0.8); padding:5px 10px; border-radius:15px; font-size:12px; font-weight:bold; color:#333; z-index:900; border:1px solid #ccc;";
     userInfoDiv.innerText = `👤 ${currentUser}`;
     document.body.appendChild(userInfoDiv);
-
     loadSheetData();
     setInterval(loadSheetData, 30000);
 }
-
-// ==========================================
-// 큐 & 이탈 방지
-// ==========================================
 window.addEventListener('beforeunload', (event) => {
     if (requestQueue.length > 0 || isProcessing) {
-        event.preventDefault();
-        event.returnValue = ''; 
+        event.preventDefault(); event.returnValue = ''; 
     }
 });
-
 function addToQueue(payload) {
-    requestQueue.push(payload);
-    processQueue();
+    requestQueue.push(payload); processQueue();
 }
-
 async function processQueue() {
     if (isProcessing || requestQueue.length === 0) return;
-
     isProcessing = true;
     const payload = requestQueue[0];
-
     updateStatus(`📤 전송 중... (${requestQueue.length}건) ⚠️ 닫지 마세요!`, 'red');
-
     try {
         await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
+            method: 'POST', mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
         requestQueue.shift();
-
-        if (requestQueue.length > 0) {
-            processQueue(); 
-        } else {
-            updateStatus('✅ 저장 완료', 'green');
-            setTimeout(() => updateStatus('✅ 준비 완료', 'green'), 3000);
-        }
-
+        if (requestQueue.length > 0) processQueue(); 
+        else { updateStatus('✅ 저장 완료', 'green'); setTimeout(() => updateStatus('✅ 준비 완료', 'green'), 3000); }
     } catch (error) {
         console.error('전송 실패:', error);
         updateStatus('❌ 실패 - 재시도 중...', 'red');
-        setTimeout(() => {
-            isProcessing = false;
-            processQueue();
-        }, 3000);
+        setTimeout(() => { isProcessing = false; processQueue(); }, 3000);
         return; 
     }
-
-    isProcessing = false;
-    if (requestQueue.length > 0) processQueue();
+    isProcessing = false; if (requestQueue.length > 0) processQueue();
 }
-
-// ==========================================
-// 데이터 로드
-// ==========================================
 let occupiedSeats = {}; 
 let currentSeatInfo = {}; 
-
 function handleSheetData(response) {
-    if (response.status === 'error') {
-        updateStatus('❌ 에러: ' + response.errors[0].message, 'red');
-        return;
-    }
+    if (response.status === 'error') { updateStatus('❌ 에러: ' + response.errors[0].message, 'red'); return; }
     try {
-        const rows = response.table.rows;
-        occupiedSeats = {}; 
-
+        const rows = response.table.rows; occupiedSeats = {}; 
         for (let i = 0; i < rows.length; i++) {
-            const row = rows[i].c;
-            if (!row) continue;
-
-            const classNum = row[0]?.v || ''; 
-            const studentId = row[1]?.v || '';
-            const name = row[2]?.v || '';     
-            let location = row[4]?.v;         
-            let seatNum = row[5]?.v;          
-
+            const row = rows[i].c; if (!row) continue;
+            const classNum = row[0]?.v || ''; const studentId = row[1]?.v || ''; const name = row[2]?.v || '';     
+            let location = row[4]?.v; let seatNum = row[5]?.v;          
             if (location && seatNum) {
-                const normalizedKey = String(location).replace(/\s+/g, '');
-                seatNum = String(seatNum).trim();
-
-                if (!occupiedSeats[normalizedKey]) {
-                    occupiedSeats[normalizedKey] = {};
-                }
-                occupiedSeats[normalizedKey][seatNum] = {
-                    classNum: classNum,
-                    studentId: studentId,
-                    name: name,
-                    locationName: location
-                };
+                const normalizedKey = String(location).replace(/\s+/g, ''); seatNum = String(seatNum).trim();
+                if (!occupiedSeats[normalizedKey]) occupiedSeats[normalizedKey] = {};
+                occupiedSeats[normalizedKey][seatNum] = { classNum, studentId, name, locationName: location };
             }
         }
-        updateSeatColors();
-        updateStatus('✅ 준비 완료', 'green');
-    } catch (e) {
-        console.error(e);
-        updateStatus('❌ 파싱 에러', 'red');
-    }
+        updateSeatColors(); updateStatus('✅ 준비 완료', 'green');
+    } catch (e) { console.error(e); updateStatus('❌ 파싱 에러', 'red'); }
 }
-
 function loadSheetData() {
     if (requestQueue.length > 0) return;
-
-    const oldScript = document.getElementById('gviz_script');
-    if (oldScript) oldScript.remove();
-
-    const script = document.createElement('script');
-    script.id = 'gviz_script';
+    const oldScript = document.getElementById('gviz_script'); if (oldScript) oldScript.remove();
+    const script = document.createElement('script'); script.id = 'gviz_script';
     script.src = `https://docs.google.com/spreadsheets/d/${READ_SHEET_ID}/gviz/tq?tqx=responseHandler:handleSheetData&sheet=${READ_SHEET_NAME}&gid=${READ_SHEET_GID}`;
     document.body.appendChild(script);
 }
-
 function updateSeatColors() {
-    document.querySelectorAll('.seat').forEach(s => {
-        s.classList.remove('occupied');
-        s.style.cursor = 'default';
-        s.onclick = null;
-    });
-
+    document.querySelectorAll('.seat').forEach(s => { s.classList.remove('occupied'); s.style.cursor = 'default'; s.onclick = null; });
     const allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(tab => {
-        const rawTabId = tab.id;
-        const normalizedTabId = rawTabId.replace(/\s+/g, '');
-
+        const rawTabId = tab.id; const normalizedTabId = rawTabId.replace(/\s+/g, '');
         for (const [sheetKey, seatDataObj] of Object.entries(occupiedSeats)) {
             if (normalizedTabId.startsWith(sheetKey)) {
                 for (const [seatNum, info] of Object.entries(seatDataObj)) {
                     const seatEl = tab.querySelector(`.seat[data-seat="${seatNum}"]`);
                     if (seatEl) {
-                        seatEl.classList.add('occupied');
-                        seatEl.style.cursor = 'pointer';
-                        seatEl.onclick = function() {
-                            openModal(seatNum, info);
-                        };
+                        seatEl.classList.add('occupied'); seatEl.style.cursor = 'pointer';
+                        seatEl.onclick = function() { openModal(seatNum, info); };
                     }
                 }
             }
@@ -3856,17 +3853,17 @@ function updateSeatColors() {
 }
 
 // ==========================================
-// UI 및 폼
+// UI 및 폼 (변경된 구조 적용)
 // ==========================================
 function openModal(seatNum, info) {
-    currentSeatInfo = info; 
-    currentSeatInfo.seatNum = seatNum;
+    currentSeatInfo = info; currentSeatInfo.seatNum = seatNum;
 
-    document.getElementById('form_seat').value = seatNum;
+    // 데이터 채우기
     document.getElementById('form_class').value = info.classNum;
     document.getElementById('form_id').value = info.studentId;
     document.getElementById('form_name').value = info.name;
     document.getElementById('form_location').value = info.locationName;
+    document.getElementById('form_seat').value = seatNum;
 
     document.getElementById('form_note').value = '';
     const radios = document.getElementsByName('guidance_type');
@@ -3874,116 +3871,90 @@ function openModal(seatNum, info) {
 
     document.getElementById('guidanceModal').style.display = 'flex';
 }
-
-function closeModal() {
-    document.getElementById('guidanceModal').style.display = 'none';
-}
-
+function closeModal() { document.getElementById('guidanceModal').style.display = 'none'; }
 function submitForm() {
-    if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-        alert('⚠️ SCRIPT_URL을 설정해주세요!');
-        return;
-    }
-
+    if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') { alert('⚠️ SCRIPT_URL을 설정해주세요!'); return; }
     const note = document.getElementById('form_note').value;
     let type = '';
     const radios = document.getElementsByName('guidance_type');
     for(const r of radios) if(r.checked) type = r.value;
-
-    if (!type) {
-        alert('지도 항목을 선택해주세요.');
-        return;
-    }
-
+    if (!type) { alert('지도 항목을 선택해주세요.'); return; }
     closeModal(); 
-
     const payload = {
-        location: currentSeatInfo.locationName,
-        seat: currentSeatInfo.seatNum,
-        classNum: currentSeatInfo.classNum,
-        studentId: currentSeatInfo.studentId,
-        name: currentSeatInfo.name,
-        type: type,
-        note: note,
-        user: currentUser
+        location: currentSeatInfo.locationName, seat: currentSeatInfo.seatNum,
+        classNum: currentSeatInfo.classNum, studentId: currentSeatInfo.studentId, name: currentSeatInfo.name,
+        type: type, note: note, user: currentUser
     };
-
     addToQueue(payload);
 }
-
 function updateStatus(msg, color) {
-    const el = document.getElementById('status_msg');
-    if (el) {
-        el.innerText = msg;
-        el.style.color = color;
-    }
+    const el = document.getElementById('status_msg'); if (el) { el.innerText = msg; el.style.color = color; }
 }
-
 window.addEventListener('load', () => {
-    const bar = document.createElement('div');
-    bar.id = 'status_msg_container';
+    const bar = document.createElement('div'); bar.id = 'status_msg_container';
     bar.style.cssText = "position:fixed; bottom:10px; right:10px; background:white; padding:10px; border:2px solid #333; z-index:9000; border-radius:5px; font-weight:bold; font-size:12px; box-shadow:0 2px 10px rgba(0,0,0,0.2);";
     bar.innerHTML = '<span id="status_msg">준비</span> <button onclick="loadSheetData()" style="margin-left:10px; padding:5px;">↻</button>';
     document.body.appendChild(bar);
-
     setTimeout(promptForUser, 100); 
 });
 </script>
 
+<!-- 모달 UI 변경 (Design v2) -->
 <div id="guidanceModal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
-        <h3 style="margin-top:0; border-bottom:2px solid #333; padding-bottom:10px;">📝 지도 관리 일지</h3>
+        <h3 class="modal-title">📝 지도 관리 일지</h3>
 
         <div class="form-group">
-            <label>학생 정보</label>
-            <input id="form_location" readonly style="margin-bottom:5px; background:#f1f3f5; font-weight:bold;">
-            <div style="display:flex; gap:5px;">
-                <input id="form_class" readonly placeholder="반" style="width:50px;">
-                <input id="form_id" readonly placeholder="학번" style="width:80px;">
-                <input id="form_name" readonly placeholder="이름" style="flex:1;">
-                <input id="form_seat" readonly placeholder="좌석" style="width:50px; text-align:center;">
+            <span class="form-label">학생 정보</span>
+            <!-- 1줄: 반 학번 이름 -->
+            <div class="student-info-grid">
+                <input id="form_class" class="info-input" readonly placeholder="반">
+                <input id="form_id" class="info-input" readonly placeholder="학번">
+                <input id="form_name" class="info-input" readonly placeholder="이름" style="font-weight:bold;">
+            </div>
+            <!-- 2줄: 독서실명 좌석 -->
+            <div class="location-info-grid">
+                <input id="form_location" class="info-input" readonly placeholder="독서실명">
+                <input id="form_seat" class="info-input" readonly placeholder="좌석">
             </div>
         </div>
 
         <div class="form-group">
-            <label>지도 항목 (선택)</label>
-            <div class="radio-group">
-                <label><input type="radio" name="guidance_type" value="수면주의"> 😴 수면주의</label>
-                <label><input type="radio" name="guidance_type" value="전자기기"> 📱 전자기기</label>
-                <label><input type="radio" name="guidance_type" value="정숙주의"> 🤫 정숙주의</label>
-                <label><input type="radio" name="guidance_type" value="수업참여"> 🏫 수업참여</label>
-                <label><input type="radio" name="guidance_type" value="기타"> 🎸 기타</label>
+            <span class="form-label">지도 항목 (선택)</span>
+            <div class="guidance-list">
+                <label class="radio-item">
+                    <input type="radio" name="guidance_type" value="수면주의">
+                    <span class="radio-text">😴 수면주의</span>
+                </label>
+                <label class="radio-item">
+                    <input type="radio" name="guidance_type" value="전자기기">
+                    <span class="radio-text">📱 전자기기 사용</span>
+                </label>
+                <label class="radio-item">
+                    <input type="radio" name="guidance_type" value="정숙주의">
+                    <span class="radio-text">🤫 정숙주의</span>
+                </label>
+                <label class="radio-item">
+                    <input type="radio" name="guidance_type" value="수업참여">
+                    <span class="radio-text">🏫 수업참여 독려</span>
+                </label>
+                <label class="radio-item">
+                    <input type="radio" name="guidance_type" value="기타">
+                    <span class="radio-text">🎸 기타</span>
+                </label>
             </div>
         </div>
 
         <div class="form-group">
-            <label>비고 / 기타 내용</label>
-            <textarea id="form_note" rows="3" placeholder="특이사항이나 기타 내용을 입력하세요"></textarea>
+            <span class="form-label">비고 / 기타 내용</span>
+            <textarea id="form_note" class="note-input" rows="2" placeholder="내용을 입력하세요"></textarea>
         </div>
 
         <div class="button-group">
-            <button onclick="closeModal()" class="btn-cancel">취소</button>
-            <button onclick="submitForm()" class="btn-submit">입력 완료</button>
+            <button onclick="closeModal()" class="btn btn-cancel">취소</button>
+            <button onclick="submitForm()" class="btn btn-submit">입력 완료</button>
         </div>
     </div>
 </div>
-
-<style>
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; justify-content: center; align-items: center; }
-.modal-content { background: white; padding: 20px; border-radius: 8px; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-.form-group input, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-.form-group input[readonly] { background-color: #f5f5f5; color: #555; }
-.radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.radio-group label { display: flex; align-items: center; gap: 5px; font-weight: normal; font-size: 14px; cursor: pointer; background: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee; }
-.radio-group label:hover { background: #eef; }
-.button-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-.button-group button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.btn-cancel { background: #ccc; color: #333; }
-.btn-submit { background: #2ecc71; color: white; }
-.btn-submit:hover { background: #27ae60; }
-.seat.occupied { background-color: #2ecc71 !important; color: white !important; border-color: #27ae60 !important; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); }
-</style>
 </body>
 </html>
