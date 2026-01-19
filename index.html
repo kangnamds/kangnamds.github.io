@@ -4,69 +4,134 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-/* 기존 데스크탑 스타일 유지 */
+/* 기본 초기화 */
+* { box-sizing: border-box; }
 
-/* 모바일 전용 스타일 (768px 이하) */
+/* 탭 버튼 영역: 가로 스크롤 필수 */
+.tabs {
+    display: flex;
+    flex-wrap: nowrap; /* 줄바꿈 금지 */
+    overflow-x: auto; /* 가로 스크롤 허용 */
+    -webkit-overflow-scrolling: touch;
+    background: #f8f9fa;
+    padding: 10px 5px;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+    white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+}
+
+.tab-button {
+    flex: 0 0 auto; /* 크기 고정 */
+    margin-right: 5px;
+    padding: 8px 15px;
+    font-size: 14px;
+    height: 40px; /* 터치 영역 확보 */
+}
+
+/* 탭 콘텐츠 영역: 좌석 배치도 스크롤 */
+.tab-content {
+    display: none; /* 기본 숨김 */
+    width: 100%;
+    overflow-x: auto; /* 좌석이 화면보다 넓으면 스크롤 */
+    -webkit-overflow-scrolling: touch;
+    padding: 10px;
+    padding-bottom: 50px; /* 하단 여백 확보 */
+}
+
+/* 활성화된 탭만 표시 (기존 display:block을 덮어쓰기 위해 !important 사용 가능성 고려) */
+.tab-content.active {
+    display: block;
+}
+
+/* 모바일 전용 스타일 */
 @media screen and (max-width: 768px) {
-    body {
-        padding: 5px;
-        font-size: 14px;
-    }
+    body { margin: 0; padding: 0; }
 
-    /* 탭 버튼 영역을 가로 스크롤 가능하게 변경 */
-    .tabs {
-        display: flex;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch; /* 부드러운 스크롤 */
-        padding-bottom: 5px;
-        margin-bottom: 10px;
-    }
-
-    .tab-button {
-        flex: 0 0 auto; /* 줄어들지 않음 */
-        padding: 8px 12px;
+    /* 좌석 크기 및 간격 조정 */
+    .seat {
+        width: 40px; 
+        height: 40px;
+        line-height: 40px;
+        margin: 3px;
         font-size: 13px;
     }
 
-    /* 좌석 배치 컨테이너 */
-    .tab-content {
-        padding: 5px;
-        overflow-x: auto; /* 좌석이 많으면 가로 스크롤 */
+    /* 테이블 구조가 깨지지 않도록 최소 너비 보장 */
+    table {
+        min-width: 100%; 
     }
+}
 
-    /* 좌석 크기 자동 조절 (너무 작아지지 않게 최소 크기 유지) */
-    .seat {
-        width: 35px;  /* 데스크탑보다 약간 작게 */
-        height: 35px;
-        line-height: 35px;
-        font-size: 12px;
-        margin: 2px;
-    }
+/* 모달 스타일 (모바일 친화적) */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 10000; /* 최상위 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px; /* 화면 가장자리 여백 */
+}
 
-    /* 모달(팝업) 스타일 최적화 */
-    .modal-content {
-        width: 95%;
-        max-width: none;
-        padding: 15px;
-        margin: 10px;
-    }
+.modal-content {
+    background: white;
+    width: 100%;
+    max-width: 500px; /* 태블릿 대응 */
+    max-height: 90vh; /* 화면 높이 초과 시 스크롤 */
+    overflow-y: auto;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
 
-    .radio-group {
-        grid-template-columns: 1fr; /* 한 줄에 하나씩 */
-    }
+.form-group label {
+    font-size: 15px;
+    margin-bottom: 8px;
+    color: #333;
+}
 
-    /* 입력 필드들 폰트 키우기 (터치 편의성) */
-    input, select, textarea, button {
-        font-size: 16px !important; /* iOS 줌인 방지 */
-        padding: 10px !important;
-    }
+.form-group input, 
+.form-group textarea {
+    font-size: 16px; /* iOS 줌 방지 */
+    padding: 12px;
+}
 
-    /* 상태바 위치 조정 (키보드에 가려지지 않게 상단으로 이동 고려하거나 바닥 고정) */
-    #status_msg_container {
-        font-size: 11px;
-        padding: 5px;
-    }
+/* 라디오 버튼 큼직하게 */
+.radio-group {
+    display: flex;
+    flex-direction: column; /* 세로 배치 */
+    gap: 10px;
+}
+
+.radio-group label {
+    background: #f1f3f5;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin: 0; /* 기존 마진 제거 */
+    display: flex;
+    align-items: center;
+}
+
+.radio-group input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+
+/* 버튼 영역 */
+.button-group {
+    margin-top: 25px;
+    display: flex;
+    gap: 10px;
+}
+
+.button-group button {
+    flex: 1; /* 버튼 너비 균등 분할 */
+    padding: 15px;
+    font-size: 16px;
+    border-radius: 8px;
 }
 </style>
 
@@ -3630,7 +3695,7 @@
 const READ_SHEET_ID = '1T1FWnYIu-a3fJituoUeFwL0r5YR2cYQAnSUSLxsdZto';
 const READ_SHEET_NAME = '마스터';
 const READ_SHEET_GID = '0';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzjSgwv5ZOFYhpgKyUk4j7gqz3-96bC9o4yfpk-1qi5no_h6wIVrTqMd9Q3mGVeVmz7g/exec'; // 필수: Apps Script URL
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzjSgwv5ZOFYhpgKyUk4j7gqz3-96bC9o4yfpk-1qi5no_h6wIVrTqMd9Q3mGVeVmz7g/exec'; 
 
 // ==========================================
 // 전역 변수
@@ -3887,17 +3952,17 @@ window.addEventListener('load', () => {
 
         <div class="form-group">
             <label>학생 정보</label>
-            <input id="form_location" readonly style="margin-bottom:5px; background:#eee;">
+            <input id="form_location" readonly style="margin-bottom:5px; background:#f1f3f5; font-weight:bold;">
             <div style="display:flex; gap:5px;">
-                <input id="form_class" readonly placeholder="반" style="width:40px;">
-                <input id="form_id" readonly placeholder="학번" style="width:60px;">
+                <input id="form_class" readonly placeholder="반" style="width:50px;">
+                <input id="form_id" readonly placeholder="학번" style="width:80px;">
                 <input id="form_name" readonly placeholder="이름" style="flex:1;">
-                <input id="form_seat" readonly placeholder="좌석" style="width:40px; text-align:center;">
+                <input id="form_seat" readonly placeholder="좌석" style="width:50px; text-align:center;">
             </div>
         </div>
 
         <div class="form-group">
-            <label>지도 항목 (선택)</label>
+            <label>지도 항목</label>
             <div class="radio-group">
                 <label><input type="radio" name="guidance_type" value="수면주의"> 😴 수면주의</label>
                 <label><input type="radio" name="guidance_type" value="전자기기"> 📱 전자기기</label>
@@ -3918,23 +3983,5 @@ window.addEventListener('load', () => {
         </div>
     </div>
 </div>
-
-<style>
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; justify-content: center; align-items: center; }
-.modal-content { background: white; padding: 20px; border-radius: 8px; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-.form-group input, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-.form-group input[readonly] { background-color: #f5f5f5; color: #555; }
-.radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.radio-group label { display: flex; align-items: center; gap: 5px; font-weight: normal; font-size: 14px; cursor: pointer; background: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee; }
-.radio-group label:hover { background: #eef; }
-.button-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-.button-group button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.btn-cancel { background: #ccc; color: #333; }
-.btn-submit { background: #2ecc71; color: white; }
-.btn-submit:hover { background: #27ae60; }
-.seat.occupied { background-color: #2ecc71 !important; color: white !important; border-color: #27ae60 !important; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); }
-</style>
 </body>
 </html>
