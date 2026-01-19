@@ -4,7 +4,19 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-/* PC에서는 드롭다운 숨김 */
+/* ... (이전 CSS 내용) ... */
+
+/* [필수] 사용 중인 좌석 스타일 복구 */
+.seat.occupied {
+    background-color: #2ecc71 !important; /* 초록색 */
+    color: white !important;
+    border-color: #27ae60 !important;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
+    cursor: pointer;
+}
+
+/* PC 드롭다운 숨김 */
 #mobile-location-select { display: none; }
 
 /* 공통 모달 스타일 */
@@ -124,21 +136,32 @@ textarea.note-input {
 /* 모바일 전용 미디어 쿼리 */
 @media screen and (max-width: 768px) {
     body { padding: 0; margin: 0; }
+
+    /* 탭 숨김 */
     .tabs { display: none !important; }
 
+    /* 드롭다운 스타일 */
     #mobile-location-select {
         display: block; width: 96%; margin: 10px auto; padding: 12px;
         font-size: 16px; border: 2px solid #ddd; border-radius: 8px; background: #fff;
     }
 
+    /* 탭 컨텐츠 (좌석 영역) 스크롤 문제 해결 */
     .tab-content {
         display: none; width: 100%; overflow-x: auto;
-        justify-content: flex-start !important; text-align: left !important;
         padding: 10px;
+        justify-content: flex-start !important; text-align: left !important;
     }
 
     .tab-content.active {
         display: block; /* Flex 대신 Block으로 하여 스크롤 자연스럽게 */
+    }
+
+    /* 테이블 강제 정렬 */
+    .grid-wrapper, table {
+        min-width: 100%; 
+        width: max-content;
+        margin-left: 0 !important;
     }
 
     .seat { display: inline-block; width: 40px; height: 40px; line-height: 40px; margin: 2px; }
