@@ -3559,25 +3559,25 @@
 // ==========================================
 // 설정 영역
 // ==========================================
-const SHEET_ID = '1T1FWnYIu-a3fJituoUeFwL0r5YR2cYQAnSUSLxsdZto';
-const SHEET_NAME = '마스터';
-const SHEET_GID = '0'; 
+// 데이터를 읽어올 마스터 시트 (기존 유지)
+const READ_SHEET_ID = '1T1FWnYIu-a3fJituoUeFwL0r5YR2cYQAnSUSLxsdZto';
+const READ_SHEET_NAME = '마스터';
+const READ_SHEET_GID = '0';
+
+// 데이터를 기록할 Apps Script 배포 URL (사용자가 나중에 교체해야 함)
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzjSgwv5ZOFYhpgKyUk4j7gqz3-96bC9o4yfpk-1qi5no_h6wIVrTqMd9Q3mGVeVmz7g/exec'; 
 
 // ==========================================
-// 시스템 변수
+// 데이터 로드 및 파싱 (기존 로직 유지)
 // ==========================================
-// 구조 변경: occupiedSeats[구역키] = { 좌석번호: {이름: '...', 학번: '...', 반: '...'} }
 let occupiedSeats = {}; 
+let currentSeatInfo = {}; // 현재 클릭한 좌석 정보 저장용
 
-// ==========================================
-// 1. 데이터 로드 및 파싱
-// ==========================================
 function handleSheetData(response) {
     if (response.status === 'error') {
-        alert('❌ 데이터 로드 에러: ' + response.errors[0].message);
+        updateStatus('❌ 읽기 에러: ' + response.errors[0].message, 'red');
         return;
     }
-
     try {
         const rows = response.table.rows;
         occupiedSeats = {}; 
@@ -3586,13 +3586,11 @@ function handleSheetData(response) {
             const row = rows[i].c;
             if (!row) continue;
 
-            // 데이터 매핑
-            const classNum = row[0]?.v || '';   // A열: 반
-            const studentId = row[1]?.v || '';  // B열: 학번
-            const name = row[2]?.v || '';       // C열: 이름
-            // D열: 성별 (패스)
-            let location = row[4]?.v;           // E열: 퀀텀관
-            let seatNum = row[5]?.v;            // F열: 좌석
+            const classNum = row[0]?.v || '';   // A: 반
+            const studentId = row[1]?.v || '';  // B: 학번
+            const name = row[2]?.v || '';       // C: 이름
+            let location = row[4]?.v;           // E: 관
+            let seatNum = row[5]?.v;            // F: 좌석
 
             if (location && seatNum) {
                 const normalizedKey = String(location).replace(/\s+/g, '');
@@ -3601,19 +3599,16 @@ function handleSheetData(response) {
                 if (!occupiedSeats[normalizedKey]) {
                     occupiedSeats[normalizedKey] = {};
                 }
-
-                // 좌석 번호를 키로 하여 학생 상세 정보 저장
                 occupiedSeats[normalizedKey][seatNum] = {
                     classNum: classNum,
                     studentId: studentId,
-                    name: name
+                    name: name,
+                    locationName: location // 원래 관 이름 저장 (기록용)
                 };
             }
         }
-
         updateSeatColors();
-        updateStatus('✅ 데이터 로드 완료', 'green');
-
+        updateStatus('✅ 준비 완료', 'green');
     } catch (e) {
         console.error(e);
         updateStatus('❌ 파싱 에러', 'red');
@@ -3621,48 +3616,38 @@ function handleSheetData(response) {
 }
 
 function loadSheetData() {
-    updateStatus('⏳ 데이터 로딩 중...', 'orange');
+    updateStatus('⏳ 동기화 중...', 'orange');
     const oldScript = document.getElementById('gviz_script');
     if (oldScript) oldScript.remove();
 
     const script = document.createElement('script');
     script.id = 'gviz_script';
-    script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleSheetData&sheet=${SHEET_NAME}&gid=${SHEET_GID}`;
+    script.src = `https://docs.google.com/spreadsheets/d/${READ_SHEET_ID}/gviz/tq?tqx=responseHandler:handleSheetData&sheet=${READ_SHEET_NAME}&gid=${READ_SHEET_GID}`;
     document.body.appendChild(script);
 }
 
-// ==========================================
-// 2. 화면 표시 및 클릭 이벤트
-// ==========================================
 function updateSeatColors() {
-    // 초기화: 색상 제거 및 이벤트 리스너 제거를 위해 노드 복제 교체
     document.querySelectorAll('.seat').forEach(s => {
         s.classList.remove('occupied');
         s.style.cursor = 'default';
-        s.onclick = null; // 기존 이벤트 제거
+        s.onclick = null;
     });
 
     const allTabs = document.querySelectorAll('.tab-content');
-
     allTabs.forEach(tab => {
         const rawTabId = tab.id;
         const normalizedTabId = rawTabId.replace(/\s+/g, '');
 
-        // 매칭되는 시트 데이터 찾기
         for (const [sheetKey, seatDataObj] of Object.entries(occupiedSeats)) {
             if (normalizedTabId.startsWith(sheetKey)) {
-
-                // 해당 구역의 모든 좌석 데이터 순회
-                for (const [seatNum, studentInfo] of Object.entries(seatDataObj)) {
+                for (const [seatNum, info] of Object.entries(seatDataObj)) {
                     const seatEl = tab.querySelector(`.seat[data-seat="${seatNum}"]`);
-
                     if (seatEl) {
                         seatEl.classList.add('occupied');
-                        seatEl.style.cursor = 'pointer'; // 클릭 가능 표시
-
-                        // 클릭 이벤트 연결
+                        seatEl.style.cursor = 'pointer';
+                        // 클릭 시 데이터 전달
                         seatEl.onclick = function() {
-                            openModal(seatNum, studentInfo);
+                            openModal(seatNum, info);
                         };
                     }
                 }
@@ -3672,24 +3657,23 @@ function updateSeatColors() {
 }
 
 // ==========================================
-// 3. 모달(입력 폼) 관련 함수
+// 모달 & 데이터 전송 로직
 // ==========================================
 function openModal(seatNum, info) {
-    const modal = document.getElementById('guidanceModal');
+    currentSeatInfo = info; // 전송 시 사용하기 위해 저장
+    currentSeatInfo.seatNum = seatNum;
 
-    // 데이터 채우기
     document.getElementById('form_seat').value = seatNum;
     document.getElementById('form_class').value = info.classNum;
     document.getElementById('form_id').value = info.studentId;
     document.getElementById('form_name').value = info.name;
+    document.getElementById('form_location').value = info.locationName;
 
-    // 초기화
     document.getElementById('form_note').value = '';
     const radios = document.getElementsByName('guidance_type');
     for(const r of radios) r.checked = false;
 
-    // 모달 표시
-    modal.style.display = 'flex';
+    document.getElementById('guidanceModal').style.display = 'flex';
 }
 
 function closeModal() {
@@ -3697,54 +3681,73 @@ function closeModal() {
 }
 
 function submitForm() {
-    // 입력값 가져오기
-    const seat = document.getElementById('form_seat').value;
-    const name = document.getElementById('form_name').value;
-    const note = document.getElementById('form_note').value;
+    if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+        alert('⚠️ 먼저 Apps Script URL을 설정해야 합니다!\n코드의 SCRIPT_URL 변수를 수정해주세요.');
+        return;
+    }
 
-    // 라디오 버튼 값 확인
+    const note = document.getElementById('form_note').value;
     let type = '';
     const radios = document.getElementsByName('guidance_type');
-    for(const r of radios) {
-        if(r.checked) type = r.value;
-    }
+    for(const r of radios) if(r.checked) type = r.value;
 
     if (!type) {
         alert('지도 항목을 선택해주세요.');
         return;
     }
 
-    // 결과 데이터 객체 (나중에 구글 시트로 보낼 데이터)
-    const resultData = {
-        timestamp: new Date().toLocaleString(),
-        seat: seat,
-        name: name,
+    // 전송할 데이터 구성
+    const payload = {
+        location: currentSeatInfo.locationName,
+        seat: currentSeatInfo.seatNum,
+        classNum: currentSeatInfo.classNum,
+        studentId: currentSeatInfo.studentId,
+        name: currentSeatInfo.name,
         type: type,
         note: note
     };
 
-    console.log("전송할 데이터:", resultData);
-    alert(`[저장 완료]
-학생: ${name}
-항목: ${type}
-내용: ${note}`);
+    updateStatus('📤 데이터 전송 중...', 'blue');
+    const submitBtn = document.querySelector('.btn-submit');
+    submitBtn.disabled = true;
+    submitBtn.innerText = '전송 중...';
 
-    closeModal();
+    // Google Apps Script로 전송 (no-cors 모드 사용)
+    // 주의: no-cors 모드는 응답 내용을 읽을 수 없음 (성공 여부만 확인 가능하거나 불투명함)
+    // 일반적으로 form submit 방식이나 jsonp를 쓰기도 하지만, 
+    // 여기서는 fetch + text/plain 모드로 전송하여 CORS 문제를 최소화합니다.
+
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', // CORS 우회 (응답 확인 불가)
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(() => {
+        // no-cors라 성공 여부를 정확히 알 수 없지만 에러가 안나면 성공으로 간주
+        alert('✅ 기록되었습니다.');
+        closeModal();
+        updateStatus('✅ 전송 완료', 'green');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ 전송 실패: ' + error);
+        updateStatus('❌ 전송 실패', 'red');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerText = '입력 완료';
+    });
 }
 
-// ==========================================
-// 유틸리티
-// ==========================================
 function updateStatus(msg, color) {
     const el = document.getElementById('status_msg');
-    if (el) {
-        el.innerText = msg;
-        el.style.color = color;
-    }
+    if (el) el.innerText = msg; el.style.color = color;
 }
 
 window.addEventListener('load', () => {
-    // 상태바 생성
     const bar = document.createElement('div');
     bar.style.cssText = "position:fixed; bottom:10px; right:10px; background:white; padding:10px; border:2px solid #333; z-index:9000; border-radius:5px; font-weight:bold;";
     bar.innerHTML = '<span id="status_msg">준비</span> <button onclick="loadSheetData()" style="margin-left:10px;">새로고침</button>';
@@ -3755,13 +3758,13 @@ window.addEventListener('load', () => {
 });
 </script>
 
-<!-- 모달 UI 구조 -->
 <div id="guidanceModal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
         <h3 style="margin-top:0; border-bottom:2px solid #333; padding-bottom:10px;">📝 지도 관리 일지</h3>
 
         <div class="form-group">
             <label>학생 정보</label>
+            <input id="form_location" readonly style="margin-bottom:5px; background:#eee;">
             <div style="display:flex; gap:5px;">
                 <input id="form_class" readonly placeholder="반" style="width:40px;">
                 <input id="form_id" readonly placeholder="학번" style="width:60px;">
@@ -3794,50 +3797,21 @@ window.addEventListener('load', () => {
 </div>
 
 <style>
-/* 모달 스타일 */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-    justify-content: center; align-items: center;
-}
-.modal-content {
-    background: white; padding: 20px; border-radius: 8px;
-    width: 90%; max-width: 400px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; justify-content: center; align-items: center; }
+.modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 .form-group { margin-bottom: 15px; }
 .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-.form-group input, .form-group textarea {
-    width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
-}
+.form-group input, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
 .form-group input[readonly] { background-color: #f5f5f5; color: #555; }
-
-/* 라디오 버튼 그리드 */
-.radio-group {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-}
-.radio-group label {
-    display: flex; align-items: center; gap: 5px;
-    font-weight: normal; font-size: 14px; cursor: pointer;
-    background: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee;
-}
+.radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.radio-group label { display: flex; align-items: center; gap: 5px; font-weight: normal; font-size: 14px; cursor: pointer; background: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee; }
 .radio-group label:hover { background: #eef; }
-
-/* 버튼 그룹 */
 .button-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 .button-group button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 .btn-cancel { background: #ccc; color: #333; }
 .btn-submit { background: #2ecc71; color: white; }
 .btn-submit:hover { background: #27ae60; }
-
-/* 좌석 스타일 */
-.seat.occupied {
-    background-color: #2ecc71 !important;
-    color: white !important;
-    border-color: #27ae60 !important;
-    box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
-}
+.seat.occupied { background-color: #2ecc71 !important; color: white !important; border-color: #27ae60 !important; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); }
 </style>
 </body>
 </html>
