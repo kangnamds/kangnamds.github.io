@@ -3977,6 +3977,8 @@ async function processQueue() {
                 time: timeStr,
                 location: payload.location,
                 seat: payload.seat,
+                classNum: payload.classNum,
+                studentId: payload.studentId,
                 name: payload.name,
                 alertText: result.message
             });
@@ -4214,7 +4216,7 @@ function renderAlertsForActiveTab() {
   container.innerHTML = '';
 
   localSessionLogs.forEach(log => {
-      const lineText = `[${log.time}] ${log.location} ${log.seat}번 ${log.name} : ${log.alertText}`;
+      const lineText = `[${log.time}] ${log.location} ${log.seat}번 ${log.classNum ? log.classNum + '반 ' : ''}${log.studentId ? log.studentId + ' ' : ''}${log.name} : ${log.alertText}`;
 
       const itemDiv = document.createElement('div');
       itemDiv.className = 'log-item';
@@ -4303,20 +4305,20 @@ function submitForm() {
   for (const r of radios) if (r.checked) type = r.value;
   if (!type) { alert('지도 항목을 선택해주세요.'); return; }
 
-  closeModal();
-
+  // [Corrected] Read values BEFORE closing modal
   const payload = {
-    location: currentSeatInfo.locationName,
-    seat: currentSeatInfo.seatNum,
-    classNum: currentSeatInfo.classNum,
-    studentId: currentSeatInfo.studentId,
-    name: currentSeatInfo.name,
+    location: document.getElementById('form_location').value,
+    seat: document.getElementById('form_seat').value,
+    classNum: document.getElementById('form_class').value,
+    studentId: document.getElementById('form_id').value,
+    name: document.getElementById('form_name').value,
     type: type,
     note: note,
     user: currentUser
   };
 
   addToQueue(payload);
+  closeModal();
 }
 
 // ==========================================
