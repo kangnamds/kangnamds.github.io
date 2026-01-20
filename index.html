@@ -4,104 +4,181 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-/* ... (이전 CSS 내용: 좌석, 모달, 모바일 최적화 등) ... */
-/* [필수] 사용 중인 좌석 스타일 */
+* { box-sizing: border-box; }
+
 .seat.occupied {
-    background-color: #2ecc71 !important; 
-    color: white !important;
-    border-color: #27ae60 !important;
-    font-weight: bold;
-    box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
-    cursor: pointer;
+  background-color: #2ecc71 !important;
+  color: #fff !important;
+  border-color: #27ae60 !important;
+  font-weight: 800;
+  box-shadow: 0 0 5px rgba(46, 204, 113, 0.45);
+  cursor: pointer;
 }
 
-/* PC 드롭다운 숨김 */
+#mobile-location-select-wrap { display: none; }
 #mobile-location-select { display: none; }
 
-/* 사용자명 표시 컨테이너 스타일 (PC/모바일 공통) */
 #user-display-bar {
-    background-color: #f1f3f5;
-    color: #495057;
-    padding: 8px 15px;
-    margin: 10px 0;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: bold;
-    border: 1px solid #dee2e6;
-    display: none; /* 사용자명 입력 전엔 숨김 */
+  display: none;
+  background: #f1f3f5;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  font-weight: 900;
+  font-size: 14px;
 }
 
-/* 모달 스타일 */
+#alerts-panel {
+  width: 100%;
+  margin: 10px 0 0 0;
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  border-radius: 8px;
+}
+#alerts-panel .alerts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+#alerts-panel .alerts-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #212529;
+}
+#alerts-panel .alerts-actions { display: flex; gap: 8px; }
+#alerts-panel button {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  background: #f8f9fa;
+  font-weight: 800;
+  cursor: pointer;
+}
+#alerts-panel textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  resize: vertical;
+}
+#alerts-panel .alerts-hint { margin-top: 6px; font-size: 12px; color: #6c757d; }
+
 .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 10000;
-    display: flex; justify-content: center; align-items: center;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 10000;
+  display: none;
+  justify-content: center;
+  align-items: center;
 }
 .modal-content {
-    background: white; padding: 20px; border-radius: 12px;
-    width: 90%; max-width: 400px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #fff;
+  width: 90%;
+  max-width: 420px;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-h3.modal-title {
-    margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #333; font-size: 18px; text-align: center;
+.modal-title {
+  margin: 0 0 15px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #333;
+  font-size: 18px;
+  text-align: center;
 }
 .form-group { margin-bottom: 12px; }
-.form-label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #555; }
-
-/* 학생 정보 그리드 */
-.student-info-grid { display: grid; grid-template-columns: 0.8fr 1fr 1.5fr; gap: 5px; margin-bottom: 5px; }
+.form-label { display:block; font-weight: 900; margin-bottom: 6px; font-size: 13px; color: #555; }
+.student-info-grid { display: grid; grid-template-columns: 0.8fr 1fr 1.5fr; gap: 5px; margin-bottom: 6px; }
 .location-info-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 5px; }
-
 input.info-input {
-    width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;
-    background-color: #f8f9fa; color: #333; font-size: 14px; text-align: center;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f8f9fa;
+  color: #333;
+  font-size: 14px;
+  text-align: center;
 }
-input.info-input[readonly] { cursor: default; }
-
-/* 지도 항목 리스트 */
-.guidance-list { display: flex; flex-direction: column; gap: 6px; border: 1px solid #eee; padding: 8px; border-radius: 6px; background: #fafafa; }
-.radio-item { display: flex; align-items: center; padding: 8px; background: white; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
-.radio-item:hover { background-color: #f0f7ff; border-color: #cce5ff; }
-.radio-item input[type="radio"] { margin: 0 8px 0 0; width: 18px; height: 18px; cursor: pointer; }
-.radio-text { font-size: 14px; font-weight: 500; }
-
-textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; resize: none; box-sizing: border-box; }
-.button-group { display: flex; gap: 10px; margin-top: 20px; }
-.btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+.guidance-list { display:flex; flex-direction: column; gap: 6px; border: 1px solid #eee; padding: 8px; border-radius: 8px; background: #fafafa; }
+.radio-item {
+  display:flex;
+  align-items:center;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.radio-item input[type="radio"] { margin: 0 8px 0 0; width: 18px; height: 18px; }
+.radio-text { font-size: 14px; font-weight: 700; }
+textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; resize: none; }
+.button-group { display:flex; gap: 10px; margin-top: 18px; }
+.btn { flex:1; padding: 12px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 14px; }
 .btn-cancel { background: #e9ecef; color: #495057; }
-.btn-submit { background: #2ecc71; color: white; }
+.btn-submit { background: #2ecc71; color: #fff; }
 
-/* 모바일 전용 */
-@media screen and (max-width: 768px) {
-    body { padding: 0; margin: 0; }
-    .tabs { display: none !important; }
-    #mobile-location-select {
-        display: block; width: 96%; margin: 10px auto; padding: 12px;
-        font-size: 16px; border: 2px solid #ddd; border-radius: 8px; background: #fff;
-    }
-    .tab-content {
-        display: none; width: 100%; overflow-x: auto; padding: 10px;
-        justify-content: flex-start !important; text-align: left !important;
-    }
-    .tab-content.active { display: block; }
-    .grid-wrapper, table { min-width: 100%; width: max-content; margin-left: 0 !important; }
-    .seat { display: inline-block; width: 40px; height: 40px; line-height: 40px; margin: 2px; }
+@media (max-width: 768px) {
+  body { margin: 0; padding: 0; overflow-x: hidden; }
+  .tabs { display: none !important; }
 
-    .modal-content { width: 95%; max-width: none; }
-    input.info-input, textarea.note-input, .radio-text, .btn { font-size: 16px !important; }
-    .radio-item { padding: 10px; }
+  #mobile-location-select-wrap {
+    display: block;
+    background:#f8f9fa;
+    padding:10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid #ddd;
+  }
 
-    /* 모바일에서 사용자명 바 여백 조정 */
-    #user-display-bar {
-        width: 96%; margin: 0 auto 10px auto;
-    }
+  #mobile-location-select {
+    display: block;
+    width: 96%;
+    margin: 0 auto;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  #user-display-bar { width: 96%; margin: 10px auto; }
+
+  .tab-content {
+    display: none;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px;
+    text-align: left !important;
+    justify-content: flex-start !important;
+  }
+
+  .tab-content.active { display: block; }
+  table { width: max-content; min-width: 100%; margin-left: 0 !important; }
+
+  .modal-content { width: 95%; max-width: none; }
+  input.info-input, textarea.note-input, .radio-text, .btn { font-size: 16px !important; }
+
+  #alerts-panel { width: 96%; margin: 0 auto 10px auto; }
+  #alerts-panel textarea { font-size: 13px; }
 }
 </style>
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>퀀텀 감독 일지</title>
+<title>배부명단 관리</title>
 <style>
         :root {
             --primary-color: #4a90e2;
@@ -355,12 +432,11 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-<div style="background:#f8f9fa; padding:10px; position:sticky; top:0; z-index:100; border-bottom:1px solid #ddd;">
-    <select id="mobile-location-select" onchange="handleMobileSelect(this.value)">
-        <option value="" disabled selected>🔽 관 선택 (터치)</option>
-    </select>
+<div id="mobile-location-select-wrap">
+  <select id="mobile-location-select" onchange="handleMobileSelect(this.value)">
+    <option value="" disabled selected>🔽 퀀텀관 선택 (터치)</option>
+  </select>
 </div>
-<!-- 사용자명 표시 영역 (위치: 드롭다운/탭과 컨텐츠 사이) -->
 <div id="user-display-bar"></div>
 
 
@@ -3322,6 +3398,7 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
 <script>
         let distributionMap = {}; // { baseRoomKey: Set(seatStr) }
         let itemNameDisplay = "(업로드 전)";
+        let localSessionLogs = []; // Stores alerts for the current session
 
         function normalize(str) {
             return String(str || "").replace(/\s+/g, "").trim();
@@ -3662,254 +3739,544 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
 
 <script>
 // ==========================================
-// 설정 영역
+// 설정
 // ==========================================
 const READ_SHEET_ID = '1T1FWnYIu-a3fJituoUeFwL0r5YR2cYQAnSUSLxsdZto';
 const READ_SHEET_NAME = '마스터';
 const READ_SHEET_GID = '0';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzjSgwv5ZOFYhpgKyUk4j7gqz3-96bC9o4yfpk-1qi5no_h6wIVrTqMd9Q3mGVeVmz7g/exec'; 
+
+const LOG_SHEET_NAME = '퀀텀관 지도 일지'; // ← 실제 시트 이름으로 수정
+const LOG_SHEET_GID = '0';
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCfzBoSCraE8ctS3PNVNnFgkSpdOEkOBCgW-95b_rjvxWEzuMaZPWpHwHEpxhGzPGI/exec';
 
 // ==========================================
-// 전역 변수
+// 전역
 // ==========================================
-let currentUser = ''; 
+let currentUser = '';
+let occupiedSeats = {};
+let currentSeatInfo = {};
+
 const requestQueue = [];
 let isProcessing = false;
 
-// ... (initMobileDropdown 등 유지) ...
+let alertRows = [];
+
+// ==========================================
+// 유틸
+// ==========================================
+function normalizeLocationKey(v) { return String(v || '').replace(/\s+/g, ''); }
+
+// ==========================================
+// 모바일 드롭다운
+// ==========================================
 function initMobileDropdown() {
-    const select = document.getElementById('mobile-location-select');
-    const buttons = document.querySelectorAll('.tab-button');
-    const addedValues = new Set();
-    buttons.forEach(btn => {
-        const text = btn.innerText.trim();
-        const match = btn.getAttribute('onclick').match(/'([^']+)'/);
-        if (match) {
-            const tabId = match[1];
-            if (!addedValues.has(tabId)) {
-                const option = document.createElement('option');
-                option.value = tabId;
-                option.text = text;
-                select.appendChild(option);
-                addedValues.add(tabId);
-            }
-        }
-    });
+  const select = document.getElementById('mobile-location-select');
+  if (!select) return;
+
+  const existing = new Set(Array.from(select.options).map(o => o.value));
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    const text = (btn.innerText || '').trim();
+    const on = btn.getAttribute('onclick') || '';
+    const match = on.match(/'([^']+)'/);
+    if (!match) return;
+    const tabId = match[1];
+    if (existing.has(tabId)) return;
+    const opt = document.createElement('option');
+    opt.value = tabId;
+    opt.text = text;
+    select.appendChild(opt);
+    existing.add(tabId);
+  });
 }
+
 function handleMobileSelect(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.style.display = 'none';
-        tab.classList.remove('active');
-    });
-    const selectedTab = document.getElementById(tabId);
-    if (selectedTab) {
-        selectedTab.style.display = 'block';
-        selectedTab.classList.add('active');
-        selectedTab.scrollLeft = 0;
-        window.scrollTo(0, 0);
-    }
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.style.display = 'none';
+    tab.classList.remove('active');
+  });
+  const selected = document.getElementById(tabId);
+  if (selected) {
+    selected.style.display = 'block';
+    selected.classList.add('active');
+    selected.scrollLeft = 0;
+    window.scrollTo(0,0);
+    renderAlertsForActiveTab();
+  }
 }
 
+// ==========================================
+// 사용자명 입력
+// ==========================================
 function promptForUser() {
-    initMobileDropdown();
+  initMobileDropdown();
 
-    // 사용자명 위치 조정 로직
-    const userBar = document.getElementById('user-display-bar');
-    const tabsContainer = document.querySelector('.tabs'); // PC용 탭 컨테이너
+  const userBar = document.getElementById('user-display-bar');
+  const tabs = document.querySelector('.tabs');
+  if (tabs && window.getComputedStyle(tabs).display !== 'none') {
+    tabs.parentNode.insertBefore(userBar, tabs.nextSibling);
+  }
 
-    // PC 화면: .tabs 요소가 존재하면 그 뒤로 이동
-    if (tabsContainer && window.getComputedStyle(tabsContainer).display !== 'none') {
-        tabsContainer.parentNode.insertBefore(userBar, tabsContainer.nextSibling);
-    } 
-    // 모바일 화면 등: 기본 위치 유지 (드롭다운 아래)
-
-    let user = '';
-    while (!user) {
-        user = prompt("사용자 이름(감독관)을 입력해주세요:", "");
-        if (user === null) {
-            alert("필수 입력 사항입니다.");
-        } else {
-            user = user.trim();
-        }
+  let user = '';
+  while (!user) {
+    user = prompt('사용자 이름(감독관)을 입력해주세요:', '');
+    if (user === null) {
+      alert('필수 입력 사항입니다.');
+    } else {
+      user = user.trim();
     }
-    currentUser = user;
+  }
 
-    // 사용자명 표시 업데이트
-    userBar.innerText = `현재 사용자 : ${currentUser}`;
-    userBar.style.display = 'block'; // 표시
+  currentUser = user;
+  userBar.innerText = `현재 사용자 : ${currentUser}`;
+  userBar.style.display = 'block';
 
-    loadSheetData();
-    setInterval(loadSheetData, 30000);
+  ensureAlertsPanel();
+
+  loadSheetData();
+  loadAlertData();
+  setInterval(() => { loadSheetData(); loadAlertData(); }, 30000);
 }
 
-// ... (나머지 로직 동일) ...
+// ==========================================
+// 이탈 방지 + 큐
+// ==========================================
 window.addEventListener('beforeunload', (event) => {
-    if (requestQueue.length > 0 || isProcessing) {
-        event.preventDefault(); event.returnValue = ''; 
-    }
+  if (requestQueue.length > 0 || isProcessing) {
+    event.preventDefault();
+    event.returnValue = '';
+  }
 });
+
 function addToQueue(payload) {
-    requestQueue.push(payload); processQueue();
+  requestQueue.push(payload);
+  processQueue();
 }
+
 async function processQueue() {
-    if (isProcessing || requestQueue.length === 0) return;
-    isProcessing = true;
-    const payload = requestQueue[0];
-    updateStatus(`📤 전송 중... (${requestQueue.length}건) ⚠️ 닫지 마세요!`, 'red');
-    try {
-        await fetch(SCRIPT_URL, {
-            method: 'POST', mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        requestQueue.shift();
-        if (requestQueue.length > 0) processQueue(); 
-        else { updateStatus('✅ 저장 완료', 'green'); setTimeout(() => updateStatus('✅ 준비 완료', 'green'), 3000); }
-    } catch (error) {
-        console.error('전송 실패:', error);
-        updateStatus('❌ 실패 - 재시도 중...', 'red');
-        setTimeout(() => { isProcessing = false; processQueue(); }, 3000);
-        return; 
-    }
-    isProcessing = false; if (requestQueue.length > 0) processQueue();
-}
-let occupiedSeats = {}; 
-let currentSeatInfo = {}; 
-function handleSheetData(response) {
-    if (response.status === 'error') { updateStatus('❌ 에러: ' + response.errors[0].message, 'red'); return; }
-    try {
-        const rows = response.table.rows; occupiedSeats = {}; 
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i].c; if (!row) continue;
-            const classNum = row[0]?.v || ''; const studentId = row[1]?.v || ''; const name = row[2]?.v || '';     
-            let location = row[4]?.v; let seatNum = row[5]?.v;          
-            if (location && seatNum) {
-                const normalizedKey = String(location).replace(/\s+/g, ''); seatNum = String(seatNum).trim();
-                if (!occupiedSeats[normalizedKey]) occupiedSeats[normalizedKey] = {};
-                occupiedSeats[normalizedKey][seatNum] = { classNum, studentId, name, locationName: location };
-            }
-        }
-        updateSeatColors(); updateStatus('✅ 준비 완료', 'green');
-    } catch (e) { console.error(e); updateStatus('❌ 파싱 에러', 'red'); }
-}
-function loadSheetData() {
-    if (requestQueue.length > 0) return;
-    const oldScript = document.getElementById('gviz_script'); if (oldScript) oldScript.remove();
-    const script = document.createElement('script'); script.id = 'gviz_script';
-    script.src = `https://docs.google.com/spreadsheets/d/${READ_SHEET_ID}/gviz/tq?tqx=responseHandler:handleSheetData&sheet=${READ_SHEET_NAME}&gid=${READ_SHEET_GID}`;
-    document.body.appendChild(script);
-}
-function updateSeatColors() {
-    document.querySelectorAll('.seat').forEach(s => { s.classList.remove('occupied'); s.style.cursor = 'default'; s.onclick = null; });
-    const allTabs = document.querySelectorAll('.tab-content');
-    allTabs.forEach(tab => {
-        const rawTabId = tab.id; const normalizedTabId = rawTabId.replace(/\s+/g, '');
-        for (const [sheetKey, seatDataObj] of Object.entries(occupiedSeats)) {
-            if (normalizedTabId.startsWith(sheetKey)) {
-                for (const [seatNum, info] of Object.entries(seatDataObj)) {
-                    const seatEl = tab.querySelector(`.seat[data-seat="${seatNum}"]`);
-                    if (seatEl) {
-                        seatEl.classList.add('occupied'); seatEl.style.cursor = 'pointer';
-                        seatEl.onclick = function() { openModal(seatNum, info); };
-                    }
-                }
-            }
-        }
+  if (isProcessing || requestQueue.length === 0) return;
+  isProcessing = true;
+
+  const payload = requestQueue[0];
+  updateStatus(`📤 전송 중... (${requestQueue.length}건) ⚠️ 닫지 마세요!`, 'red');
+
+  try {
+    // Modified to read response
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      // mode: 'no-cors', // Removed to allow reading response
+      // Use text/plain to avoid CORS preflight (OPTIONS)
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+      body: JSON.stringify(payload)
     });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+        // Show alert if message exists
+        if (result.message && result.message.trim() !== "") {
+            alert("⚠️ 지도 알림: " + result.message);
+
+            // [추가됨] 세션 로그에 추가
+            if (typeof localSessionLogs !== 'undefined') {
+                const now = new Date();
+                const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+
+                localSessionLogs.push({
+                    time: timeStr,
+                    location: payload.location,
+                    seat: payload.seat,
+                    name: payload.name,
+                    alertText: result.message
+                });
+                renderAlertsForActiveTab();
+            }
+        }
+        requestQueue.shift();
+    } else {
+        throw new Error(result.message || "Server Error");
+    }
+
+    if (requestQueue.length > 0) {
+      processQueue();
+    } else {
+      updateStatus('✅ 저장 완료', 'green');
+      loadSheetData();
+      loadAlertData();
+      setTimeout(() => updateStatus('✅ 준비 완료', 'green'), 2500);
+    }
+
+  } catch (e) {
+    console.error(e);
+    updateStatus('❌ 실패 - 재시도 중...', 'red');
+    setTimeout(() => { isProcessing = false; processQueue(); }, 3000);
+    return;
+  }
+
+  isProcessing = false;
+  if (requestQueue.length > 0) processQueue();
 }
+
+// ==========================================
+// 마스터 시트
+// ==========================================
+function handleSheetData(response) {
+  if (response.status === 'error') {
+    updateStatus('❌ 에러: ' + response.errors[0].message, 'red');
+    return;
+  }
+
+  try {
+    const rows = response.table.rows || [];
+    occupiedSeats = {};
+
+    for (const r of rows) {
+      const c = r.c;
+      if (!c) continue;
+
+      const classNum = c[0]?.v || '';
+      const studentId = c[1]?.v || '';
+      const name = c[2]?.v || '';
+      const location = c[4]?.v;
+      let seatNum = c[5]?.v;
+
+      if (location && seatNum) {
+        const key = normalizeLocationKey(location);
+        seatNum = String(seatNum).trim();
+        if (!occupiedSeats[key]) occupiedSeats[key] = {};
+        occupiedSeats[key][seatNum] = { classNum, studentId, name, locationName: location };
+      }
+    }
+
+    updateSeatColors();
+    updateStatus('✅ 준비 완료', 'green');
+  } catch (e) {
+    console.error(e);
+    updateStatus('❌ 파싱 에러', 'red');
+  }
+}
+
+function loadSheetData() {
+  if (requestQueue.length > 0) return;
+
+  const old = document.getElementById('gviz_master_script');
+  if (old) old.remove();
+
+  const script = document.createElement('script');
+  script.id = 'gviz_master_script';
+  script.src = `https://docs.google.com/spreadsheets/d/${READ_SHEET_ID}/gviz/tq?tqx=responseHandler:handleSheetData&sheet=${encodeURIComponent(READ_SHEET_NAME)}&gid=${READ_SHEET_GID}`;
+  document.body.appendChild(script);
+}
+
+function updateSeatColors() {
+  document.querySelectorAll('.seat').forEach(s => {
+    s.classList.remove('occupied');
+    s.style.cursor = 'default';
+    s.onclick = null;
+  });
+
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    const tabKey = normalizeLocationKey(tab.id);
+
+    for (const [sheetKey, seatObj] of Object.entries(occupiedSeats)) {
+      if (!tabKey.startsWith(sheetKey)) continue;
+
+      for (const [seatNum, info] of Object.entries(seatObj)) {
+        const seatEl = tab.querySelector(`.seat[data-seat="${seatNum}"]`);
+        if (seatEl) {
+          seatEl.classList.add('occupied');
+          seatEl.style.cursor = 'pointer';
+          seatEl.onclick = () => openModal(seatNum, info);
+        }
+      }
+    }
+  });
+
+  renderAlertsForActiveTab();
+}
+
+// ==========================================
+// 알림 데이터 (O열 읽기)
+// ==========================================
+function handleAlertData(response) {
+  if (response.status === 'error') {
+    console.error('alert data error', response.errors);
+    alertRows = [];
+    renderAlertsForActiveTab();
+    return;
+  }
+
+  alertRows = [];
+
+  try {
+    const rows = response.table.rows || [];
+    for (const r of rows) {
+      const c = r.c;
+      if (!c) continue;
+
+      const location = c[2]?.v || '';
+      const seat = c[3]?.v || '';
+      const classNum = c[4]?.v || '';
+      const studentId = c[5]?.v || '';
+      const name = c[6]?.v || '';
+      const alertText = c[14]?.v || ''; // O열
+
+      if (!alertText || !location || !seat) continue;
+
+      alertRows.push({
+        location,
+        seat: String(seat).trim(),
+        classNum,
+        studentId,
+        name,
+        alertText
+      });
+    }
+  } catch (e) {
+    console.error(e);
+    alertRows = [];
+  }
+
+  renderAlertsForActiveTab();
+}
+
+function loadAlertData() {
+  const old = document.getElementById('gviz_alert_script');
+  if (old) old.remove();
+
+  const script = document.createElement('script');
+  script.id = 'gviz_alert_script';
+  script.src = `https://docs.google.com/spreadsheets/d/${READ_SHEET_ID}/gviz/tq?tqx=responseHandler:handleAlertData&sheet=${encodeURIComponent(LOG_SHEET_NAME)}&gid=${LOG_SHEET_GID}`;
+  document.body.appendChild(script);
+}
+
+// ==========================================
+// 누적 패널
+// ==========================================
+function ensureAlertsPanel() {
+  let panel = document.getElementById('alerts-panel');
+  if (panel) return panel;
+
+  panel = document.createElement('div');
+  panel.id = 'alerts-panel';
+  panel.innerHTML = `
+    <div class="alerts-header">
+      <div class="alerts-title">📌 누적 지도 대상(오늘)</div>
+      <div class="alerts-actions">
+        <button type="button" onclick="copyAlertsText()">복사</button>
+        <button type="button" onclick="loadAlertData()">새로고침</button>
+      </div>
+    </div>
+    <textarea id="alerts-text" readonly placeholder="(표시 조건)\n- 수면주의: 3회 이상\n- 전자기기 위반: 1회 이상\n- 정숙주의/수업참여: 1회 이상\n\n관을 선택하면 아래에 대상자가 표시됩니다."></textarea>
+    <div class="alerts-hint">형식: 관 좌석번호 반 학번 이름 알림내용</div>
+  `;
+
+  return panel;
+}
+
+function getActiveTabElement() {
+  let active = document.querySelector('.tab-content.active');
+  if (active) return active;
+  const tabs = Array.from(document.querySelectorAll('.tab-content'));
+  return tabs.find(t => window.getComputedStyle(t).display !== 'none');
+}
+
+function mountAlertsPanelToActiveTab() {
+  const panel = ensureAlertsPanel();
+  const activeTab = getActiveTabElement();
+  if (!activeTab) return;
+  if (panel.parentElement !== activeTab) activeTab.appendChild(panel);
+}
+
+function buildAlertsTextForTab(tabEl) {
+  if (!tabEl) return '';
+
+  const tabKey = normalizeLocationKey(tabEl.id);
+
+  const filtered = alertRows.filter(row => {
+    const locKey = normalizeLocationKey(row.location);
+    return tabKey.startsWith(locKey);
+  });
+
+  if (filtered.length === 0) return '';
+
+  filtered.sort((a, b) => {
+    const na = Number(a.seat), nb = Number(b.seat);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+    return String(a.seat).localeCompare(String(b.seat));
+  });
+
+  const lines = filtered.map(row => {
+    return `${row.location} ${row.seat} ${row.classNum || ''} ${row.studentId || ''} ${row.name || ''} ${row.alertText}`.replace(/\s+/g,' ').trim();
+  });
+
+  return lines.join('\n');
+}
+
+function renderAlertsForActiveTab() {
+  mountAlertsPanelToActiveTab();
+  const ta = document.getElementById('alerts-text');
+  if (!ta) return;
+
+  if (!localSessionLogs || localSessionLogs.length === 0) {
+      ta.value = "아직 기록된 알림이 없습니다.";
+      return;
+  }
+
+  const lines = localSessionLogs.map(log => {
+      // 형식: [시간] 관 좌석 이름 : 내용
+      return `[${log.time}] ${log.location} ${log.seat}번 ${log.name} : ${log.alertText}`;
+  });
+
+  ta.value = lines.join('\n');
+  ta.scrollTop = ta.scrollHeight;
+}
+
+async function copyAlertsText() {
+  const ta = document.getElementById('alerts-text');
+  if (!ta) return;
+  const text = (ta.value || '').trim();
+  if (!text) { alert('복사할 내용이 없습니다.'); return; }
+
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    ta.focus();
+    ta.select();
+    document.execCommand('copy');
+  }
+
+  updateStatus('✅ 복사 완료', 'green');
+  setTimeout(() => updateStatus('✅ 준비 완료', 'green'), 1500);
+}
+
+// ==========================================
+// 모달
+// ==========================================
 function openModal(seatNum, info) {
-    currentSeatInfo = info; currentSeatInfo.seatNum = seatNum;
-    document.getElementById('form_class').value = info.classNum;
-    document.getElementById('form_id').value = info.studentId;
-    document.getElementById('form_name').value = info.name;
-    document.getElementById('form_location').value = info.locationName;
-    document.getElementById('form_seat').value = seatNum;
-    document.getElementById('form_note').value = '';
-    const radios = document.getElementsByName('guidance_type');
-    for(const r of radios) r.checked = false;
-    document.getElementById('guidanceModal').style.display = 'flex';
+  currentSeatInfo = info;
+  currentSeatInfo.seatNum = seatNum;
+
+  document.getElementById('form_class').value = info.classNum || '';
+  document.getElementById('form_id').value = info.studentId || '';
+  document.getElementById('form_name').value = info.name || '';
+  document.getElementById('form_location').value = info.locationName || '';
+  document.getElementById('form_seat').value = seatNum || '';
+
+  document.getElementById('form_note').value = '';
+  const radios = document.getElementsByName('guidance_type');
+  for (const r of radios) r.checked = false;
+
+  document.getElementById('guidanceModal').style.display = 'flex';
 }
-function closeModal() { document.getElementById('guidanceModal').style.display = 'none'; }
+
+function closeModal() {
+  document.getElementById('guidanceModal').style.display = 'none';
+}
+
 function submitForm() {
-    if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') { alert('⚠️ SCRIPT_URL을 설정해주세요!'); return; }
-    const note = document.getElementById('form_note').value;
-    let type = '';
-    const radios = document.getElementsByName('guidance_type');
-    for(const r of radios) if(r.checked) type = r.value;
-    if (!type) { alert('지도 항목을 선택해주세요.'); return; }
-    closeModal(); 
-    const payload = {
-        location: currentSeatInfo.locationName, seat: currentSeatInfo.seatNum,
-        classNum: currentSeatInfo.classNum, studentId: currentSeatInfo.studentId, name: currentSeatInfo.name,
-        type: type, note: note, user: currentUser
-    };
-    addToQueue(payload);
+  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    alert('⚠️ SCRIPT_URL을 설정해주세요!');
+    return;
+  }
+
+  const note = document.getElementById('form_note').value;
+  let type = '';
+  const radios = document.getElementsByName('guidance_type');
+  for (const r of radios) if (r.checked) type = r.value;
+  if (!type) { alert('지도 항목을 선택해주세요.'); return; }
+
+  closeModal();
+
+  const payload = {
+    location: currentSeatInfo.locationName,
+    seat: currentSeatInfo.seatNum,
+    classNum: currentSeatInfo.classNum,
+    studentId: currentSeatInfo.studentId,
+    name: currentSeatInfo.name,
+    type: type,
+    note: note,
+    user: currentUser
+  };
+
+  addToQueue(payload);
 }
+
+// ==========================================
+// 상태바
+// ==========================================
 function updateStatus(msg, color) {
-    const el = document.getElementById('status_msg'); if (el) { el.innerText = msg; el.style.color = color; }
+  const el = document.getElementById('status_msg');
+  if (!el) return;
+  el.innerText = msg;
+  el.style.color = color;
 }
+
+function hookOpenTab() {
+  if (typeof window.openTab !== 'function') return;
+  if (window.__openTabHooked) return;
+
+  const original = window.openTab;
+  window.openTab = function(evt, tabName) {
+    const r = original.apply(this, arguments);
+    setTimeout(() => { renderAlertsForActiveTab(); }, 0);
+    return r;
+  };
+  window.__openTabHooked = true;
+}
+
 window.addEventListener('load', () => {
-    const bar = document.createElement('div'); bar.id = 'status_msg_container';
-    bar.style.cssText = "position:fixed; bottom:10px; right:10px; background:white; padding:10px; border:2px solid #333; z-index:9000; border-radius:5px; font-weight:bold; font-size:12px; box-shadow:0 2px 10px rgba(0,0,0,0.2);";
-    bar.innerHTML = '<span id="status_msg">준비</span> <button onclick="loadSheetData()" style="margin-left:10px; padding:5px;">↻</button>';
-    document.body.appendChild(bar);
-    setTimeout(promptForUser, 100); 
+  hookOpenTab();
+
+  const bar = document.createElement('div');
+  bar.id = 'status_msg_container';
+  bar.style.cssText = 'position:fixed; bottom:10px; right:10px; background:white; padding:10px; border:2px solid #333; z-index:9000; border-radius:8px; font-weight:900; font-size:12px; box-shadow:0 2px 10px rgba(0,0,0,0.2);';
+  bar.innerHTML = '<span id="status_msg">준비</span> <button onclick="loadSheetData(); loadAlertData();" style="margin-left:10px; padding:5px; font-weight:900;">↻</button>';
+  document.body.appendChild(bar);
+
+  setTimeout(promptForUser, 100);
 });
 </script>
 
-<div id="guidanceModal" class="modal-overlay" style="display:none;">
-    <div class="modal-content">
-        <h3 class="modal-title">📝 지도 관리 일지</h3>
+<div id="guidanceModal" class="modal-overlay">
+  <div class="modal-content">
+    <h3 class="modal-title">📝 지도 관리 일지</h3>
 
-        <div class="form-group">
-            <span class="form-label">학생 정보</span>
-            <div class="student-info-grid">
-                <input id="form_class" class="info-input" readonly placeholder="반">
-                <input id="form_id" class="info-input" readonly placeholder="학번">
-                <input id="form_name" class="info-input" readonly placeholder="이름" style="font-weight:bold;">
-            </div>
-            <div class="location-info-grid">
-                <input id="form_location" class="info-input" readonly placeholder="독서실명">
-                <input id="form_seat" class="info-input" readonly placeholder="좌석">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <span class="form-label">지도 항목 (선택)</span>
-            <div class="guidance-list">
-                <label class="radio-item">
-                    <input type="radio" name="guidance_type" value="수면주의">
-                    <span class="radio-text">😴 수면주의</span>
-                </label>
-                <label class="radio-item">
-                    <input type="radio" name="guidance_type" value="전자기기">
-                    <span class="radio-text">📱 전자기기 사용</span>
-                </label>
-                <label class="radio-item">
-                    <input type="radio" name="guidance_type" value="정숙주의">
-                    <span class="radio-text">🤫 정숙주의</span>
-                </label>
-                <label class="radio-item">
-                    <input type="radio" name="guidance_type" value="수업참여">
-                    <span class="radio-text">🏫 수업참여 독려</span>
-                </label>
-                <label class="radio-item">
-                    <input type="radio" name="guidance_type" value="기타">
-                    <span class="radio-text">🎸 기타</span>
-                </label>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <span class="form-label">비고 / 기타 내용</span>
-            <textarea id="form_note" class="note-input" rows="2" placeholder="내용을 입력하세요"></textarea>
-        </div>
-
-        <div class="button-group">
-            <button onclick="closeModal()" class="btn btn-cancel">취소</button>
-            <button onclick="submitForm()" class="btn btn-submit">입력 완료</button>
-        </div>
+    <div class="form-group">
+      <span class="form-label">학생 정보</span>
+      <div class="student-info-grid">
+        <input id="form_class" class="info-input" readonly placeholder="반">
+        <input id="form_id" class="info-input" readonly placeholder="학번">
+        <input id="form_name" class="info-input" readonly placeholder="이름" style="font-weight:900;">
+      </div>
+      <div class="location-info-grid">
+        <input id="form_location" class="info-input" readonly placeholder="독서실명">
+        <input id="form_seat" class="info-input" readonly placeholder="좌석">
+      </div>
     </div>
+
+    <div class="form-group">
+      <span class="form-label">지도 항목 (선택)</span>
+      <div class="guidance-list">
+        <label class="radio-item"><input type="radio" name="guidance_type" value="수면주의"><span class="radio-text">😴 수면주의</span></label>
+        <label class="radio-item"><input type="radio" name="guidance_type" value="전자기기 위반"><span class="radio-text">📱 전자기기 위반</span></label>
+        <label class="radio-item"><input type="radio" name="guidance_type" value="정숙주의"><span class="radio-text">🤫 정숙주의</span></label>
+        <label class="radio-item"><input type="radio" name="guidance_type" value="수업참여"><span class="radio-text">🏫 수업참여 독려</span></label>
+        <label class="radio-item"><input type="radio" name="guidance_type" value="기타"><span class="radio-text">🎸 기타</span></label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <span class="form-label">비고 / 기타 내용</span>
+      <textarea id="form_note" class="note-input" rows="2" placeholder="내용을 입력하세요"></textarea>
+    </div>
+
+    <div class="button-group">
+      <button onclick="closeModal()" class="btn btn-cancel">취소</button>
+      <button onclick="submitForm()" class="btn btn-submit">입력 완료</button>
+    </div>
+  </div>
 </div>
+
 </body>
 </html>
