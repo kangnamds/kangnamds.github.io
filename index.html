@@ -430,6 +430,61 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
     </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+/* Session Log Item Styles */
+.log-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+  color: #333;
+}
+.log-item:hover {
+  background-color: #f9f9f9;
+}
+.log-text {
+  flex: 1;
+  margin-right: 10px;
+  font-family: 'Courier New', monospace;
+}
+.copy-btn {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: #555;
+  transition: all 0.2s;
+  min-width: 50px;
+}
+.copy-btn:hover {
+  background: #eee;
+  border-color: #bbb;
+  color: #000;
+}
+
+/* Mobile Alignment Fix */
+@media (max-width: 768px) {
+  .tab-content {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+  }
+
+  .grid-wrapper {
+    justify-content: flex-start !important;
+    margin-left: 0 !important;
+  }
+
+  table {
+    margin-left: 0 !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div id="mobile-location-select-wrap">
@@ -3398,7 +3453,7 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
 <script>
         let distributionMap = {}; // { baseRoomKey: Set(seatStr) }
         let itemNameDisplay = "(업로드 전)";
-        let localSessionLogs = []; // Stores alerts for the current session
+        let localSessionLogs = []; // Session log storage
 
         function normalize(str) {
             return String(str || "").replace(/\s+/g, "").trim();
@@ -3877,20 +3932,19 @@ async function processQueue() {
         if (result.message && result.message.trim() !== "") {
             alert("⚠️ 지도 알림: " + result.message);
 
-            // [추가됨] 세션 로그에 추가
-            if (typeof localSessionLogs !== 'undefined') {
-                const now = new Date();
-                const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+            // Add to session log
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
 
-                localSessionLogs.push({
-                    time: timeStr,
-                    location: payload.location,
-                    seat: payload.seat,
-                    name: payload.name,
-                    alertText: result.message
-                });
-                renderAlertsForActiveTab();
-            }
+            localSessionLogs.push({
+                time: timeStr,
+                location: payload.location,
+                seat: payload.seat,
+                name: payload.name,
+                alertText: result.message
+            });
+
+            renderAlertsForActiveTab();
         }
         requestQueue.shift();
     } else {
@@ -4061,14 +4115,11 @@ function ensureAlertsPanel() {
   panel.id = 'alerts-panel';
   panel.innerHTML = `
     <div class="alerts-header">
-      <div class="alerts-title">📌 누적 지도 대상(오늘)</div>
-      <div class="alerts-actions">
-        <button type="button" onclick="copyAlertsText()">복사</button>
-        <button type="button" onclick="loadAlertData()">새로고침</button>
-      </div>
+      <div class="alerts-title">📌 실시간 지도 알림 로그</div>
     </div>
-    <textarea id="alerts-text" readonly placeholder="(표시 조건)\n- 수면주의: 3회 이상\n- 전자기기 위반: 1회 이상\n- 정숙주의/수업참여: 1회 이상\n\n관을 선택하면 아래에 대상자가 표시됩니다."></textarea>
-    <div class="alerts-hint">형식: 관 좌석번호 반 학번 이름 알림내용</div>
+    <div id="alerts-container" style="flex:1; overflow-y:auto; background:#fff; border:1px solid #ccc; padding:0;">
+        <div style="color:#999; text-align:center; padding:20px; font-size:13px;">아직 기록된 알림이 없습니다.</div>
+    </div>
   `;
 
   return panel;
@@ -4115,21 +4166,50 @@ function buildAlertsTextForTab(tabEl) {
 
 function renderAlertsForActiveTab() {
   mountAlertsPanelToActiveTab();
-  const ta = document.getElementById('alerts-text');
-  if (!ta) return;
+  const container = document.getElementById('alerts-container');
+  if (!container) return;
 
   if (!localSessionLogs || localSessionLogs.length === 0) {
-      ta.value = "아직 기록된 알림이 없습니다.";
+      container.innerHTML = '<div style="color:#999; text-align:center; padding:20px; font-size:13px;">아직 기록된 알림이 없습니다.</div>';
       return;
   }
 
-  const lines = localSessionLogs.map(log => {
-      // 형식: [시간] 관 좌석 이름 : 내용
-      return `[${log.time}] ${log.location} ${log.seat}번 ${log.name} : ${log.alertText}`;
+  container.innerHTML = '';
+
+  localSessionLogs.forEach(log => {
+      const lineText = `[${log.time}] ${log.location} ${log.seat}번 ${log.name} : ${log.alertText}`;
+
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'log-item';
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'log-text';
+      textSpan.textContent = lineText;
+
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = '복사';
+      btn.onclick = () => {
+          navigator.clipboard.writeText(lineText).then(() => {
+              btn.textContent = '✓';
+              btn.style.color = 'green';
+              btn.style.borderColor = 'green';
+              setTimeout(() => {
+                  btn.textContent = '복사';
+                  btn.style.color = '#555';
+                  btn.style.borderColor = '#ddd';
+              }, 1500);
+          }).catch(() => {
+              alert('복사 실패');
+          });
+      };
+
+      itemDiv.appendChild(textSpan);
+      itemDiv.appendChild(btn);
+      container.appendChild(itemDiv);
   });
 
-  ta.value = lines.join('\n');
-  ta.scrollTop = ta.scrollHeight;
+  container.scrollTop = container.scrollHeight;
 }
 
 async function copyAlertsText() {
