@@ -468,26 +468,26 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
     margin-left: 0 !important;
   }
 }
-/* È¨ ¹öÆ° Àü¿ë ½ºÅ¸ÀÏ */
+/* È¨   Æ°        Å¸   */
 .tab-button.home-tab {
-    background-color: #f1f3f5; /* ´Ù¸¥ ÅÇº¸´Ù ¾à°£ Â£Àº È¸»ö ¹è°æ */
+    background-color: #f1f3f5; /*  Ù¸   Çº     à°£ Â£   È¸       */
     color: #333;
-    font-weight: 900; /* ÅØ½ºÆ®¸¦ ´õ ±½°Ô */
-    margin-right: 10px; /* ´Ù¸¥ ÅÇµé°ú °£°Ý ¶ç¿ì±â */
+    font-weight: 900; /*  Ø½ Æ®           */
+    margin-right: 10px; /*  Ù¸   Çµ             */
     border-color: #ced4da;
 }
 
-    /* ¸¶¿ì½º ¿Ã·ÈÀ» ¶§ */
+    /*    ì½º  Ã·       */
     .tab-button.home-tab:hover {
         background-color: #e9ecef;
-        transform: translateY(-1px); /* »ìÂ¦ ¶°¿À¸£´Â È¿°ú */
+        transform: translateY(-1px); /*   Â¦          È¿   */
     }
 
 /* =========================================
-   [°³¼±µÈ] Ã¹ È­¸é(·£µù ÆäÀÌÁö) ½ºÅ¸ÀÏ
+   [      ] Ã¹ È­  (           )   Å¸  
    ========================================= */
 
-/* ¹è°æ: ÀºÀºÇÑ ±×¶óµ¥ÀÌ¼ÇÀ¸·Î º¯°æ */
+/*    :         ×¶  Ì¼           */
 #main-landing {
     position: fixed;
     top: 0;
@@ -505,7 +505,7 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
     backdrop-filter: blur(5px);
 }
 
-/* Ä«µå ¹Ú½º: ´õ ±íÀÌ°¨ ÀÖ´Â ±×¸²ÀÚ¿Í µÕ±Ù ¸ð¼­¸® */
+/* Ä«    Ú½ :       Ì°   Ö´   ×¸  Ú¿   Õ±   ð¼­¸  */
 .landing-card {
     background: rgba(255, 255, 255, 0.95);
     padding: 40px 30px;
@@ -517,7 +517,7 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
     animation: slideUp 0.5s ease-out;
 }
 
-/* Á¦¸ñ ½ºÅ¸ÀÏ °­È­ */
+/*        Å¸     È­ */
 #main-landing h1 {
     font-size: 28px;
     margin-bottom: 35px;
@@ -528,7 +528,7 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
     display: inline-block;
 }
 
-    /* Á¦¸ñ ¾Æ·¡ ÂªÀº ¹ØÁÙ Àå½Ä */
+    /*       Æ·  Âª            */
     #main-landing h1::after {
         content: '';
         display: block;
@@ -539,7 +539,7 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
         border-radius: 2px;
     }
 
-/* ¹öÆ° ±×¸®µå: 2¿­ ¹èÄ¡·Î ±ò²ûÇÏ°Ô Á¤¸® */
+/*   Æ°  ×¸   : 2     Ä¡       Ï°       */
 .building-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -547,7 +547,7 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
     margin-top: 10px;
 }
 
-/* ¹öÆ° µðÀÚÀÎ: ¸ð´øÇÏ°í Å¬¸¯ÇÏ°í ½ÍÀº ´À³¦ */
+/*   Æ°       :     Ï°  Å¬   Ï°            */
 .building-btn {
     padding: 20px;
     background: white;
@@ -561,7 +561,7 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
     box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
-    /* È£¹ö È¿°ú: »ö»ó º¯°æ ¹× ¾à°£ ¶°¿À¸£´Â È¿°ú */
+    /* È£   È¿  :               à°£          È¿   */
     .building-btn:hover {
         background: #4a90e2;
         color: white;
@@ -570,13 +570,13 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
         box-shadow: 0 8px 15px rgba(74, 144, 226, 0.25);
     }
 
-    /* Å¬¸¯ È¿°ú */
+    /* Å¬   È¿   */
     .building-btn:active {
         transform: translateY(-1px);
         box-shadow: 0 4px 6px rgba(74, 144, 226, 0.2);
     }
 
-/* ºÎµå·¯¿î µîÀå ¾Ö´Ï¸ÞÀÌ¼Ç */
+/*  Îµå·¯         Ö´Ï¸  Ì¼  */
 @keyframes slideUp {
     from {
         opacity: 0;

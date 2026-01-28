@@ -153,65 +153,7 @@ let distributionMap = {}; // { baseRoomKey: Set(seatStr) }
             }
         }
 
-        async function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data, { type: 'array' });
-
-            let sheetName = workbook.SheetNames.find(n => n.includes("반별 컨텐츠 구매 명단"));
-            if (!sheetName) sheetName = workbook.SheetNames[0];
-
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
-
-            const itemSet = new Set();
-            for (const row of jsonData) {
-                const v = String(row['항목명'] || '').trim();
-                if (v) itemSet.add(v);
-            }
-            if (itemSet.size === 1) itemNameDisplay = Array.from(itemSet)[0];
-            else if (itemSet.size > 1) itemNameDisplay = `${itemSet.size}개 항목`;
-            else itemNameDisplay = "(항목명 없음)";
-
-            distributionMap = {};
-            let count = 0;
-            for (const row of jsonData) {
-                const room = row['독서실명'];
-                const seat = row['자리'];
-                const key = baseRoomKey(room);
-                const seatStr = String(seat).trim();
-                if (!key || !seatStr) continue;
-
-                if (!distributionMap[key]) distributionMap[key] = new Set();
-                distributionMap[key].add(seatStr);
-                count++;
-            }
-
-            document.getElementById('status-message').textContent = `✅ ${count}건 로드 완료`;
-            document.getElementById('status-message').style.color = '#27ae60';
-            document.getElementById('resetBtn').style.display = 'inline-flex';
-            document.getElementById('downloadBtn').style.display = 'inline-flex';
-
-            applyHighlightsGlobal();
-            updateSummaryPage();
-            const activeTabId = document.querySelector('.tab-content.active')?.id || 'MAIN';
-            setHeader(activeTabId);
-        }
-
-        function resetData() {
-            distributionMap = {};
-            itemNameDisplay = "(업로드 전)";
-            document.getElementById('fileInput').value = '';
-            applyHighlightsGlobal();
-            updateSummaryPage();
-            document.getElementById('status-message').textContent = "데이터가 초기화되었습니다.";
-            document.getElementById('status-message').style.color = '#7f8c8d';
-            document.getElementById('resetBtn').style.display = 'none';
-            document.getElementById('downloadBtn').style.display = 'none';
-            const activeTabId = document.querySelector('.tab-content.active')?.id || 'MAIN';
-            setHeader(activeTabId);
-        }
+        
 
         function applyHighlightsGlobal() {
             document.querySelectorAll('.seat.target').forEach(el => {
@@ -234,110 +176,7 @@ let distributionMap = {}; // { baseRoomKey: Set(seatStr) }
             });
         }
 
-        async function downloadAllScreenshots() {
-            const overlay = document.getElementById('loading-overlay');
-            const progressText = document.getElementById('loading-text');
-            overlay.style.display = 'flex';
-
-            try {
-                const tabs = document.querySelectorAll('.tab-content');
-                const originalActive = document.querySelector('.tab-content.active');
-
-                const downloadImage = (blob, name) => {
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = name;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                };
-
-                for (const tab of tabs) {
-                    if (tab.id === 'MAIN') continue;
-
-                    progressText.innerText = `이미지 저장 중... (${tab.id})`;
-
-                    tab.classList.add('active');
-                    tab.style.display = 'block';
-                    tab.style.animation = 'none';
-
-                    const isSummary = (tab.id === 'SUMMARY');
-                    const roomText = isSummary ? '총배부 수량' : tab.id;
-                    const itemText = itemNameDisplay;
-
-                    const titleNode = document.createElement('div');
-                    titleNode.style.textAlign = 'center';
-                    titleNode.style.marginBottom = '15px';
-                    titleNode.style.fontFamily = "'Pretendard', sans-serif";
-
-                    const line1 = document.createElement('div');
-                    line1.innerText = roomText;
-                    line1.style.color = '#2c3e50';
-                    line1.style.fontSize = '22px';
-                    line1.style.fontWeight = '900';
-                    line1.style.lineHeight = '1.1';
-
-                    const line2 = document.createElement('div');
-                    line2.innerText = itemText;
-                    line2.style.color = '#2c3e50';
-                    line2.style.fontSize = '16px';
-                    line2.style.fontWeight = '600';
-                    line2.style.marginTop = '6px';
-
-                    titleNode.appendChild(line1);
-                    titleNode.appendChild(line2);
-
-                    tab.insertBefore(titleNode, tab.firstChild);
-
-                    const originalPadding = tab.style.padding;
-                    tab.style.padding = '30px';
-                    tab.style.backgroundColor = '#ffffff';
-                    tab.style.width = 'fit-content';
-                    tab.style.margin = '0 auto';
-
-                    const canvas = await html2canvas(tab, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
-
-                    const safeRoom = String(roomText || '').replace(/[\\/:*?\"<>|]/g, '_');
-                    const safeItem = String(itemText || '').replace(/[\\/:*?\"<>|]/g, '_');
-                    const filename = `${safeRoom}_${safeItem}.jpg`;
-
-                    canvas.toBlob((blob) => {
-                        downloadImage(blob, filename);
-                    }, 'image/jpeg', 0.9);
-
-                    tab.removeChild(titleNode);
-                    tab.style.padding = originalPadding;
-                    tab.style.backgroundColor = '';
-                    tab.style.width = '';
-                    tab.style.margin = '';
-
-                    tab.style.animation = '';
-                    tab.style.display = '';
-                    tab.classList.remove('active');
-
-                    await new Promise(r => setTimeout(r, 400));
-                }
-
-                if (originalActive) originalActive.classList.add('active');
-            } catch (err) {
-                alert("오류 발생: " + err.message);
-                console.error(err);
-            } finally {
-                overlay.style.display = 'none';
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('resetBtn').style.display = 'none';
-            document.getElementById('downloadBtn').style.display = 'none';
-            updateSummaryPage();
-            setHeader('MAIN');
-        });
-
+        
 // ==========================================
 // 설정
 // ==========================================
@@ -355,7 +194,6 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCfzBoSCraE8ctS3PNV
 // ==========================================
 let currentUser = '';
 let occupiedSeats = {};
-let currentSeatInfo = {};
 
 const requestQueue = [];
 let isProcessing = false;
@@ -769,8 +607,6 @@ async function copyAlertsText() {
 // 모달
 // ==========================================
 function openModal(seatNum, info) {
-  currentSeatInfo = info;
-  currentSeatInfo.seatNum = seatNum;
 
   document.getElementById('form_class').value = info.classNum || '';
   document.getElementById('form_id').value = info.studentId || '';
@@ -852,27 +688,6 @@ window.addEventListener('load', () => {
   setTimeout(promptForUser, 100);
 });
 
-function enterRoom() {
-    const select = document.getElementById('room-select');
-    const selectedRoom = select.value;
-
-    if (!selectedRoom) {
-        alert('관을 선택해주세요!');
-        return;
-    }
-
-    document.getElementById('main-landing').style.display = 'none';
-    document.querySelector('.container').style.display = 'block';
-
-    if (typeof openTab === 'function') {
-        openTab(null, selectedRoom);
-    }
-
-    const mobileSelect = document.getElementById('mobile-location-select');
-    if (mobileSelect) {
-        mobileSelect.value = selectedRoom;
-    }
-}
 
 // ==========================================
 // [수정] 관 선택 시 진입 (드롭다운에 '홈으로' 추가)
