@@ -875,20 +875,19 @@ function enterRoom() {
 }
 
 // ==========================================
-// [추가] 관 선택 시 진입 (감독관 이름 체크)
+// [수정] 관 선택 시 진입 (이름 체크 + 탭/드롭다운 필터링)
 // ==========================================
 function enterBuilding(buildingName) {
-    // 1. 감독관 이름 확인 (세션 스토리지 체크)
+    // 1. 감독관 이름 확인
     if (!currentUser) {
         const storedName = sessionStorage.getItem('supervisorName');
         if (storedName) {
             currentUser = storedName;
         } else {
-            // 이름 입력 루프 (필수)
             let nameInput = '';
             while (!nameInput) {
                 nameInput = prompt('감독관 이름을 입력해주세요 (필수):', '');
-                if (nameInput === null) return; // 취소 시 진입 불가
+                if (nameInput === null) return;
                 nameInput = nameInput.trim();
                 if (!nameInput) alert('이름을 입력해야 관리 화면으로 이동할 수 있습니다.');
             }
@@ -897,7 +896,7 @@ function enterBuilding(buildingName) {
         }
     }
 
-    // 2. 사용자 이름 표시줄 업데이트
+    // 2. 사용자 이름 표시
     const userBar = document.getElementById('user-display-bar');
     if (userBar) {
         userBar.innerText = `현재 사용자 : ${currentUser}`;
@@ -911,14 +910,23 @@ function enterBuilding(buildingName) {
     const container = document.querySelector('.container');
     if (container) container.style.display = 'block';
 
-    // 4. 탭 버튼 필터링 (홈 버튼 유지)
+    // ============================================================
+    // [핵심 변경] 4. 탭 버튼 & 모바일 드롭다운 동시 필터링
+    // ============================================================
     const tabButtons = document.querySelectorAll('.tab-button');
+    const mobileSelect = document.getElementById('mobile-location-select');
+
+    // 드롭다운 초기화 (기본 옵션만 남기기)
+    if (mobileSelect) {
+        mobileSelect.innerHTML = '<option value="" disabled selected>🔽 층 선택 (터치)</option>';
+    }
+
     let firstVisibleTab = null;
 
     tabButtons.forEach(btn => {
         // 홈 버튼은 항상 표시
         if (btn.classList.contains('home-tab')) {
-            btn.style.display = 'inline-flex'; 
+            btn.style.display = 'inline-flex';
             return;
         }
 
@@ -927,21 +935,39 @@ function enterBuilding(buildingName) {
 
         if (match) {
             const tabId = match[1];
+            const btnText = btn.innerText.trim();
+
+            // 선택한 관(buildingName)과 일치하는지 확인
             if (tabId.startsWith(buildingName)) {
+                // 1) PC 탭 표시
                 btn.style.display = 'inline-block';
+
+                // 2) 모바일 드롭다운에 옵션 추가
+                if (mobileSelect) {
+                    const opt = document.createElement('option');
+                    opt.value = tabId;
+                    opt.text = btnText;
+                    mobileSelect.appendChild(opt);
+                }
+
                 if (!firstVisibleTab) firstVisibleTab = tabId;
             } else {
+                // 일치하지 않으면 숨김
                 btn.style.display = 'none';
             }
         }
     });
 
+    // 5. 첫 번째 층 자동 선택
     if (firstVisibleTab) {
         openTab(null, firstVisibleTab);
+        // 드롭다운 값도 동기화
+        if (mobileSelect) mobileSelect.value = firstVisibleTab;
     } else {
         alert('해당 관에 등록된 층이 없습니다.');
     }
 }
+
 
 // ==========================================
 // [추가] 홈 버튼 기능: 초기 화면으로 복귀
