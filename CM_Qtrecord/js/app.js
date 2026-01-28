@@ -390,20 +390,20 @@ function initMobileDropdown() {
   });
 }
 
-function handleMobileSelect(tabId) {
-  document.querySelectorAll('.tab-content').forEach(tab => {
-    tab.style.display = 'none';
-    tab.classList.remove('active');
-  });
-  const selected = document.getElementById(tabId);
-  if (selected) {
-    selected.style.display = 'block';
-    selected.classList.add('active');
-    selected.scrollLeft = 0;
-    window.scrollTo(0,0);
-    renderAlertsForActiveTab();
-  }
+// 범용 handleMobileSelect (this 또는 value 둘 다 대응)
+function handleMobileSelect(arg) {
+    const val = (arg.value !== undefined) ? arg.value : arg;
+
+    if (val === 'HOME') {
+        goToHome();
+        return;
+    }
+
+    if (val && typeof openTab === 'function') {
+        openTab(null, val);
+    }
 }
+
 
 // ==========================================
 // 사용자명 입력
@@ -875,7 +875,7 @@ function enterRoom() {
 }
 
 // ==========================================
-// [수정] 관 선택 시 진입 (이름 체크 + 탭/드롭다운 필터링)
+// [수정] 관 선택 시 진입 (드롭다운에 '홈으로' 추가)
 // ==========================================
 function enterBuilding(buildingName) {
     // 1. 감독관 이름 확인
@@ -911,20 +911,34 @@ function enterBuilding(buildingName) {
     if (container) container.style.display = 'block';
 
     // ============================================================
-    // [핵심 변경] 4. 탭 버튼 & 모바일 드롭다운 동시 필터링
+    // 4. 탭 버튼 & 모바일 드롭다운 필터링
     // ============================================================
     const tabButtons = document.querySelectorAll('.tab-button');
     const mobileSelect = document.getElementById('mobile-location-select');
 
-    // 드롭다운 초기화 (기본 옵션만 남기기)
+    // 드롭다운 초기화
     if (mobileSelect) {
-        mobileSelect.innerHTML = '<option value="" disabled selected>🔽 층 선택 (터치)</option>';
+        mobileSelect.innerHTML = ''; // 싹 비우기
+
+        // [추가] '홈으로' 옵션 맨 위에 추가
+        const homeOpt = document.createElement('option');
+        homeOpt.value = "HOME"; // 구분용 값
+        homeOpt.text = "🏠 홈으로 (퀀텀선택)";
+        homeOpt.style.fontWeight = "bold";
+        homeOpt.style.color = "#e74c3c"; // 빨간색 강조 (지원 브라우저만)
+        mobileSelect.appendChild(homeOpt);
+
+        // 구분선 역할 (선택 불가)
+        const disabledOpt = document.createElement('option');
+        disabledOpt.text = "──────────";
+        disabledOpt.disabled = true;
+        mobileSelect.appendChild(disabledOpt);
     }
 
     let firstVisibleTab = null;
 
     tabButtons.forEach(btn => {
-        // 홈 버튼은 항상 표시
+        // PC 화면의 '홈' 탭 버튼은 항상 표시
         if (btn.classList.contains('home-tab')) {
             btn.style.display = 'inline-flex';
             return;
@@ -937,12 +951,10 @@ function enterBuilding(buildingName) {
             const tabId = match[1];
             const btnText = btn.innerText.trim();
 
-            // 선택한 관(buildingName)과 일치하는지 확인
             if (tabId.startsWith(buildingName)) {
-                // 1) PC 탭 표시
                 btn.style.display = 'inline-block';
 
-                // 2) 모바일 드롭다운에 옵션 추가
+                // 모바일 드롭다운에 층 추가
                 if (mobileSelect) {
                     const opt = document.createElement('option');
                     opt.value = tabId;
@@ -952,7 +964,6 @@ function enterBuilding(buildingName) {
 
                 if (!firstVisibleTab) firstVisibleTab = tabId;
             } else {
-                // 일치하지 않으면 숨김
                 btn.style.display = 'none';
             }
         }
@@ -961,8 +972,7 @@ function enterBuilding(buildingName) {
     // 5. 첫 번째 층 자동 선택
     if (firstVisibleTab) {
         openTab(null, firstVisibleTab);
-        // 드롭다운 값도 동기화
-        if (mobileSelect) mobileSelect.value = firstVisibleTab;
+        if (mobileSelect) mobileSelect.value = firstVisibleTab; // 드롭다운도 해당 층 선택 상태로
     } else {
         alert('해당 관에 등록된 층이 없습니다.');
     }
