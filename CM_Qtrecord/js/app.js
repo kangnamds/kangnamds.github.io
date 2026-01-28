@@ -417,19 +417,7 @@ function promptForUser() {
     tabs.parentNode.insertBefore(userBar, tabs.nextSibling);
   }
 
-  let user = '';
-  while (!user) {
-    user = prompt('사용자 이름(감독관)을 입력해주세요:', '');
-    if (user === null) {
-      alert('필수 입력 사항입니다.');
-    } else {
-      user = user.trim();
-    }
-  }
-
-  currentUser = user;
-  userBar.innerText = `현재 사용자 : ${currentUser}`;
-  userBar.style.display = 'block';
+  // (삭제됨: 초기 강제 입력 로직 제거)
 
   ensureAlertsPanel();
 
@@ -884,4 +872,86 @@ function enterRoom() {
     if (mobileSelect) {
         mobileSelect.value = selectedRoom;
     }
+}
+
+// ==========================================
+// [추가] 관 선택 시 진입 (감독관 이름 체크)
+// ==========================================
+function enterBuilding(buildingName) {
+    // 1. 감독관 이름 확인 (세션 스토리지 체크)
+    if (!currentUser) {
+        const storedName = sessionStorage.getItem('supervisorName');
+        if (storedName) {
+            currentUser = storedName;
+        } else {
+            // 이름 입력 루프 (필수)
+            let nameInput = '';
+            while (!nameInput) {
+                nameInput = prompt('감독관 이름을 입력해주세요 (필수):', '');
+                if (nameInput === null) return; // 취소 시 진입 불가
+                nameInput = nameInput.trim();
+                if (!nameInput) alert('이름을 입력해야 관리 화면으로 이동할 수 있습니다.');
+            }
+            currentUser = nameInput;
+            sessionStorage.setItem('supervisorName', currentUser);
+        }
+    }
+
+    // 2. 사용자 이름 표시줄 업데이트
+    const userBar = document.getElementById('user-display-bar');
+    if (userBar) {
+        userBar.innerText = `현재 사용자 : ${currentUser}`;
+        userBar.style.display = 'block';
+    }
+
+    // 3. 화면 전환
+    const landing = document.getElementById('main-landing');
+    if (landing) landing.style.display = 'none';
+
+    const container = document.querySelector('.container');
+    if (container) container.style.display = 'block';
+
+    // 4. 탭 버튼 필터링 (홈 버튼 유지)
+    const tabButtons = document.querySelectorAll('.tab-button');
+    let firstVisibleTab = null;
+
+    tabButtons.forEach(btn => {
+        // 홈 버튼은 항상 표시
+        if (btn.classList.contains('home-tab')) {
+            btn.style.display = 'inline-flex'; 
+            return;
+        }
+
+        const onClickText = btn.getAttribute('onclick') || '';
+        const match = onClickText.match(/'([^']+)'/);
+
+        if (match) {
+            const tabId = match[1];
+            if (tabId.startsWith(buildingName)) {
+                btn.style.display = 'inline-block';
+                if (!firstVisibleTab) firstVisibleTab = tabId;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+    });
+
+    if (firstVisibleTab) {
+        openTab(null, firstVisibleTab);
+    } else {
+        alert('해당 관에 등록된 층이 없습니다.');
+    }
+}
+
+// ==========================================
+// [추가] 홈 버튼 기능: 초기 화면으로 복귀
+// ==========================================
+function goToHome() {
+    if (!confirm('초기 화면으로 돌아가시겠습니까?')) return;
+
+    const container = document.querySelector('.container');
+    if (container) container.style.display = 'none';
+
+    const landing = document.getElementById('main-landing');
+    if (landing) landing.style.display = 'flex'; // CSS에 맞게 flex 또는 block
 }
