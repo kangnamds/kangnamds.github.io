@@ -1,14 +1,14 @@
 * { box-sizing: border-box; }
 
 .seat.occupied {
-  background-color: #2ecc71 !important;
-  color: #fff !important;
-  border-color: #27ae60 !important;
-  font-weight: 800;
-  box-shadow: 0 0 5px rgba(46, 204, 113, 0.45);
-  cursor: pointer;
+    background-color: #fff !important; /* 배경 흰색 */
+    background-image: none !important; /* [중요] 빗금 패턴 제거 */
+    color: #333 !important; /* 글자 검은색 */
+    border: 2px solid #2ecc71 !important; /* 테두리 초록색 강조 */
+    font-weight: 800;
+    box-shadow: 0 0 5px rgba(46, 204, 113, 0.3);
+    cursor: pointer;
 }
-
 #mobile-location-select-wrap { display: none; }
 #mobile-location-select { display: none; }
 
@@ -344,15 +344,21 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
         }
 
         .seat {
-            width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 4px;
-            background: white; border: 1.5px solid #e0e0e0;
-            font-weight: 800; color: #555;
+            /* 회색 빗금 패턴 적용 */
+            background: repeating-linear-gradient( 45deg, #ffffff, #ffffff 5px, #ebebeb 5px, #ebebeb 10px );
+            border: 1.5px solid #e0e0e0;
+            font-weight: 800;
+            color: #555;
             font-size: var(--font-size);
             user-select: none;
             box-sizing: border-box;
-        }
+}
 
         .seat.empty { visibility: hidden; }
 
@@ -588,3 +594,103 @@ textarea.note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border
         transform: translateY(0);
     }
 }
+/* =========================================
+   [추천] 가시성 높은 파스텔 톤 색상 조합
+   ========================================= */
+
+/* 공통: 글자는 진한 검정 (#000) + 굵게 */
+.seat.occupied {
+    color: #000 !important;
+    font-weight: 800;
+}
+
+/* 1. 정상/자습 (기존 유지) - 깔끔한 흰색 + 초록 테두리 */
+.seat.status-self {
+    background-color: #fff !important;
+    border: 2px solid #2ecc71 !important;
+    color: #000 !important;
+}
+
+/* 2. 수업 - 밝은 노랑 (검은 글씨 찰떡궁합) */
+.seat.status-class {
+    background-color: #fff176 !important;
+    border: 2px solid #fbc02d !important; /* 테두리는 조금 진하게 */
+    color: #000 !important;
+}
+
+/* 3. 조퇴 - 밝은 하늘색 (시원하고 명확함) */
+.seat.status-leave {
+    background-color: #90caf9 !important;
+    border: 2px solid #1e88e5 !important;
+    color: #000 !important;
+}
+
+/* 4. 외출 - 연한 라벤더 (눈에 띄면서 편안함) */
+.seat.status-out {
+    background-color: #ce93d8 !important;
+    border: 2px solid #8e24aa !important;
+    color: #000 !important;
+}
+
+/* 5. 결석 - 연한 빨강 (경고 느낌은 주되 글씨 방해 X) */
+.seat.status-absent {
+    background-color: #ef9a9a !important;
+    border: 2px solid #d32f2f !important;
+    color: #000 !important;
+}
+
+/* =========================================
+   [추가] 상태 범례 (Legend) 스타일
+   ========================================= */
+.status-legend {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    flex-wrap: wrap; /* 모바일 대응 */
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #555;
+}
+
+.legend-box {
+    width: 20px;
+    height: 20px;
+    margin-right: 6px;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+    /* 범례 박스 색상 (실제 좌석과 동일하게 매칭) */
+    .legend-box.status-self {
+        background-color: #fff;
+        border: 2px solid #2ecc71;
+    }
+
+    .legend-box.status-class {
+        background-color: #fff176;
+        border: 2px solid #fbc02d;
+    }
+
+    .legend-box.status-leave {
+        background-color: #90caf9;
+        border: 2px solid #1e88e5;
+    }
+
+    .legend-box.status-out {
+        background-color: #ce93d8;
+        border: 2px solid #8e24aa;
+    }
+
+    .legend-box.status-absent {
+        background-color: #ef9a9a;
+        border: 2px solid #d32f2f;
+    }

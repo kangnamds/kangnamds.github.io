@@ -1,782 +1,515 @@
-let distributionMap = {}; // { baseRoomKey: Set(seatStr) }
-        let itemNameDisplay = "(업로드 전)";
-        let localSessionLogs = []; // Session log storage
+/* =========================================
+   [1] 구글 시트 ID 및 설정
+   ========================================= */
+const READSHEETID = '1T1FWnYIu-a3fJituoUeFwL0r5YR2cYQAnSUSLxsdZto';
+const CLASSSHEETID = '1jtye6oY0gHPDn7xJla75uG_fhdy_yktx9v4SObCFHRg';
+const CLASSSHEETNAME = '학생별수업';
 
-        function normalize(str) {
-            return String(str || "").replace(/\s+/g, "").trim();
-        }
+const LOGSHEETNAME = '퀀텀관 지도 일지';
+const LOGSHEETGID = '0';
 
-        // Match only up to "관" + "층" (ignore trailing room section number like ...층1/2/3)
-        // Examples:
-        // 1관B1층1 -> 1관B1층
-        // 1관5층2  -> 1관5층
-        // 3관(두원) 2층3 -> 3관(두원)2층
-        function baseRoomKey(str) {
-            const s = normalize(str);
+const SCRIPTURL = 'https://script.google.com/macros/s/AKfycbzCfzBoSCraE8ctS3PNVNnFgkSpdOEkOBCgW-95b_rjvxWEzuMaZPWpHwHEpxhGzPGI/exec';
 
-            // Handle 3관(두원)
-            if (s.startsWith('3관(두원)')) {
-                const m = s.match(/^(3관\(두원\))(B1층|\d+층)/);
-                if (m) return `${m[1]}${m[2]}`;
-                return s;
-            }
 
-            const b = s.match(/^(\d+관)/);
-            const building = b ? b[1] : '';
-
-            if (s.includes('B1층')) {
-                return `${building}B1층`;
-            }
-
-            const f = s.match(/(\d+)층/);
-            if (f) {
-                return `${building}${f[1]}층`;
-            }
-
-            // Fallback to full normalized string
-            return s;
-        }
-
-        function escapeHtml(s) {
-            return String(s || '')
-                .replaceAll('&', '&amp;')
-                .replaceAll('<', '&lt;')
-                .replaceAll('>', '&gt;')
-                .replaceAll('"', '&quot;')
-                .replaceAll("'", '&#39;');
-        }
-
-        function setHeader(tabId) {
-            const pageTitleEl = document.getElementById('pageTitle');
-            if (!pageTitleEl) return;
-
-            if (tabId === 'MAIN') {
-                pageTitleEl.innerHTML = `
-                    <div class="title-room">메인</div>
-                    <div class="title-item">${escapeHtml(itemNameDisplay)}</div>
-                `;
-                document.title = `${itemNameDisplay} 메인 배부명단`;
-                return;
-            }
-
-            if (tabId === 'SUMMARY') {
-                pageTitleEl.innerHTML = `
-                    <div class="title-room">총배부 수량</div>
-                    <div class="title-item">${escapeHtml(itemNameDisplay)}</div>
-                `;
-                document.title = `${itemNameDisplay} 총배부 수량`;
-                return;
-            }
-
-            pageTitleEl.innerHTML = `
-                <div class="title-room">${escapeHtml(tabId)}</div>
-                <div class="title-item">${escapeHtml(itemNameDisplay)}</div>
-            `;
-            document.title = `${tabId} - ${itemNameDisplay}`;
-        }
-
-        function openTab(evt, tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
-
-            document.getElementById(tabName).classList.add('active');
-            if (evt) evt.currentTarget.classList.add('active');
-
-            setHeader(tabName);
-        }
-
-        // Summary grouping label, already at 관/층 granularity
-        function roomGroupLabelFromTabId(tabId) {
-            if (!tabId) return "";
-            if (tabId.startsWith('3관(두원)')) {
-                const m = tabId.match(/^(3관\(두원\))\s*(B1층|\d+층)/);
-                if (m) return `${m[1]} ${m[2]}`;
-                return '3관(두원)';
-            }
-            const bm = tabId.match(/^(\d+관)/);
-            const building = bm ? bm[1] : '';
-            if (tabId.includes('B1층')) return `${building} B1층`;
-            const fm = tabId.match(/(\d+)층/);
-            if (fm) return `${building} ${fm[1]}층`;
-            return building || tabId;
-        }
-
-        function updateSummaryPage() {
-            const listEl = document.getElementById('summaryList');
-            if (!listEl) return;
-
-            // Build stable list of all 관/층 labels that exist as tabs
-            const sortLabel = (a, b) => {
-                const parse = (label) => {
-                    const m1 = label.match(/^(\d+)관/);
-                    const building = m1 ? parseInt(m1[1], 10) : 99;
-                    let floor = 99;
-                    if (label.includes('B1층')) floor = -1;
-                    else {
-                        const m2 = label.match(/(\d+)층/);
-                        if (m2) floor = parseInt(m2[1], 10);
-                    }
-                    return { building, floor, label };
-                };
-                const pa = parse(a);
-                const pb = parse(b);
-                if (pa.building !== pb.building) return pa.building - pb.building;
-                if (pa.floor !== pb.floor) return pa.floor - pb.floor;
-                return pa.label.localeCompare(pb.label, 'ko');
-            };
-
-            const allLabels = Array.from(new Set(
-                Array.from(document.querySelectorAll('.tab-content'))
-                    .map(el => el.id)
-                    .filter(id => id !== 'MAIN' && id !== 'SUMMARY')
-                    .map(id => roomGroupLabelFromTabId(id))
-            )).sort(sortLabel);
-
-            // Map label -> base key to sum distributionMap
-            const labelToBaseKey = new Map();
-            for (const id of Array.from(document.querySelectorAll('.tab-content')).map(el => el.id)) {
-                if (id === 'MAIN' || id === 'SUMMARY') continue;
-                const label = roomGroupLabelFromTabId(id);
-                if (!labelToBaseKey.has(label)) {
-                    labelToBaseKey.set(label, baseRoomKey(id));
-                }
-            }
-
-            listEl.innerHTML = '';
-            for (const label of allLabels) {
-                const baseKey = labelToBaseKey.get(label);
-                const count = (baseKey && distributionMap[baseKey]) ? distributionMap[baseKey].size : 0;
-                const li = document.createElement('li');
-                li.className = 'summary-item';
-                li.innerHTML = `<span class="summary-name">${escapeHtml(label)}</span><span class="summary-count">${String(count).padStart(2,'0')}부</span>`;
-                listEl.appendChild(li);
-            }
-        }
-
-        
-
-        function applyHighlightsGlobal() {
-            document.querySelectorAll('.seat.target').forEach(el => {
-                el.classList.remove('target');
-                el.removeAttribute('title');
-            });
-
-            if (Object.keys(distributionMap).length === 0) return;
-
-            document.querySelectorAll('.seat[data-seat]').forEach(el => {
-                const seatNum = el.getAttribute('data-seat');
-                const tabDiv = el.closest('.tab-content');
-                if (!tabDiv) return;
-
-                const roomKey = baseRoomKey(tabDiv.id);
-                if (distributionMap[roomKey] && distributionMap[roomKey].has(seatNum)) {
-                    el.classList.add('target');
-                    el.title = '배부 대상';
-                }
-            });
-        }
-
-        
-// ==========================================
-// 설정
-// ==========================================
-const READ_SHEET_ID = '1T1FWnYIu-a3fJituoUeFwL0r5YR2cYQAnSUSLxsdZto';
-const READ_SHEET_NAME = '마스터';
-const READ_SHEET_GID = '0';
-
-const LOG_SHEET_NAME = '퀀텀관 지도 일지'; // ← 실제 시트 이름으로 수정
-const LOG_SHEET_GID = '0';
-
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCfzBoSCraE8ctS3PNVNnFgkSpdOEkOBCgW-95b_rjvxWEzuMaZPWpHwHEpxhGzPGI/exec';
-
-// ==========================================
-// 전역
-// ==========================================
-let currentUser = '';
+/* =========================================
+   [2] 전역 변수
+   ========================================= */
+let currentUser = "";
 let occupiedSeats = {};
-
+let distributionMap = {};
+let localSessionLogs = [];
+let currentSeatInfo = null;
 const requestQueue = [];
 let isProcessing = false;
-
 let alertRows = [];
 
-// ==========================================
-// 유틸
-// ==========================================
-function normalizeLocationKey(v) { return String(v || '').replace(/\s+/g, ''); }
 
-// ==========================================
-// 모바일 드롭다운
-// ==========================================
-function initMobileDropdown() {
-  const select = document.getElementById('mobile-location-select');
-  if (!select) return;
-
-  const existing = new Set(Array.from(select.options).map(o => o.value));
-  document.querySelectorAll('.tab-button').forEach(btn => {
-    const text = (btn.innerText || '').trim();
-    const on = btn.getAttribute('onclick') || '';
-    const match = on.match(/'([^']+)'/);
-    if (!match) return;
-    const tabId = match[1];
-    if (existing.has(tabId)) return;
-    const opt = document.createElement('option');
-    opt.value = tabId;
-    opt.text = text;
-    select.appendChild(opt);
-    existing.add(tabId);
-  });
+/* =========================================
+   [3] 유틸리티 함수
+   ========================================= */
+function normalizeLocationKey(v) {
+    return String(v).replace(/\s+/g, "").trim();
 }
 
-// 범용 handleMobileSelect (this 또는 value 둘 다 대응)
-function handleMobileSelect(arg) {
-    const val = (arg.value !== undefined) ? arg.value : arg;
+function roomGroupLabelFromTabId(tabId) {
+    if (!tabId) return "";
+    if (tabId.startsWith('3')) {
+        const m = tabId.match(/^(3B1)/);
+        if (m) return m[1];
+        return "3";
+    }
+    const bm = tabId.match(/^(\d+)B1/);
+    if (bm) return bm[1] + "B1";
+    const fm = tabId.match(/^(\d+)F/);
+    if (fm) return fm[1] + "F";
+    return tabId;
+}
 
-    if (val === 'HOME') {
-        goToHome();
+function getCurrentPeriod(dateObj) {
+    if (!dateObj) dateObj = new Date();
+    const day = dateObj.getDay();
+    if (day === 0 || day === 6) return "주말";
+
+    const currentMinutes = (dateObj.getHours() * 60) + dateObj.getMinutes();
+
+    const t0750 = 7 * 60 + 50; const t0900 = 9 * 60; const t0950 = 9 * 60 + 50;
+    const t1100 = 11 * 60; const t1150 = 11 * 60 + 50; const t1300 = 13 * 60;
+    const t1400 = 14 * 60; const t1450 = 14 * 60 + 50; const t1600 = 16 * 60;
+    const t1650 = 16 * 60 + 50; const t1800 = 18 * 60; const t1900 = 19 * 60;
+    const t2000 = 20 * 60; const t2200 = 22 * 60; const t2300 = 23 * 60;
+
+    if (currentMinutes >= t0750 && currentMinutes < t0900) return "1";
+    if (currentMinutes >= t0900 && currentMinutes < t0950) return "2";
+    if (currentMinutes >= t0950 && currentMinutes < t1100) return "3";
+    if (currentMinutes >= t1100 && currentMinutes < t1150) return "4";
+    if (currentMinutes >= t1300 && currentMinutes < t1400) return "5";
+    if (currentMinutes >= t1400 && currentMinutes < t1450) return "6";
+    if (currentMinutes >= t1450 && currentMinutes < t1600) return "7";
+    if (currentMinutes >= t1600 && currentMinutes < t1650) return "8";
+    if (currentMinutes >= t1650 && currentMinutes < t1800) return "9";
+
+    if (currentMinutes >= t1900 && currentMinutes < t2000) return "야1";
+    if (currentMinutes >= t2000 && currentMinutes < t2200) return "야2";
+    if (currentMinutes >= t2200 && currentMinutes < t2300) return "야3";
+
+    return "쉬는시간";
+}
+
+function getColumnIndexForCurrentTime() {
+    const now = new Date();
+    const day = now.getDay();
+    if (day < 1 || day > 5) return -1;
+    const periodLabel = getCurrentPeriod(now);
+    if (periodLabel === "쉬는시간" || periodLabel === "주말") return -1;
+
+    const periodMap = {
+        "1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5,
+        "7": 6, "8": 7, "9": 8, "야1": 9, "야2": 10, "야3": 11
+    };
+    const pIdx = periodMap[periodLabel];
+    if (pIdx === undefined) return -1;
+    return 4 + ((day - 1) * 12) + pIdx;
+}
+
+
+/* =========================================
+   [4] 탭 및 UI
+   ========================================= */
+function openTab(evt, tabName) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+
+    const tabContent = document.getElementById(tabName);
+    if (tabContent) tabContent.classList.add('active');
+
+    if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+
+    const pageTitleEl = document.getElementById('pageTitle');
+    if (pageTitleEl) {
+        pageTitleEl.innerHTML = `<div class="title-room">${tabName}</div>`;
+    }
+
+    mountAlertsPanelToActiveTab();
+    renderAlertsForActiveTab();
+
+    const mobileSelect = document.getElementById('mobile-location-select');
+    if (mobileSelect && mobileSelect.value !== tabName) {
+        for (let i = 0; i < mobileSelect.options.length; i++) {
+            if (mobileSelect.options[i].value === tabName) {
+                mobileSelect.value = tabName;
+                break;
+            }
+        }
+    }
+}
+
+function handleMobileSelect(arg) {
+    const val = arg.value !== undefined ? arg.value : arg;
+    if (val === "HOME") { goToHome(); return; }
+    if (val) openTab(null, val);
+}
+
+
+/* =========================================
+   [5] 데이터 로딩
+   ========================================= */
+function loadSheetData() {
+    if (requestQueue.length > 0) return;
+
+    const oldMaster = document.getElementById('gviz_master_script');
+    if (oldMaster) oldMaster.remove();
+    const oldClass = document.getElementById('gviz_class_script');
+    if (oldClass) oldClass.remove();
+    const oldAlert = document.getElementById('gviz_alert_script');
+    if (oldAlert) oldAlert.remove();
+
+    updateStatus('좌석 데이터 요청 중...', 'black');
+
+    const script = document.createElement('script');
+    script.id = 'gviz_master_script';
+    script.src = `https://docs.google.com/spreadsheets/d/${READSHEETID}/gviz/tq?tq=select%20*&tqx=responseHandler:handleMasterData`;
+    document.body.appendChild(script);
+}
+
+function handleMasterData(response) {
+    if (response.status === 'error') {
+        updateStatus('마스터 데이터 에러', 'red');
         return;
     }
+    try {
+        const rows = response.table.rows;
+        occupiedSeats = {};
+        distributionMap = {};
 
-    if (val && typeof openTab === 'function') {
-        openTab(null, val);
-    }
-}
+        for (const r of rows) {
+            const c = r.c;
+            if (!c) continue;
+            const classNum = c[0]?.v;
+            const studentId = c[1]?.v;
+            const name = c[2]?.v;
+            const location = c[4]?.v;
+            const seatNum = c[5]?.v;
 
+            if (location && seatNum && studentId) {
+                const key = normalizeLocationKey(location);
+                const seatKey = String(seatNum).trim();
+                const stdIdStr = String(studentId).trim();
 
-// ==========================================
-// 사용자명 입력
-// ==========================================
-function promptForUser() {
-  initMobileDropdown();
+                if (!occupiedSeats[key]) occupiedSeats[key] = {};
+                occupiedSeats[key][seatKey] = {
+                    classNum: classNum, studentId: stdIdStr, name: name, locationName: location, status: '정상'
+                };
 
-  const userBar = document.getElementById('user-display-bar');
-  const tabs = document.querySelector('.tabs');
-  if (tabs && window.getComputedStyle(tabs).display !== 'none') {
-    tabs.parentNode.insertBefore(userBar, tabs.nextSibling);
-  }
-
-  // (삭제됨: 초기 강제 입력 로직 제거)
-
-  ensureAlertsPanel();
-
-  loadSheetData();
-  loadAlertData();
-  setInterval(() => { loadSheetData(); loadAlertData(); }, 30000);
-}
-
-// ==========================================
-// 이탈 방지 + 큐
-// ==========================================
-window.addEventListener('beforeunload', (event) => {
-  if (requestQueue.length > 0 || isProcessing) {
-    event.preventDefault();
-    event.returnValue = '';
-  }
-});
-
-function addToQueue(payload) {
-  requestQueue.push(payload);
-  processQueue();
-}
-
-async function processQueue() {
-  if (isProcessing || requestQueue.length === 0) return;
-  isProcessing = true;
-
-  const payload = requestQueue[0];
-  updateStatus(`📤 전송 중... (${requestQueue.length}건) ⚠️ 닫지 마세요!`, 'red');
-
-  try {
-    // Modified to read response
-    const response = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      // mode: 'no-cors', // Removed to allow reading response
-      // Use text/plain to avoid CORS preflight (OPTIONS)
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-      body: JSON.stringify(payload)
-    });
-
-    const result = await response.json();
-
-    if (result.status === 'success') {
-        // Show alert if message exists
-        if (result.message && result.message.trim() !== "") {
-            // Alert Popup Removed
-
-            // Add to session log
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
-
-            localSessionLogs.push({
-                time: timeStr,
-                location: payload.location,
-                seat: payload.seat,
-                classNum: payload.classNum,
-                studentId: payload.studentId,
-                name: payload.name,
-                alertText: result.message
-            });
-
-            renderAlertsForActiveTab();
+                if (!distributionMap[key]) distributionMap[key] = new Set();
+                distributionMap[key].add(seatKey);
+            }
         }
-        requestQueue.shift();
-    } else {
-        throw new Error(result.message || "Server Error");
+        updateStatus('출결 시트 로딩 중...', 'blue');
+        loadClassData();
+    } catch (e) {
+        console.error(e);
+        updateStatus('마스터 파싱 오류', 'red');
     }
-
-    if (requestQueue.length > 0) {
-      processQueue();
-    } else {
-      updateStatus('✅ 저장 완료', 'green');
-      loadSheetData();
-      loadAlertData();
-      setTimeout(() => updateStatus('✅ 준비 완료', 'green'), 2500);
-    }
-
-  } catch (e) {
-    console.error(e);
-    updateStatus('❌ 실패 - 재시도 중...', 'red');
-    setTimeout(() => { isProcessing = false; processQueue(); }, 3000);
-    return;
-  }
-
-  isProcessing = false;
-  if (requestQueue.length > 0) processQueue();
 }
 
-// ==========================================
-// 마스터 시트
-// ==========================================
-function handleSheetData(response) {
-  if (response.status === 'error') {
-    updateStatus('❌ 에러: ' + response.errors[0].message, 'red');
-    return;
-  }
-
-  try {
-    const rows = response.table.rows || [];
-    occupiedSeats = {};
-
-    for (const r of rows) {
-      const c = r.c;
-      if (!c) continue;
-
-      const classNum = c[0]?.v || '';
-      const studentId = c[1]?.v || '';
-      const name = c[2]?.v || '';
-      const location = c[4]?.v;
-      let seatNum = c[5]?.v;
-
-      if (location && seatNum) {
-        const key = normalizeLocationKey(location);
-        seatNum = String(seatNum).trim();
-        if (!occupiedSeats[key]) occupiedSeats[key] = {};
-        occupiedSeats[key][seatNum] = { classNum, studentId, name, locationName: location };
-      }
-    }
-
-    updateSeatColors();
-    updateStatus('✅ 준비 완료', 'green');
-  } catch (e) {
-    console.error(e);
-    updateStatus('❌ 파싱 에러', 'red');
-  }
+function loadClassData() {
+    const script = document.createElement('script');
+    script.id = 'gviz_class_script';
+    script.src = `https://docs.google.com/spreadsheets/d/${CLASSSHEETID}/gviz/tq?tq=select%20*&tqx=responseHandler:handleClassData&sheet=${encodeURIComponent(CLASSSHEETNAME)}`;
+    document.body.appendChild(script);
 }
 
-function loadSheetData() {
-  if (requestQueue.length > 0) return;
+/* =========================================
+   [수정] 수업 데이터(출결) 로딩 및 상태 반영 로직 복구
+   ========================================= */
+function handleClassData(response) {
+    if (response.status !== 'error') {
+        try {
+            const rows = response.table.rows;
+            // 1. 현재 교시에 해당하는 열 인덱스 가져오기
+            const targetColIndex = getColumnIndexForCurrentTime();
 
-  const old = document.getElementById('gviz_master_script');
-  if (old) old.remove();
+            // 디버깅용: 현재 상태 확인 (필요시 콘솔 확인)
+            // console.log("Target Column Index:", targetColIndex);
 
-  const script = document.createElement('script');
-  script.id = 'gviz_master_script';
-  script.src = `https://docs.google.com/spreadsheets/d/${READ_SHEET_ID}/gviz/tq?tqx=responseHandler:handleSheetData&sheet=${encodeURIComponent(READ_SHEET_NAME)}&gid=${READ_SHEET_GID}`;
-  document.body.appendChild(script);
-}
+            if (targetColIndex !== -1) {
+                // 2. 수업 시트의 모든 행을 순회하며 상태 매칭
+                for (const r of rows) {
+                    const c = r.c;
+                    if (!c) continue;
 
-function updateSeatColors() {
-  document.querySelectorAll('.seat').forEach(s => {
-    s.classList.remove('occupied');
-    s.style.cursor = 'default';
-    s.onclick = null;
-  });
+                    // C열(인덱스 2)에 있는 학번을 가져옴 (핵심 매칭 키)
+                    const classSheetStudentId = c[2]?.v;
+                    if (!classSheetStudentId) continue;
 
-  document.querySelectorAll('.tab-content').forEach(tab => {
-    const tabKey = normalizeLocationKey(tab.id);
+                    // 학번 정규화 (문자열 변환 및 공백 제거)
+                    const targetStudentId = String(classSheetStudentId).trim();
 
-    for (const [sheetKey, seatObj] of Object.entries(occupiedSeats)) {
-      if (!tabKey.startsWith(sheetKey)) continue;
+                    // 현재 교시(targetColIndex)의 셀 값 가져오기 (예: "수업", "조퇴")
+                    const cell = c[targetColIndex];
+                    const statusValue = cell ? String(cell.v).trim() : "";
 
-      for (const [seatNum, info] of Object.entries(seatObj)) {
-        const seatEl = tab.querySelector(`.seat[data-seat="${seatNum}"]`);
-        if (seatEl) {
-          seatEl.classList.add('occupied');
-          seatEl.style.cursor = 'pointer';
-          seatEl.onclick = () => openModal(seatNum, info);
+                    // 상태 값이 없으면 건너뜀
+                    if (!statusValue) continue;
+
+                    // 3. occupiedSeats 전체를 뒤져서 해당 학번 학생 찾기
+                    // (비효율적일 수 있으나 원본 로직 유지)
+                    for (const roomKey in occupiedSeats) {
+                        for (const seatKey in occupiedSeats[roomKey]) {
+                            const seatInfo = occupiedSeats[roomKey][seatKey];
+
+                            // [핵심] 학번이 일치하면 status 업데이트
+                            if (String(seatInfo.studentId).trim() === targetStudentId) {
+                                seatInfo.status = statusValue; // "정상" -> "수업" 등으로 변경됨
+                            }
+                        }
+                    }
+                }
+                updateStatus("출결 데이터 반영 완료", "green");
+            } else {
+                updateStatus("현재는 정규 수업 시간이 아닙니다 (기본 상태)", "green");
+            }
+
+            // 4. 변경된 status를 바탕으로 색상 다시 칠하기
+            updateSeatColors();
+
+        } catch (e) {
+            console.error(e);
+            updateStatus("출결 데이터 처리 중 오류", "red");
         }
-      }
+    } else {
+        updateStatus("수업 데이터 로딩 실패", "red");
+        updateSeatColors(); // 실패하더라도 기본 좌석은 표시
     }
-  });
 
-  renderAlertsForActiveTab();
+    // 다음 단계(로그 데이터) 로딩
+    loadAlertData();
 }
 
-// ==========================================
-// 알림 데이터 (O열 읽기)
-// ==========================================
-function handleAlertData(response) {
-  if (response.status === 'error') {
-    console.error('alert data error', response.errors);
-    alertRows = [];
-    renderAlertsForActiveTab();
-    return;
-  }
-
-  alertRows = [];
-
-  try {
-    const rows = response.table.rows || [];
-    for (const r of rows) {
-      const c = r.c;
-      if (!c) continue;
-
-      const location = c[2]?.v || '';
-      const seat = c[3]?.v || '';
-      const classNum = c[4]?.v || '';
-      const studentId = c[5]?.v || '';
-      const name = c[6]?.v || '';
-      const alertText = c[14]?.v || ''; // O열
-
-      if (!alertText || !location || !seat) continue;
-
-      alertRows.push({
-        location,
-        seat: String(seat).trim(),
-        classNum,
-        studentId,
-        name,
-        alertText
-      });
-    }
-  } catch (e) {
-    console.error(e);
-    alertRows = [];
-  }
-
-  renderAlertsForActiveTab();
-}
 
 function loadAlertData() {
-  const old = document.getElementById('gviz_alert_script');
-  if (old) old.remove();
-
-  const script = document.createElement('script');
-  script.id = 'gviz_alert_script';
-  script.src = `https://docs.google.com/spreadsheets/d/${READ_SHEET_ID}/gviz/tq?tqx=responseHandler:handleAlertData&sheet=${encodeURIComponent(LOG_SHEET_NAME)}&gid=${LOG_SHEET_GID}`;
-  document.body.appendChild(script);
+    const script = document.createElement('script');
+    script.id = 'gviz_alert_script';
+    script.src = `https://docs.google.com/spreadsheets/d/${READSHEETID}/gviz/tq?tqx=responseHandler:handleAlertData&sheet=${encodeURIComponent(LOGSHEETNAME)}&gid=${LOGSHEETGID}`;
+    document.body.appendChild(script);
 }
 
-// ==========================================
-// 누적 패널
-// ==========================================
+function handleAlertData(response) {
+    if (response.status === 'error') return;
+    try {
+        const rows = response.table.rows;
+        alertRows = [];
+        for (const r of rows) {
+            const c = r.c;
+            if (!c) continue;
+
+            const location = c[2]?.v;
+            const seat = c[3]?.v;
+            const classNum = c[4]?.v;
+            const studentId = c[5]?.v;
+            const name = c[6]?.v;
+            const alertText = c[14]?.v;
+
+            if (!alertText && !location) continue;
+
+            alertRows.push({
+                location: location || "",
+                seat: String(seat || "").trim(),
+                classNum: classNum || "",
+                studentId: studentId || "",
+                name: name || "",
+                alertText: alertText || ""
+            });
+        }
+        renderAlertsForActiveTab();
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+
+/* =========================================
+   [6] Alerts Panel (이미지 스타일 복원)
+   ========================================= */
 function ensureAlertsPanel() {
-  let panel = document.getElementById('alerts-panel');
-  if (panel) return panel;
+    let panel = document.getElementById('alerts-panel');
+    if (panel) return panel;
 
-  panel = document.createElement('div');
-  panel.id = 'alerts-panel';
-  panel.innerHTML = `
-    <div class="alerts-header">
-      <div class="alerts-title">📌 실시간 지도 알림 로그</div>
-    </div>
-    <div id="alerts-container" style="flex:1; overflow-y:auto; background:#fff; border:1px solid #ccc; padding:0;">
-        <div style="color:#999; text-align:center; padding:20px; font-size:13px;">아직 기록된 알림이 없습니다.</div>
-    </div>
-  `;
+    // 이미지와 같은 디자인 적용
+    panel = document.createElement('div');
+    panel.id = 'alerts-panel';
+    panel.style.cssText = "border:1px solid #ddd; border-radius:8px; padding:15px; margin-top:20px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.05);";
 
-  return panel;
+    panel.innerHTML = `
+        <div style="font-weight:bold; color:#d9534f; margin-bottom:10px; display:flex; align-items:center;">
+            <span style="margin-right:5px;">📌</span> 실시간 지도 알림 로그
+        </div>
+        <div id="alerts-container" style="max-height:200px; overflow-y:auto;"></div>
+        <!-- 숨겨진 복사용 textarea (기능 유지용) -->
+        <textarea id="alerts-text" style="width:1px; height:1px; opacity:0; position:absolute;"></textarea>
+    `;
+    return panel;
 }
 
 function getActiveTabElement() {
-  let active = document.querySelector('.tab-content.active');
-  if (active) return active;
-  const tabs = Array.from(document.querySelectorAll('.tab-content'));
-  return tabs.find(t => window.getComputedStyle(t).display !== 'none');
+    const active = document.querySelector('.tab-content.active');
+    if (active) return active;
+    return document.querySelector('.tab-content');
 }
 
 function mountAlertsPanelToActiveTab() {
-  const panel = ensureAlertsPanel();
-  const activeTab = getActiveTabElement();
-  if (!activeTab) return;
-  if (panel.parentElement !== activeTab) activeTab.appendChild(panel);
-}
+    const panel = ensureAlertsPanel();
+    const activeTab = getActiveTabElement();
+    if (!activeTab) return;
 
-function buildAlertsTextForTab(tabEl) {
-  if (!tabEl) return '';
-
-  const tabKey = normalizeLocationKey(tabEl.id);
-
-  const filtered = alertRows.filter(row => {
-    const locKey = normalizeLocationKey(row.location);
-    return tabKey.startsWith(locKey);
-  });
-
-  if (filtered.length === 0) return '';
-
-  filtered.sort((a, b) => {
-    const na = Number(a.seat), nb = Number(b.seat);
-    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-    return String(a.seat).localeCompare(String(b.seat));
-  });
-
-  const lines = filtered.map(row => {
-    return `${row.location} ${row.seat} ${row.classNum || ''} ${row.studentId || ''} ${row.name || ''} ${row.alertText}`.replace(/\s+/g,' ').trim();
-  });
-
-  return lines.join('\n');
+    if (panel.parentElement !== activeTab) {
+        activeTab.appendChild(panel);
+    }
 }
 
 function renderAlertsForActiveTab() {
-  mountAlertsPanelToActiveTab();
-  const container = document.getElementById('alerts-container');
-  if (!container) return;
+    const container = document.getElementById('alerts-container');
+    const ta = document.getElementById('alerts-text');
+    if (!container) return;
 
-  if (!localSessionLogs || localSessionLogs.length === 0) {
-      container.innerHTML = '<div style="color:#999; text-align:center; padding:20px; font-size:13px;">아직 기록된 알림이 없습니다.</div>';
-      return;
-  }
+    let html = "";
 
-  container.innerHTML = '';
+    // 로그 아이템 생성 함수 (스타일 적용)
+    const createItem = (text) => {
+        return `
+        <div class="log-item" style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee; font-size:13px; color:#555;">
+            <span style="flex:1;">${text}</span>
+            <button onclick="copySingleLog(this)" style="margin-left:10px; padding:2px 8px; border:1px solid #ddd; background:#fff; border-radius:4px; cursor:pointer; font-size:11px; color:#666;">복사</button>
+        </div>`;
+    };
 
-  localSessionLogs.forEach(log => {
-      const lineText = `[${log.time}] ${log.location} ${log.seat}번 ${log.classNum ? log.classNum + '반 ' : ''}${log.studentId ? log.studentId + ' ' : ''}${log.name} : ${log.alertText}`;
+    // 1. 현재 세션 로그
+    localSessionLogs.forEach(log => {
+        // [09:15] 2관 2층 1번 K반 1312 이해린 : 내용
+        const fullText = `[${log.time}] ${log.location} ${log.seat}번 ${log.classNum}반 ${log.studentId} ${log.name} : ${log.alertText}`;
+        html += createItem(fullText);
+    });
 
-      const itemDiv = document.createElement('div');
-      itemDiv.className = 'log-item';
+    // 2. 과거 로그 필터링
+    const activeTab = getActiveTabElement();
+    let filtered = [];
+    if (activeTab) {
+        const tabKey = normalizeLocationKey(activeTab.id);
+        filtered = alertRows.filter(r => {
+            const locKey = normalizeLocationKey(r.location);
+            return tabKey.startsWith(locKey);
+        });
 
-      const textSpan = document.createElement('span');
-      textSpan.className = 'log-text';
-      textSpan.textContent = lineText;
+        filtered.forEach(row => {
+            // 과거 로그엔 시간 정보가 없을 수 있으므로 [기록]으로 대체
+            const fullText = `[기록] ${row.location} ${row.seat}번 ${row.classNum}반 ${row.studentId} ${row.name} : ${row.alertText}`;
+            html += createItem(fullText);
+        });
+    }
 
-      const btn = document.createElement('button');
-      btn.className = 'copy-btn';
-      btn.textContent = '복사';
-      btn.onclick = () => {
-          navigator.clipboard.writeText(lineText).then(() => {
-              btn.textContent = '✓';
-              btn.style.color = 'green';
-              btn.style.borderColor = 'green';
-              setTimeout(() => {
-                  btn.textContent = '복사';
-                  btn.style.color = '#555';
-                  btn.style.borderColor = '#ddd';
-              }, 1500);
-          }).catch(() => {
-              alert('복사 실패');
-          });
-      };
+    container.innerHTML = html || "<div style='text-align:center; padding:20px; color:#999; font-size:12px;'>표시할 알림 로그가 없습니다.</div>";
+    container.scrollTop = container.scrollHeight;
 
-      itemDiv.appendChild(textSpan);
-      itemDiv.appendChild(btn);
-      container.appendChild(itemDiv);
-  });
-
-  container.scrollTop = container.scrollHeight;
+    // 전체 복사용 텍스트 업데이트 (숨김 처리됨)
+    if (ta) {
+        // ... (필요하다면 전체 텍스트 갱신)
+    }
 }
 
-async function copyAlertsText() {
-  const ta = document.getElementById('alerts-text');
-  if (!ta) return;
-  const text = (ta.value || '').trim();
-  if (!text) { alert('복사할 내용이 없습니다.'); return; }
-
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (e) {
-    ta.focus();
-    ta.select();
-    document.execCommand('copy');
-  }
-
-  updateStatus('✅ 복사 완료', 'green');
-  setTimeout(() => updateStatus('✅ 준비 완료', 'green'), 1500);
+// 개별 로그 복사 기능
+async function copySingleLog(btn) {
+    const text = btn.parentElement.querySelector('span').innerText;
+    try {
+        await navigator.clipboard.writeText(text);
+        const originalText = btn.innerText;
+        btn.innerText = "완료";
+        btn.style.color = "green";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.color = "#666";
+        }, 1000);
+    } catch (e) {
+        alert("복사 실패");
+    }
 }
 
-// ==========================================
-// 모달
-// ==========================================
-function openModal(seatNum, info) {
 
-  document.getElementById('form_class').value = info.classNum || '';
-  document.getElementById('form_id').value = info.studentId || '';
-  document.getElementById('form_name').value = info.name || '';
-  document.getElementById('form_location').value = info.locationName || '';
-  document.getElementById('form_seat').value = seatNum || '';
+/* =========================================
+   [7] 좌석 색상 및 모달
+   ========================================= */
+function updateSeatColors() {
+    document.querySelectorAll('.seat').forEach(s => {
+        s.classList.remove('occupied', 'status-class', 'status-leave', 'status-out', 'status-self', 'status-absent');
+        s.style.cursor = 'default';
+        s.onclick = null;
+        s.title = "";
+    });
 
-  document.getElementById('form_note').value = '';
-  const radios = document.getElementsByName('guidance_type');
-  for (const r of radios) r.checked = false;
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        const tabKey = normalizeLocationKey(tab.id);
+        for (const [sheetKey, seatObj] of Object.entries(occupiedSeats)) {
+            if (!tabKey.startsWith(sheetKey)) continue;
 
-  document.getElementById('guidanceModal').style.display = 'flex';
+            for (const [seatNum, info] of Object.entries(seatObj)) {
+                const seatEl = tab.querySelector(`.seat[data-seat="${seatNum}"]`);
+                if (seatEl) {
+                    seatEl.classList.add('occupied');
+
+                    const st = String(info.status).replace(/\s+/g, "");
+                    if (st === '수업') seatEl.classList.add('status-class');
+                    else if (st === '조퇴') seatEl.classList.add('status-leave');
+                    else if (st === '외출') seatEl.classList.add('status-out');
+                    else if (st === '결석') seatEl.classList.add('status-absent');
+                    else seatEl.classList.add('status-self');
+
+                    seatEl.style.cursor = 'pointer';
+                    seatEl.onclick = () => openModal(seatNum, info);
+                    seatEl.title = `${info.name} (${info.status})`;
+                }
+            }
+        }
+    });
 }
 
-function closeModal() {
-  document.getElementById('guidanceModal').style.display = 'none';
-}
 
-function submitForm() {
-  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-    alert('⚠️ SCRIPT_URL을 설정해주세요!');
-    return;
-  }
-
-  const note = document.getElementById('form_note').value;
-  let type = '';
-  const radios = document.getElementsByName('guidance_type');
-  for (const r of radios) if (r.checked) type = r.value;
-  if (!type) { alert('지도 항목을 선택해주세요.'); return; }
-
-  // [Corrected] Read values BEFORE closing modal
-  const payload = {
-    location: document.getElementById('form_location').value,
-    seat: document.getElementById('form_seat').value,
-    classNum: document.getElementById('form_class').value,
-    studentId: document.getElementById('form_id').value,
-    name: document.getElementById('form_name').value,
-    type: type,
-    note: note,
-    user: currentUser
-  };
-
-  addToQueue(payload);
-  closeModal();
-}
-
-// ==========================================
-// 상태바
-// ==========================================
-function updateStatus(msg, color) {
-  const el = document.getElementById('status_msg');
-  if (!el) return;
-  el.innerText = msg;
-  el.style.color = color;
-}
-
-function hookOpenTab() {
-  if (typeof window.openTab !== 'function') return;
-  if (window.__openTabHooked) return;
-
-  const original = window.openTab;
-  window.openTab = function(evt, tabName) {
-    const r = original.apply(this, arguments);
-    setTimeout(() => { renderAlertsForActiveTab(); }, 0);
-    return r;
-  };
-  window.__openTabHooked = true;
-}
-
-window.addEventListener('load', () => {
-  hookOpenTab();
-
-  const bar = document.createElement('div');
-  bar.id = 'status_msg_container';
-  bar.style.cssText = 'position:fixed; bottom:10px; right:10px; background:white; padding:10px; border:2px solid #333; z-index:9000; border-radius:8px; font-weight:900; font-size:12px; box-shadow:0 2px 10px rgba(0,0,0,0.2);';
-  bar.innerHTML = '<span id="status_msg">준비</span> <button onclick="loadSheetData(); loadAlertData();" style="margin-left:10px; padding:5px; font-weight:900;">↻</button>';
-  document.body.appendChild(bar);
-
-  setTimeout(promptForUser, 100);
-});
-
-
-// ==========================================
-// [수정] 관 선택 시 진입 (드롭다운에 '홈으로' 추가)
-// ==========================================
+/* =========================================
+   [8] 화면 진입 (관 선택)
+   ========================================= */
 function enterBuilding(buildingName) {
-    // 1. 감독관 이름 확인
     if (!currentUser) {
         const storedName = sessionStorage.getItem('supervisorName');
         if (storedName) {
             currentUser = storedName;
         } else {
-            let nameInput = '';
-            while (!nameInput) {
-                nameInput = prompt('감독관 이름을 입력해주세요 (필수):', '');
-                if (nameInput === null) return;
-                nameInput = nameInput.trim();
-                if (!nameInput) alert('이름을 입력해야 관리 화면으로 이동할 수 있습니다.');
-            }
+            let nameInput = prompt("감독관 이름을 입력해주세요:", "") || "";
+            nameInput = nameInput.trim();
+            if (!nameInput) { alert("이름 필수"); return; }
             currentUser = nameInput;
             sessionStorage.setItem('supervisorName', currentUser);
         }
     }
 
-    // 2. 사용자 이름 표시
     const userBar = document.getElementById('user-display-bar');
     if (userBar) {
-        userBar.innerText = `현재 사용자 : ${currentUser}`;
+        userBar.innerText = `감독관: ${currentUser}`;
         userBar.style.display = 'block';
     }
 
-    // 3. 화면 전환
     const landing = document.getElementById('main-landing');
     if (landing) landing.style.display = 'none';
-
     const container = document.querySelector('.container');
     if (container) container.style.display = 'block';
 
-    // ============================================================
-    // 4. 탭 버튼 & 모바일 드롭다운 필터링
-    // ============================================================
     const tabButtons = document.querySelectorAll('.tab-button');
     const mobileSelect = document.getElementById('mobile-location-select');
 
-    // 드롭다운 초기화
     if (mobileSelect) {
-        mobileSelect.innerHTML = ''; // 싹 비우기
-
-        // [추가] '홈으로' 옵션 맨 위에 추가
-        const homeOpt = document.createElement('option');
-        homeOpt.value = "HOME"; // 구분용 값
-        homeOpt.text = "🏠 홈으로 (퀀텀선택)";
-        homeOpt.style.fontWeight = "bold";
-        homeOpt.style.color = "#e74c3c"; // 빨간색 강조 (지원 브라우저만)
-        mobileSelect.appendChild(homeOpt);
-
-        // 구분선 역할 (선택 불가)
-        const disabledOpt = document.createElement('option');
-        disabledOpt.text = "──────────";
-        disabledOpt.disabled = true;
-        mobileSelect.appendChild(disabledOpt);
+        mobileSelect.innerHTML = "<option value='HOME' style='color:red; font-weight:bold'>← 처음 화면</option><option disabled>──────────</option>";
     }
 
     let firstVisibleTab = null;
+    const searchKey = buildingName.replace('관', '').trim();
 
     tabButtons.forEach(btn => {
-        // PC 화면의 '홈' 탭 버튼은 항상 표시
         if (btn.classList.contains('home-tab')) {
             btn.style.display = 'inline-flex';
             return;
         }
-
-        const onClickText = btn.getAttribute('onclick') || '';
-        const match = onClickText.match(/'([^']+)'/);
+        const onClickText = btn.getAttribute('onclick');
+        const match = onClickText ? onClickText.match(/openTab\s*\(\s*[^,]+,\s*['"]([^'"]+)['"]\s*\)/) : null;
 
         if (match) {
             const tabId = match[1];
             const btnText = btn.innerText.trim();
 
-            if (tabId.startsWith(buildingName)) {
+            if (tabId.startsWith(searchKey)) {
                 btn.style.display = 'inline-block';
-
-                // 모바일 드롭다운에 층 추가
                 if (mobileSelect) {
                     const opt = document.createElement('option');
                     opt.value = tabId;
                     opt.text = btnText;
                     mobileSelect.appendChild(opt);
                 }
-
                 if (!firstVisibleTab) firstVisibleTab = tabId;
             } else {
                 btn.style.display = 'none';
@@ -784,25 +517,118 @@ function enterBuilding(buildingName) {
         }
     });
 
-    // 5. 첫 번째 층 자동 선택
     if (firstVisibleTab) {
         openTab(null, firstVisibleTab);
-        if (mobileSelect) mobileSelect.value = firstVisibleTab; // 드롭다운도 해당 층 선택 상태로
+        if (mobileSelect) mobileSelect.value = firstVisibleTab;
     } else {
-        alert('해당 관에 등록된 층이 없습니다.');
+        alert("해당하는 탭을 찾을 수 없습니다.");
+    }
+
+    loadSheetData();
+    if (window.refreshInterval) clearInterval(window.refreshInterval);
+    window.refreshInterval = setInterval(loadSheetData, 30000);
+}
+
+function goToHome() {
+    if (!confirm("처음 화면으로 돌아가시겠습니까?")) return;
+    document.querySelector('.container').style.display = 'none';
+    document.getElementById('main-landing').style.display = 'flex';
+}
+
+function updateStatus(msg, color) {
+    const el = document.getElementById('status_msg');
+    if (!el) return;
+    el.innerText = msg;
+    el.style.color = color || 'black';
+}
+
+
+/* =========================================
+   [9] 모달 및 전송
+   ========================================= */
+function openModal(seatNum, info) {
+    currentSeatInfo = info;
+    currentSeatInfo.seatNum = seatNum;
+    document.getElementById('form_class').value = info.classNum || "";
+    document.getElementById('form_id').value = info.studentId || "";
+    document.getElementById('form_name').value = info.name || "";
+    document.getElementById('form_location').value = info.locationName || "";
+    document.getElementById('form_seat').value = seatNum;
+    document.getElementById('form_note').value = "";
+    document.getElementsByName('guidance_type').forEach(r => r.checked = false);
+    document.getElementById('guidanceModal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('guidanceModal').style.display = 'none'; }
+function submitForm() {
+    const note = document.getElementById('form_note').value;
+    let type = "";
+    document.getElementsByName('guidance_type').forEach(r => { if (r.checked) type = r.value; });
+    if (!type) { alert("유형 선택 필요"); return; }
+
+    const payload = {
+        location: document.getElementById('form_location').value,
+        seat: document.getElementById('form_seat').value,
+        classNum: document.getElementById('form_class').value,
+        studentId: document.getElementById('form_id').value,
+        name: document.getElementById('form_name').value,
+        type: type, note: note, user: currentUser
+    };
+    addToQueue(payload);
+    closeModal();
+}
+function addToQueue(p) { requestQueue.push(p); processQueue(); }
+
+async function processQueue() {
+    if (isProcessing || requestQueue.length === 0) return;
+    isProcessing = true;
+    const payload = requestQueue[0];
+    updateStatus("전송 중...", "blue");
+
+    try {
+        const response = await fetch(SCRIPTURL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+        });
+
+        // 원본 로직 유지 (no-cors 아님)
+        const result = await response.json();
+
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+        localSessionLogs.push({
+            time: timeStr,
+            location: payload.location,
+            seat: payload.seat,
+            classNum: payload.classNum,
+            studentId: payload.studentId,
+            name: payload.name,
+            alertText: result.message
+        });
+
+        renderAlertsForActiveTab();
+        requestQueue.shift();
+        updateStatus("전송 완료", "green");
+        setTimeout(() => {
+            isProcessing = false;
+            if (requestQueue.length > 0) processQueue();
+        }, 1500);
+
+    } catch (e) {
+        console.error(e);
+        updateStatus("전송 실패", "red");
+        setTimeout(() => {
+            isProcessing = false;
+            processQueue();
+        }, 3000);
     }
 }
 
-
-// ==========================================
-// [추가] 홈 버튼 기능: 초기 화면으로 복귀
-// ==========================================
-function goToHome() {
-    if (!confirm('초기 화면으로 돌아가시겠습니까?')) return;
-
-    const container = document.querySelector('.container');
-    if (container) container.style.display = 'none';
-
-    const landing = document.getElementById('main-landing');
-    if (landing) landing.style.display = 'flex'; // CSS에 맞게 flex 또는 block
-}
+window.addEventListener('load', () => {
+    const bar = document.createElement('div');
+    bar.id = 'status_msg_container';
+    bar.style.cssText = "position:fixed; bottom:10px; right:10px; background:white; padding:10px; border:2px solid #333; z-index:9000; border-radius:8px; font-weight:900; font-size:12px; box-shadow:0 2px 10px rgba(0,0,0,0.2);";
+    bar.innerHTML = `<span id="status_msg">대기 중...</span> <button onclick="loadSheetData()" style="margin-left:10px; padding:5px; font-weight:900;">↻</button>`;
+    document.body.appendChild(bar);
+});
