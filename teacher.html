@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>생활담임 관리 메뉴</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --hover-color: #357abd;
+            --disabled-color: #95a5a6;
+            --bg-color: #f4f6f9;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 1.5rem;
+        }
+
+        /* 2x2 격자 레이아웃 설정 */
+        .grid-menu {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2열 배치 */
+            gap: 20px; /* 버튼 사이 간격 */
+        }
+
+        .menu-btn {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            color: #333;
+            text-decoration: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            aspect-ratio: 1 / 1; /* 가로세로 비율 1:1 유지 (정사각형) */
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 10px;
+        }
+
+        /* 아이콘 스타일 (이모지 사용) */
+        .icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        /* 호버 효과 */
+        .menu-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 준비중 버튼 스타일 */
+        .menu-btn.disabled {
+            background-color: #e0e0e0;
+            color: var(--disabled-color);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .menu-btn.disabled:hover {
+            transform: none;
+            background-color: #e0e0e0;
+            color: var(--disabled-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <h1>관리 메뉴</h1>
+        
+        <div class="grid-menu">
+            <!-- 1. 퀀텀 지도 현황 -->
+            <a href="Dashboard.html" class="menu-btn">
+                <span class="icon">📝</span>
+                <span>퀀텀 지도 현황</span>
+            </a>
+
+            <!-- 2. 출결 보고 -->
+            <a href="attendance.html" class="menu-btn">
+                <span class="icon">🏫</span>
+                <span>출결 보고</span>
+            </a>
+
+            <!-- 3. 컨텐츠 배부 명단 -->
+            <a href="content_list.html" class="menu-btn">
+                <span class="icon">📚</span>
+                <span>컨텐츠 배부 명단</span>
+            </a>
+
+            <!-- 4. 준비중 (클릭 방지 처리) -->
+            <a href="#" class="menu-btn disabled" onclick="alert('준비 중인 기능입니다.'); return false;">
+                <span class="icon">🚧</span>
+                <span>준비중</span>
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

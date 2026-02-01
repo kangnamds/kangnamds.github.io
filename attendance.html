@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출결 보고</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
+    <style>
+        :root {
+            --primary-bg: linear-gradient(90deg, #4e5dce 0%, #3a4bba 100%);
+            --card-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8f9fc;
+        }
+
+        .navbar-custom {
+            background: var(--primary-bg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 1rem 1.5rem;
+        }
+
+        .nav-link {
+            cursor: pointer;
+            color: rgba(255,255,255,0.8) !important;
+            font-weight: 500;
+        }
+
+            .nav-link.active {
+                color: #fff !important;
+                font-weight: 700;
+                border-bottom: 2px solid #fff;
+            }
+
+        .custom-card {
+            background: #fff;
+            border-radius: 0.75rem;
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            border: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed #dce1e6;
+            background-color: #fcfcfc;
+            border-radius: 12px;
+            padding: 3rem 1rem;
+            text-align: center;
+            cursor: pointer;
+        }
+
+            .upload-zone:hover {
+                background-color: #eef2ff;
+                border-color: #4e73df;
+            }
+
+        .page-section {
+            display: none;
+        }
+
+            .page-section.active {
+                display: block;
+                animation: fadeIn 0.3s;
+            }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .file-status-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fc;
+            border-radius: 8px;
+            border: 1px solid #e3e6f0;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#"><i class="bi bi-building-check me-2"></i>강남대성 출결 현황</a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" onclick="showPage('upload-page', this)">데이터 업로드</a></li>
+                    <li class="nav-item"><a class="nav-link" onclick="showPage('input-page', this); loadNonArrivals();">미등원 기록 입력</a></li>
+                    <li class="nav-item"><a class="nav-link" onclick="showPage('summary-page', this)">금일 요약</a></li>
+                    <li class="nav-item"><a class="nav-link" onclick="showPage('history-page', this)">기록 조회</a></li>
+                </ul>
+                <button class="btn btn-sm btn-light ms-3 text-primary fw-bold" onclick="window.location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i> 새로고침
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 mt-4" style="max-width: 1400px;">
+
+        <!-- [PAGE 1] 데이터 업로드 -->
+        <section id="upload-page" class="page-section active">
+            <div class="custom-card">
+                <h5 class="fw-bold text-dark mb-4">출결 명단 업로드</h5>
+                <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <i class="bi bi-cloud-arrow-up fs-1 text-primary mb-3"></i>
+                    <h6 class="fw-bold text-dark">이곳을 클릭하거나 파일을 드래그하세요</h6>
+                    <p class="text-muted small mb-0">지원 형식: .xlsx</p>
+                    <input type="file" id="fileInput" accept=".xlsx" hidden onchange="handleFileSelect(this)">
+                </div>
+                <div class="file-status-box text-center" id="fileStatusArea">
+                    <div class="mb-3"><span class="badge bg-success p-2 fs-6 mb-2">선택된 파일</span><br><strong id="fileNameDisplay" class="fs-5 text-dark"></strong></div>
+                    <button class="btn btn-primary px-4 py-2 fw-bold" id="startUploadBtn" onclick="processUpload()">
+                        <i class="bi bi-send-fill me-2"></i>서버로 전송하기
+                    </button>
+                </div>
+                <div id="resultMessage" class="alert mt-3 text-center" style="display:none;"></div>
+            </div>
+        </section>
+
+        <!-- [PAGE 1.5] 미등원 기록 입력 (Split View) -->
+        <section id="input-page" class="page-section">
+            <div class="custom-card">
+                <!-- 상단 헤더 -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold text-dark m-0">📝 미등원 학생 관리</h5>
+                    <div class="d-flex gap-2">
+                        <select id="inputClassSelect" class="form-select w-auto fw-bold" onchange="filterNonArrivals()">
+                            <option value="all">전체 반</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="loadNonArrivals()">
+                            <i class="bi bi-arrow-clockwise"></i> 새로고침
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- [왼쪽] 미등원 명단 리스트 -->
+                    <div class="col-md-6 border-end">
+                        <h6 class="fw-bold text-secondary mb-3">미등원 명단 <span id="nonArrivalCount" class="badge bg-secondary ms-1">0</span></h6>
+                        <div class="list-group overflow-auto" id="nonArrivalList" style="max-height: 600px;">
+                            <div class="text-center py-5 text-muted">데이터를 불러오는 중...</div>
+                        </div>
+                    </div>
+
+                    <!-- [오른쪽] 처리 결과 및 큐 상태 -->
+                    <div class="col-md-6 d-flex flex-column" style="height: 600px;">
+                        <div class="card h-100 shadow-sm border-0 bg-light">
+                            <div class="card-header bg-white border-bottom py-3">
+                                <h6 class="mb-0 fw-bold text-success"><i class="bi bi-check-square me-2"></i>처리 결과</h6>
+                            </div>
+
+                            <!-- 1. 로그 영역 (스크롤 가능) -->
+                            <div id="processedLog" class="card-body overflow-auto p-3" style="flex: 1;">
+                                <div class="text-center py-5 text-muted small" id="emptyLogMsg">처리된 내역이 여기에 표시됩니다.</div>
+                            </div>
+
+                            <!-- 2. 하단 큐 상태바 (고정) -->
+                            <div class="card-footer bg-white border-top p-3">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <span id="queueStatusIcon" class="spinner-border spinner-border-sm text-primary me-2" role="status" style="display:none;"></span>
+                                        <span id="queueStatusText" class="fw-bold text-muted small">대기 중인 작업 없음</span>
+                                    </div>
+                                    <span id="queueCountBadge" class="badge bg-secondary rounded-pill">0건</span>
+                                </div>
+                                <!-- 진행률 바 -->
+                                <div class="progress mt-2" style="height: 4px; display:none;" id="queueProgressBar">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+
+        <!-- [모달] 상태 변경 팝업 -->
+        <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="modalStudentName">학생 상태 변경</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="selectedRowIndex">
+
+                        <!-- 선택 그룹 (라디오 버튼) -->
+                        <div class="list-group mb-3">
+                            <!-- 1. 등원 -->
+                            <label class="list-group-item list-group-item-action d-flex align-items-center gap-2" style="cursor: pointer;">
+                                <input class="form-check-input flex-shrink-0" type="radio" name="statusOption" id="radioArrival" value="arrival" onchange="toggleStatusForm()">
+                                <span>🏃 등원 (시간 기록)</span>
+                            </label>
+
+                            <!-- 2. 등원 예정 -->
+                            <label class="list-group-item list-group-item-action d-flex align-items-center gap-2" style="cursor: pointer;">
+                                <input class="form-check-input flex-shrink-0" type="radio" name="statusOption" id="radioExpected" value="expected" onchange="toggleStatusForm()">
+                                <span>⏰ 등원 예정 (사유 입력)</span>
+                            </label>
+
+                            <!-- 3. 결석 -->
+                            <label class="list-group-item list-group-item-action d-flex align-items-center gap-2" style="cursor: pointer;">
+                                <input class="form-check-input flex-shrink-0" type="radio" name="statusOption" id="radioAbsent" value="absent" onchange="toggleStatusForm()">
+                                <span>🏠 결석 처리 (사유 입력)</span>
+                            </label>
+                        </div>
+
+                        <!-- 입력 폼 영역 (처음엔 숨김 상태 or 선택에 따라 내용 바뀜) -->
+                        <div id="statusInputArea" class="p-3 bg-light border rounded" style="display:none;">
+
+                            <!-- A. 등원 입력폼 -->
+                            <div id="form-arrival" class="status-form" style="display:none;">
+                                <label class="form-label fw-bold">등원 시간 (숫자 4자리)</label>
+                                <input type="text" class="form-control mb-3 text-center fs-5 fw-bold"
+                                       id="inputArrivalTime"
+                                       placeholder="0800"
+                                       maxlength="5"
+                                       inputmode="numeric"
+                                       oninput="formatTimeInput(this)">
+                                <button class="btn btn-primary w-100" onclick="submitStatus('arrival')">등원 확인</button>
+                            </div>
+
+                            <!-- B. 등원 예정 입력폼 -->
+                            <div id="form-expected" class="status-form" style="display:none;">
+                                <label class="form-label fw-bold">예정 시간 및 사유</label>
+                                <input type="text" class="form-control mb-3" id="inputExpectedReason" placeholder="예: 병원진료 오후등원">
+                                <button class="btn btn-info text-white w-100" onclick="submitStatus('expected')">예정 처리 확인</button>
+                            </div>
+
+                            <!-- C. 결석 입력폼 -->
+                            <div id="form-absent" class="status-form" style="display:none;">
+                                <label class="form-label fw-bold">결석 사유</label>
+                                <input type="text" class="form-control mb-3" id="inputAbsentReason" placeholder="예: 병결, 개인사정, 가정사">
+                                <button class="btn btn-danger w-100" onclick="submitStatus('absent')">결석 처리 확인</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- [PAGE 2] 금일 요약 및 보고 -->
+        <section id="summary-page" class="page-section">
+            <div class="custom-card">
+                <!-- 상단 헤더: 버튼 추가됨 -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="fw-bold text-dark m-0">📋 출결 보고서 생성</h5>
+                        <button class="btn btn-outline-success btn-sm fw-bold" onclick="saveAsJpg()">
+                            <i class="bi bi-camera-fill me-1"></i>이미지 저장
+                        </button>
+                    </div>
+                    <select id="classSelect" class="form-select w-auto fw-bold" onchange="updateSummaryUI()">
+                        <option value="all">전체 반</option>
+                    </select>
+                </div>
+
+                <!-- 캡처될 영역 시작 -->
+                <div id="captureArea" class="bg-white p-3 rounded">
+                    <div class="alert alert-primary text-center" role="alert">
+                        <!-- 글자 크기 키움 (h5 -> h2) -->
+                        <h2 class="fw-bold mb-2" id="reportTitle">0월 0일 요일 출결 현황</h2>
+                        <p class="mb-0 fs-5" id="reportSummary">로딩 중...</p>
+                    </div>
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-4">
+                            <div class="card h-100 border-danger mb-3">
+                                <div class="card-header bg-danger text-white fw-bold">🚨 결석 명단</div>
+                                <ul class="list-group list-group-flush" id="absentList"><li class="list-group-item text-muted small">데이터 없음</li></ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-warning mb-3">
+                                <div class="card-header bg-warning text-dark fw-bold">⏰ 지각 명단</div>
+                                <ul class="list-group list-group-flush" id="lateList"><li class="list-group-item text-muted small">데이터 없음</li></ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-info mb-3">
+                                <div class="card-header bg-info text-white fw-bold">📅 등원예정 명단</div>
+                                <ul class="list-group list-group-flush" id="expectedList"><li class="list-group-item text-muted small">데이터 없음</li></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 캡처될 영역 끝 -->
+
+                <div class="text-end mt-4">
+                    <button class="btn btn-secondary btn-sm" onclick="loadSummaryData()"><i class="bi bi-arrow-clockwise me-1"></i> 데이터 새로고침</button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- [PAGE 3] 기록 조회 -->
+        <section id="history-page" class="page-section">
+            <div class="alert alert-info text-center">기록 조회 기능은 준비 중입니다.</div>
+        </section>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ==========================================
+        // ⚠️ 배포된 Google Apps Script URL 입력 (필수)
+        // ==========================================
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz0HbGoNv6CW868O2_w-o-2IYr_EC73F6YTm9DnTLs_FZm9JqtnXgg-SgiSiCWbaT2LUg/exec";
+        let requestQueue = [];
+        let isProcessingQueue = false; 
+        // 위 주소를 본인의 웹 앱 URL로 꼭 바꿔주세요!
+
+        let selectedFile = null;
+        let allAttendanceData = [];
+
+
+        // 1. 페이지 전환 & 데이터 로드
+        function showPage(pageId, navElement) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (navElement) {
+                document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+                navElement.classList.add('active');
+            }
+            if (pageId === 'summary-page') loadSummaryData();
+        }
+
+        // 2. 업로드 관련 로직
+        const dropZone = document.getElementById('dropZone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+        dropZone.addEventListener('drop', (e) => handleFileSelect({ files: e.dataTransfer.files }), false);
+
+        function handleFileSelect(input) {
+            if (input.files.length > 0) {
+                selectedFile = input.files[0];
+                document.getElementById('fileStatusArea').style.display = 'block';
+                document.getElementById('fileNameDisplay').innerText = selectedFile.name;
+                document.getElementById('resultMessage').style.display = 'none';
+            }
+        }
+
+        function processUpload() {
+            if (!selectedFile) return alert("파일을 선택해주세요.");
+            if (SCRIPT_URL.includes("...")) return alert("SCRIPT_URL을 설정해주세요!");
+
+            const btn = document.getElementById('startUploadBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '전송 중...'; btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+                    // 1. 전체 데이터를 2차원 배열로 변환
+                    let rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    // 2. 실제 헤더 찾기 ("학번", "이름" 포함 행)
+                    let headerRowIndex = -1;
+                    for (let i = 0; i < Math.min(rawData.length, 20); i++) {
+                        const row = rawData[i];
+                        if (row && row.some(c => String(c).includes('학번')) && row.some(c => String(c).includes('이름'))) {
+                            headerRowIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (headerRowIndex === -1) {
+                        throw new Error("올바른 양식이 아닙니다. ('학번', '이름' 열을 찾을 수 없습니다)");
+                    }
+
+                    // 3. 데이터 분리
+                    const header = rawData[headerRowIndex];
+                    const body = rawData.slice(headerRowIndex + 1);
+
+                    // 4. 열 인덱스 매핑
+                    const getIdx = (name) => header.findIndex(h => h && String(h).includes(name));
+
+                    const idxMap = {
+                        no: getIdx('NO') > -1 ? getIdx('NO') : getIdx('No'),
+                        class: getIdx('반'),
+                        id: getIdx('학번'),
+                        name: getIdx('이름'),
+                        arrival: getIdx('등원'),
+                        leave: getIdx('하원'),
+                        status: getIdx('구분'),
+                        memo: getIdx('메모')
+                    };
+
+                    // 5. 표준 포맷 변환 & 시간 정규화
+                    const standardData = body.map(row => {
+                        if (!row[idxMap.id]) return null;
+
+                        const newRow = new Array(16).fill("");
+                        const getVal = (idx) => (row[idx] !== undefined && row[idx] !== null) ? row[idx] : "";
+
+                        newRow[0] = getVal(idxMap.no);
+                        newRow[2] = getVal(idxMap.class);
+                        newRow[4] = getVal(idxMap.id);
+                        newRow[5] = getVal(idxMap.name);
+
+                        // [시간 포맷 정규화]
+                        let rawTime = getVal(idxMap.arrival);
+                        let formattedTime = "";
+
+                        if (typeof rawTime === 'number') {
+                            // 엑셀 숫자 시간 변환
+                            const totalSeconds = Math.round(rawTime * 86400);
+                            const hours = Math.floor(totalSeconds / 3600);
+                            const minutes = Math.floor((totalSeconds % 3600) / 60);
+                            formattedTime = String(hours).padStart(2, '0') + ":" + String(minutes).padStart(2, '0');
+                        } else if (typeof rawTime === 'string') {
+                            let cleanStr = rawTime.replace(/\s/g, '').trim();
+                            if (cleanStr.includes(':')) {
+                                formattedTime = cleanStr.substring(0, 5);
+                            } else {
+                                formattedTime = cleanStr;
+                            }
+                        }
+                        newRow[7] = formattedTime; // 등원
+
+                        newRow[8] = getVal(idxMap.leave);
+                        newRow[10] = getVal(idxMap.status);
+
+                        // [추가 기능] R열(17) -> L열(11, 비고), T열(19) -> N열(13, 메모)
+                        const valR = getVal(17);
+                        const valT = getVal(19);
+
+                        if (valR) newRow[11] = valR;
+                        if (valT) newRow[13] = valT;
+                        else if (idxMap.memo > -1) newRow[13] = getVal(idxMap.memo);
+
+                        return newRow;
+                    }).filter(r => r !== null);
+
+                    // 6. 서버 전송
+                    fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(standardData)
+                    })
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.success) {
+                                document.getElementById('resultMessage').className = 'alert alert-success mt-3';
+                                document.getElementById('resultMessage').innerText = res.message;
+                                document.getElementById('resultMessage').style.display = 'block';
+                                document.getElementById('fileStatusArea').style.display = 'none';
+                            } else throw new Error(res.message);
+                        })
+                        .catch(err => alert("전송 실패: " + err.message))
+                        .finally(() => { btn.innerHTML = originalText; btn.disabled = false; });
+
+                } catch (e) {
+                    console.error(e);
+                    alert("처리 오류: " + e.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            };
+            reader.readAsArrayBuffer(selectedFile);
+        }
+
+
+
+        // 3. 요약 데이터 로드 및 UI 갱신
+        function loadSummaryData() {
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "getSummary" })
+            })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        allAttendanceData = res.data;
+                        initClassDropdown();
+                        updateSummaryUI();
+                    } else {
+                        document.getElementById('reportSummary').textContent = "데이터 로드 실패";
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        function initClassDropdown() {
+            const select = document.getElementById('classSelect');
+            const current = select.value;
+            const classes = [...new Set(allAttendanceData.map(d => d.class).filter(c => c))].sort();
+            select.innerHTML = '<option value="all">전체 반</option>';
+            classes.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.textContent = c;
+                select.appendChild(opt);
+            });
+            if (classes.includes(current)) select.value = current;
+        }
+
+        // 시간 포맷팅 헬퍼 함수 (추가)
+        // 어떤 형태의 값이 오든 "HH:mm" 문자열로 변환 시도
+        function formatTime(val) {
+            if (!val) return '-';
+
+            const strVal = String(val).trim();
+
+            // 1. 이미 HH:mm 형식이면 그대로 반환 (예: "09:30")
+            if (/^\d{1,2}:\d{2}$/.test(strVal)) return strVal;
+
+            // 2. HH:mm:ss 형식이면 앞 5글자만 (예: "09:30:00")
+            if (/^\d{1,2}:\d{2}:\d{2}/.test(strVal)) return strVal.substring(0, 5);
+
+            // 3. 구글 시트 Date 객체 문자열인 경우 (예: "2023-01-01T09:30:00.000Z")
+            // "T"가 포함되어 있으면 시간만 추출 시도
+            if (strVal.includes('T')) {
+                try {
+                    const date = new Date(strVal);
+                    if (!isNaN(date.getTime())) {
+                        const h = String(date.getHours()).padStart(2, '0');
+                        const m = String(date.getMinutes()).padStart(2, '0');
+                        return `${h}:${m}`;
+                    }
+                } catch (e) { }
+            }
+
+            // 4. 그냥 텍스트인 경우 (예: "9시 30분" 등) -> 그대로 표시하되 너무 길면 자름
+            return strVal.length > 8 ? strVal.substring(0, 8) : strVal;
+        }
+
+        function updateSummaryUI() {
+            const selectedClass = document.getElementById('classSelect').value;
+
+            // 1. 데이터 필터링
+            let targetData = selectedClass === 'all' ? allAttendanceData : allAttendanceData.filter(d => d.class === selectedClass);
+
+            const now = new Date();
+            //요일 구하기 (일, 월, 화...)
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dayOfWeek = days[now.getDay()];
+            const dateStr = `${now.getMonth() + 1}월 ${now.getDate()}일(${dayOfWeek})`;
+
+            // '전체' 뒤에 '반' 붙이기
+            const className = selectedClass === 'all' ? '전체반' : selectedClass + '반';
+            document.getElementById('reportTitle').textContent = `${dateStr} ${className} 출결 현황`;
+
+            // 2. 통계 집계
+            let stats = { total: targetData.length, present: 0, absent: 0, late: 0, expected: 0 };
+            let lists = { absent: [], late: [], expected: [] };
+
+            targetData.forEach(item => {
+                const status = (item.status || "").trim();
+                const arrival = (item.arrival || "").trim();
+
+                if (arrival) stats.present++;
+
+                if (status.includes('결석')) { stats.absent++; lists.absent.push(item); }
+                else if (status.includes('지각')) { stats.late++; lists.late.push(item); }
+                else if (status.includes('등원')) { stats.expected++; lists.expected.push(item); }
+            });
+
+            document.getElementById('reportSummary').textContent =
+                `총원 ${stats.total}명 | 등원 ${stats.present}명 | 결석 ${stats.absent}명 | 등원예정 ${stats.expected}명`;
+
+            document.querySelector('.border-danger .card-header').textContent = `🚨 결석 명단 (${stats.absent}명)`;
+            document.querySelector('.border-warning .card-header').textContent = `⏰ 지각 명단 (${stats.late}명)`;
+            document.querySelector('.border-info .card-header').textContent = `📅 등원예정 명단 (${stats.expected}명)`;
+
+            // 3. 리스트 렌더링
+            const renderList = (elementId, dataList, type) => {
+                const el = document.getElementById(elementId);
+                el.innerHTML = '';
+
+                // [헤더] 좌측 정렬 (text-start)
+                const headerLi = document.createElement('li');
+                headerLi.className = 'list-group-item bg-light border-0 border-bottom fw-bold text-secondary small py-2 px-3';
+
+                if (type === 'late') {
+                    // 지각: 이름 | 학번 | 시간 | 사유
+                    headerLi.innerHTML = `
+      <div class="row g-0">
+        <div class="col-3 text-start">이름</div>
+        <div class="col-3 text-start">학번</div>
+        <div class="col-3 text-start">시간</div>
+        <div class="col-3 text-start">사유</div>
+      </div>`;
+                } else {
+                    // 결석/예정: 이름 | 학번 | 사유
+                    headerLi.innerHTML = `
+      <div class="row g-0">
+        <div class="col-3 text-start">이름</div>
+        <div class="col-3 text-start">학번</div>
+        <div class="col-6 text-start">사유</div>
+      </div>`;
+                }
+                el.appendChild(headerLi);
+
+                // 데이터 없음
+                if (dataList.length === 0) {
+                    el.innerHTML += '<li class="list-group-item border-0 text-muted small text-center py-4">해당 없음</li>';
+                    return;
+                }
+
+                // [리스트 아이템] 좌측 정렬
+                dataList.forEach(s => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item border-0 border-bottom py-2 px-3';
+
+                    // 텍스트 스타일
+                    const name = `<span class="fw-bold text-dark" style="font-size:0.95rem;">${s.name}</span>`;
+                    const id = `<span class="text-secondary" style="font-size:0.9rem;">${s.id}</span>`;
+                    // 사유: 좌측 정렬
+                    let displayMemo = '';
+                    const status = (s.status || "").trim();
+
+                    if (status.includes('결석')) {
+                        // 1. 결석이면 '비고(note)' 값을 가져옴
+                        let rawNote = s.note || "";
+
+                        // 2. "[직]" 글자를 찾아서 빈카드로 변경 (삭제)
+                        displayMemo = rawNote.replace("[직]", "").trim();
+                    } else {
+                        // 지각이나 등원예정은 기존대로 '메모(memo)' 값 사용
+                        displayMemo = s.memo;
+                    }
+
+                    // 화면에 표시 (툴팁에도 수정된 내용이 나오도록 설정)
+                    const memo = `<span class="text-danger small text-truncate d-block text-start" title="${displayMemo}">${displayMemo || '-'}</span>`;
+
+                    let contentHtml = '';
+
+                    if (type === 'late') {
+                        // 시간 포맷팅 (헬퍼 함수 사용)
+                        const timeStr = formatTime(s.arrival);
+                        const timeTxt = `<span class="fw-bold text-warning" style="font-size:0.9rem;">${timeStr}</span>`;
+
+                        contentHtml = `
+        <div class="row align-items-center g-0 w-100">
+          <div class="col-3 text-start">${name}</div>
+          <div class="col-3 text-start">${id}</div>
+          <div class="col-3 text-start">${timeTxt}</div>
+          <div class="col-3 text-start">${memo}</div>
+        </div>`;
+                    } else {
+                        contentHtml = `
+        <div class="row align-items-center g-0 w-100">
+          <div class="col-3 text-start">${name}</div>
+          <div class="col-3 text-start">${id}</div>
+          <div class="col-6 text-start">${memo}</div>
+        </div>`;
+                    }
+
+                    li.innerHTML = contentHtml;
+                    el.appendChild(li);
+                });
+            };
+
+            renderList('absentList', lists.absent, 'normal');
+            renderList('lateList', lists.late, 'late');
+            renderList('expectedList', lists.expected, 'normal');
+        }
+
+        function saveAsJpg() {
+            const captureElement = document.getElementById('captureArea');
+            if (!captureElement) return alert('저장할 영역이 없습니다.');
+
+            // 파일명 설정: 제목(예: 1월 30일(금) 전체반 출결보고) 뒤에 '서'를 붙임
+            let titleText = document.getElementById('reportTitle').innerText.trim();
+            // 공백을 _로 바꾸고 확장자 추가
+            let fileName = titleText.replace(/\s+/g, '_') + '서.jpg';
+
+            html2canvas(captureElement, {
+                backgroundColor: "#ffffff", // 배경을 흰색으로 고정
+                scale: 2 // 해상도 2배 (선명하게)
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = canvas.toDataURL('image/jpeg');
+                link.click();
+            });
+        }
+
+        let nonArrivalData = [];
+
+        // 1. 데이터 불러오기
+        function loadNonArrivals() {
+            const listContainer = document.getElementById('nonArrivalList');
+            // 기존 리스트 비우고 로딩 UI 표시
+            listContainer.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">최신 데이터를 가져오는 중...</p>
+        </div>`;
+            document.getElementById('nonArrivalList').innerHTML = '<div class="text-center py-5 text-muted"><div class="spinner-border text-primary" role="status"></div><br>데이터 로딩 중...</div>';
+    
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "getNonArrivals" })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    nonArrivalData = res.data;
+                    initInputClassDropdown(); // 반 필터 초기화
+                    renderNonArrivalList();   // 리스트 그리기
+                } else {
+                    alert("로드 실패: " + res.message);
+                }
+            })
+            .catch(console.error);
+        }
+
+        // 2. 반 필터 초기화
+        function initInputClassDropdown() {
+            const select = document.getElementById('inputClassSelect');
+            const classes = [...new Set(nonArrivalData.map(d => d.class).filter(c => c))].sort();
+    
+            const currentVal = select.value;
+            select.innerHTML = '<option value="all">전체 반</option>';
+            classes.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.textContent = c;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        // 3. 리스트 필터링 및 렌더링
+        function filterNonArrivals() {
+            renderNonArrivalList();
+        }
+
+        function renderNonArrivalList() {
+            const selectedClass = document.getElementById('inputClassSelect').value;
+            const listContainer = document.getElementById('nonArrivalList');
+
+            // 1. filtered 변수 먼저 정의 [필수]
+            let filtered = selectedClass === 'all'
+                ? nonArrivalData
+                : nonArrivalData.filter(d => d.class === selectedClass);
+
+            // 2. 카운트 갱신 (filtered가 정의된 후에 실행) [수정됨]
+            const countEl = document.getElementById('nonArrivalCount');
+            if (countEl) countEl.innerText = filtered.length; // textContent 대신 innerText 사용 (무방함)
+
+            // 3. 데이터가 없을 때 처리
+            if (filtered.length === 0) {
+                listContainer.innerHTML = '<div class="text-center py-5 text-muted">미등원 학생이 없습니다.</div>';
+                return;
+            }
+
+            // 4. 리스트 렌더링
+            listContainer.innerHTML = '';
+            filtered.forEach(s => {
+                const item = document.createElement('a');
+
+                // 삭제용 ID (중요)
+                item.id = `student-card-${s.rowIndex}`;
+
+                item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3';
+                item.style.cursor = 'pointer';
+                item.onclick = () => openStatusModal(s);
+
+                item.innerHTML = `
+            <div>
+                <span class="badge bg-secondary me-2">${s.class}</span>
+                <span class="fw-bold text-dark me-2">${s.name}</span>
+                <span class="text-muted small">${s.id}</span>
+            </div>
+            <div class="text-danger small fw-bold">${s.memo || '-'}</div>
+        `;
+                listContainer.appendChild(item);
+            });
+        }
+
+
+        function toggleStatusForm() {
+            // 1. 전체 입력 영역 표시
+            const inputArea = document.getElementById('statusInputArea');
+            inputArea.style.display = 'block';
+
+            // 2. 모든 세부 폼 숨기기
+            document.querySelectorAll('.status-form').forEach(el => el.style.display = 'none');
+
+            // 3. 선택된 라디오 값 확인
+            const selected = document.querySelector('input[name="statusOption"]:checked').value;
+
+            // 4. 해당 폼만 보이기
+            if (selected === 'arrival') {
+                document.getElementById('form-arrival').style.display = 'block';
+                // [수정] 현재 시간을 HH:mm 텍스트로 입력
+                const now = new Date();
+                let h = String(now.getHours()).padStart(2, '0');
+                let m = String(now.getMinutes()).padStart(2, '0');
+                document.getElementById('inputArrivalTime').value = `${h}:${m}`;
+
+                // 입력창에 포커스 (바로 수정 가능하게)
+                document.getElementById('inputArrivalTime').select();
+            } else if (selected === 'expected') {
+                document.getElementById('form-expected').style.display = 'block';
+                document.getElementById('inputExpectedReason').focus();
+            } else if (selected === 'absent') {
+                document.getElementById('form-absent').style.display = 'block';
+                document.getElementById('inputAbsentReason').focus();
+            }
+        }
+
+        // [신규] 시간 입력 포맷팅 (0750 -> 07:50)
+        function formatTimeInput(input) {
+            // 숫자만 남기기
+            let val = input.value.replace(/[^0-9]/g, '');
+
+            // 4글자 초과 입력 방지
+            if (val.length > 4) val = val.substring(0, 4);
+
+            // 3글자 이상이면 중간에 콜론 삽입
+            if (val.length >= 3) {
+                val = val.substring(0, 2) + ':' + val.substring(2);
+            }
+
+            input.value = val;
+        }
+
+        // 4. 모달 열기
+        function openStatusModal(student) {
+            currentSelectedStudent = student;
+            document.getElementById('modalStudentName').innerText = `${student.name} 학생 상태 변경`;
+            document.getElementById('selectedRowIndex').value = student.rowIndex;
+
+            // 1. 라디오 버튼 선택 해제 (초기화)
+            const radios = document.getElementsByName('statusOption');
+            radios.forEach(r => r.checked = false);
+
+            // 2. 입력 영역 숨기기
+            document.getElementById('statusInputArea').style.display = 'none';
+
+            // [핵심 수정] 3. 기존 메모(사유) 가져와서 입력창에 채워넣기
+            // student.memo가 있으면 그 값을, 없으면 빈 문자열을 넣음
+            const existingMemo = student.memo || "";
+
+            document.getElementById('inputAbsentReason').value = existingMemo;
+            document.getElementById('inputExpectedReason').value = existingMemo;
+
+            // 모달 표시
+            const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+            modal.show();
+        }
+
+        // [신규 추가] 우측 패널 로그 출력 함수
+        function addLog(message) {
+            const logContainer = document.getElementById('processedLog');
+
+            // 처음 안내 문구('처리된 내역이...')가 있다면 제거
+            if (logContainer.innerText.includes('처리된 내역이 여기에 표시됩니다')) {
+                logContainer.innerHTML = '';
+            }
+
+            const time = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+            const div = document.createElement('div');
+            div.className = "p-2 mb-2 bg-white border rounded shadow-sm text-sm"; // 스타일 적용
+            div.innerHTML = `<span class="fw-bold text-primary me-2">[${time}]</span> ${message}`;
+
+            logContainer.prepend(div); // 맨 위에 추가
+        }
+
+
+        function submitStatus(type) {
+            const rowIndex = document.getElementById('selectedRowIndex').value;
+
+            // 모달 타이틀에서 학생 이름 추출
+            const titleText = document.getElementById('modalStudentName').innerText;
+            const studentName = titleText.replace(' 학생 상태 변경', '').trim();
+
+            let payload = { action: "updateStatus", rowIndex: rowIndex, type: type };
+            let typeStr = "";
+
+            // 입력값 가져오기 및 유효성 검사
+            if (type === 'arrival') {
+                let timeVal = document.getElementById('inputArrivalTime').value;
+                if (timeVal.length === 4 && !timeVal.includes(':')) {
+                    timeVal = timeVal.substring(0, 2) + ':' + timeVal.substring(2);
+                }
+                if (!/^\d{2}:\d{2}$/.test(timeVal)) {
+                    alert("올바른 시간 형식을 입력해주세요 (예: 0750 -> 07:50)");
+                    return;
+                }
+                payload.time = timeVal;
+                typeStr = "등원";
+            } else if (type === 'absent') {
+                payload.reason = document.getElementById('inputAbsentReason').value;
+                typeStr = "결석";
+            } else if (type === 'expected') {
+                payload.reason = document.getElementById('inputExpectedReason').value;
+                typeStr = "등원예정";
+            }
+
+            // [1] UI 즉시 반영 (모달 닫기 + 리스트 삭제)
+            const modalEl = document.getElementById('statusModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+
+            // 해당 학생 카드 삭제 (ID로 찾기)
+            const targetId = `student-card-${rowIndex}`;
+            const targetItem = document.getElementById(targetId);
+            if (targetItem) targetItem.remove();
+
+            // 카운트 감소
+            const countEl = document.getElementById('nonArrivalCount');
+            if (countEl) countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
+
+            // [2] 큐에 추가 및 상태바 갱신
+            requestQueue.push({
+                payload: payload,
+                studentName: studentName,
+                typeStr: typeStr
+            });
+
+            updateQueueStatus();
+            processQueue();
+        }
+
+
+        // [신규 추가] 큐 처리기 함수
+        function processQueue() {
+            // 1. 실행 중이거나 큐가 비어있으면 중단
+            if (isProcessingQueue || requestQueue.length === 0) return;
+
+            isProcessingQueue = true; // 잠금(Lock)
+            const request = requestQueue.shift(); // 대기열에서 꺼내기
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(request.payload)
+            })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        addLog(`✅ <b>${request.studentName}</b> 저장 완료.`);
+                    } else {
+                        addLog(`❌ <b>${request.studentName}</b> 실패: ${res.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    addLog(`❌ <b>${request.studentName}</b> 전송 오류 (네트워크)`);
+                })
+                .finally(() => {
+                    isProcessingQueue = false; // 잠금 해제
+                    // 다음 요청 처리 (약간의 딜레이)
+                    setTimeout(processQueue, 300);
+                });
+        }
+
+        // [신규] 큐 처리기 (순차 전송)
+        function processQueue() {
+            if (isProcessingQueue || requestQueue.length === 0) return;
+
+            isProcessingQueue = true;
+            updateQueueStatus(); // 상태바 갱신
+
+            const request = requestQueue.shift();
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(request.payload)
+            })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        // 성공 로그만 간단히 출력
+                        addLog(`✅ <b>${request.studentName}</b> ${request.typeStr} 변경 완료`);
+                    } else {
+                        addLog(`❌ <b>${request.studentName}</b> 실패: ${res.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    addLog(`❌ <b>${request.studentName}</b> 전송 오류`);
+                })
+                .finally(() => {
+                    isProcessingQueue = false;
+                    updateQueueStatus(); // 상태바 갱신 (완료 체크)
+                    setTimeout(processQueue, 300);
+                });
+        }
+
+        // [신규] 큐 상태바 UI 업데이트
+        function updateQueueStatus() {
+            const count = requestQueue.length + (isProcessingQueue ? 1 : 0);
+            const statusText = document.getElementById('queueStatusText');
+            const statusIcon = document.getElementById('queueStatusIcon');
+            const badge = document.getElementById('queueCountBadge');
+            const progressBar = document.getElementById('queueProgressBar');
+
+            if (!statusText) return; // 요소가 없으면 중단
+
+            badge.innerText = `${count}건`;
+
+            if (count > 0) {
+                statusText.innerText = `${count}건 기록 중...`;
+                statusText.className = "fw-bold text-primary small";
+                statusIcon.style.display = "inline-block";
+                badge.className = "badge bg-primary rounded-pill";
+                if (progressBar) progressBar.style.display = "flex";
+            } else {
+                statusText.innerText = "✅ 모든 기록 완료!";
+                statusText.className = "fw-bold text-success small";
+                statusIcon.style.display = "none";
+                badge.className = "badge bg-success rounded-pill";
+                if (progressBar) progressBar.style.display = "none";
+
+                // 3초 후 대기 상태로 복귀
+                setTimeout(() => {
+                    if (requestQueue.length === 0 && !isProcessingQueue) {
+                        statusText.innerText = "대기 중인 작업 없음";
+                        statusText.className = "fw-bold text-muted small";
+                        badge.className = "badge bg-secondary rounded-pill";
+                    }
+                }, 3000);
+            }
+        }
+
+
+
+    </script>
+</body>
+</html>
