@@ -581,35 +581,63 @@ function addToQueue(p) { requestQueue.push(p); processQueue(); }
 async function processQueue() {
     if (isProcessing || requestQueue.length === 0) return;
     isProcessing = true;
+
     const payload = requestQueue[0];
-    updateStatus("전송 중...", "blue");
+
+    // 상태 메시지 표시
+    if (typeof updateStatus === 'function') {
+        updateStatus("전송 중...", "blue");
+    }
 
     try {
-        const response = await fetch(SCRIPTURL, {
+        // [중요] 변수명 자동 감지 (SCRIPT_URL 또는 SCRIPTURL 사용)
+        const targetUrl = (typeof SCRIPT_URL !== 'undefined') ? SCRIPT_URL : SCRIPTURL;
+
+        const response = await fetch(targetUrl, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(payload)
         });
 
-        // 원본 로직 유지 (no-cors 아님)
         const result = await response.json();
 
-        const now = new Date();
-        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        // ====================================================
+        // [수정된 부분] 수면 로그 필터링 로직 (3회 미만 숨김)
+        // ====================================================
+        let alertMsg = result.message || "";
 
-        localSessionLogs.push({
-            time: timeStr,
-            location: payload.location,
-            seat: payload.seat,
-            classNum: payload.classNum,
-            studentId: payload.studentId,
-            name: payload.name,
-            alertText: result.message
-        });
+        // "수면" 또는 "수면주의"가 1회, 2회인 경우 문구에서 삭제
+        alertMsg = alertMsg.replace(/(수면(?:주의)?\s*[12]회(?:,\s*)?|,\s*수면(?:주의)?\s*[12]회)/g, '').trim();
+        // 앞뒤 콤마 정리
+        alertMsg = alertMsg.replace(/^,\s*|\s*,$/g, '');
 
-        renderAlertsForActiveTab();
+        // 메시지가 있을 때만 로그에 추가
+        if (alertMsg && alertMsg !== "") {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+            localSessionLogs.push({
+                time: timeStr,
+                location: payload.location,
+                seat: payload.seat,
+                classNum: payload.classNum,
+                studentId: payload.studentId,
+                name: payload.name,
+                alertText: alertMsg // 필터링된 메시지 사용
+            });
+
+            if (typeof renderAlertsForActiveTab === 'function') {
+                renderAlertsForActiveTab();
+            }
+        }
+        // ====================================================
+
         requestQueue.shift();
-        updateStatus("전송 완료", "green");
+
+        if (typeof updateStatus === 'function') {
+            updateStatus("전송 완료", "green");
+        }
+
         setTimeout(() => {
             isProcessing = false;
             if (requestQueue.length > 0) processQueue();
@@ -617,13 +645,16 @@ async function processQueue() {
 
     } catch (e) {
         console.error(e);
-        updateStatus("전송 실패", "red");
+        if (typeof updateStatus === 'function') {
+            updateStatus("전송 실패", "red");
+        }
         setTimeout(() => {
             isProcessing = false;
             processQueue();
         }, 3000);
     }
 }
+
 
 window.addEventListener('load', () => {
     const bar = document.createElement('div');
