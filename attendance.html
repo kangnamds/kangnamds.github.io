@@ -150,9 +150,20 @@
                 </div>
 
                 <div class="row g-4">
+
                     <!-- [왼쪽] 미등원 명단 리스트 -->
                     <div class="col-md-6 border-end">
                         <h6 class="fw-bold text-secondary mb-3">미등원 명단 <span id="nonArrivalCount" class="badge bg-secondary ms-1">0</span></h6>
+                        <!-- [추가] 일괄 처리 버튼 영역 -->
+                        <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="checkAll" onchange="toggleAllChecks(this)">
+                                <label class="form-check-label small text-muted" for="checkAll">전체 선택</label>
+                            </div>
+                            <button class="btn btn-sm btn-info text-white" onclick="openBatchModal()" id="btnBatchExpected" style="display:none;">
+                                <i class="bi bi-check-all"></i> 선택 등원예정 처리
+                            </button>
+                        </div>
                         <div class="list-group overflow-auto" id="nonArrivalList" style="max-height: 600px;">
                             <div class="text-center py-5 text-muted">데이터를 불러오는 중...</div>
                         </div>
@@ -401,6 +412,7 @@
                     // 4. 열 인덱스 매핑
                     const getIdx = (name) => header.findIndex(h => h && String(h).includes(name));
 
+                    // 4. 열 인덱스 매핑 수정
                     const idxMap = {
                         no: getIdx('NO') > -1 ? getIdx('NO') : getIdx('No'),
                         class: getIdx('반'),
@@ -409,8 +421,11 @@
                         arrival: getIdx('등원'),
                         leave: getIdx('하원'),
                         status: getIdx('구분'),
-                        memo: getIdx('메모')
+                        memo: getIdx('메모'),
+                        note: getIdx('비고') // [필수 추가]
                     };
+
+
 
                     // 5. 표준 포맷 변환 & 시간 정규화
                     const standardData = body.map(row => {
@@ -419,17 +434,16 @@
                         const newRow = new Array(16).fill("");
                         const getVal = (idx) => (row[idx] !== undefined && row[idx] !== null) ? row[idx] : "";
 
+                        // 기본 정보 매핑
                         newRow[0] = getVal(idxMap.no);
                         newRow[2] = getVal(idxMap.class);
                         newRow[4] = getVal(idxMap.id);
                         newRow[5] = getVal(idxMap.name);
 
-                        // [시간 포맷 정규화]
+                        // 시간 포맷 정규화
                         let rawTime = getVal(idxMap.arrival);
                         let formattedTime = "";
-
                         if (typeof rawTime === 'number') {
-                            // 엑셀 숫자 시간 변환
                             const totalSeconds = Math.round(rawTime * 86400);
                             const hours = Math.floor(totalSeconds / 3600);
                             const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -447,16 +461,27 @@
                         newRow[8] = getVal(idxMap.leave);
                         newRow[10] = getVal(idxMap.status);
 
-                        // [추가 기능] R열(17) -> L열(11, 비고), T열(19) -> N열(13, 메모)
-                        const valR = getVal(17);
-                        const valT = getVal(19);
+                        // [수정된 로직] 비고(11) / 메모(13) 처리
 
-                        if (valR) newRow[11] = valR;
-                        if (valT) newRow[13] = valT;
-                        else if (idxMap.memo > -1) newRow[13] = getVal(idxMap.memo);
+                        // 1. 기본값: 원래 엑셀의 '비고', '메모' 컬럼 값으로 채움
+                        if (idxMap.note > -1) newRow[11] = getVal(idxMap.note);
+                        if (idxMap.memo > -1) newRow[13] = getVal(idxMap.memo);
+
+                        // 2. 덮어쓰기: R열(17), T열(19)에 값이 '있으면' 무조건 덮어씀
+                        // (row 길이를 체크해서 해당 열이 존재하는지 확인)
+                        if (row.length > 17) {
+                            const valR = getVal(17);
+                            if (valR !== "") newRow[11] = valR;
+                        }
+
+                        if (row.length > 19) {
+                            const valT = getVal(19);
+                            if (valT !== "") newRow[13] = valT;
+                        }
 
                         return newRow;
                     }).filter(r => r !== null);
+
 
                     // 6. 서버 전송
                     fetch(SCRIPT_URL, {
@@ -773,25 +798,40 @@
             // 4. 리스트 렌더링
             listContainer.innerHTML = '';
             filtered.forEach(s => {
-                const item = document.createElement('a');
-
-                // 삭제용 ID (중요)
-                item.id = `student-card-${s.rowIndex}`;
-
-                item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3';
+                const item = document.createElement('div'); // a → div (체크박스 클릭 간섭 최소화)
+                item.id = `student-card-${s.rowIndex}`;     // (선택) 나중에 DOM 제거용
+                item.className = 'list-group-item list-group-item-action d-flex align-items-center py-3';
                 item.style.cursor = 'pointer';
-                item.onclick = () => openStatusModal(s);
 
+                // 체크박스 클릭 시 모달 열림 방지: event.stopPropagation()
                 item.innerHTML = `
+        <div class="me-3">
+            <input class="form-check-input student-checkbox"
+                   type="checkbox"
+                   value="${s.rowIndex}"
+                   data-name="${s.name}"
+                   onclick="event.stopPropagation(); updateBatchBtn && updateBatchBtn();">
+        </div>
+
+        <div class="flex-grow-1 d-flex justify-content-between align-items-center">
             <div>
                 <span class="badge bg-secondary me-2">${s.class}</span>
                 <span class="fw-bold text-dark me-2">${s.name}</span>
                 <span class="text-muted small">${s.id}</span>
             </div>
             <div class="text-danger small fw-bold">${s.memo || '-'}</div>
-        `;
+        </div>
+    `;
+
+                // 체크박스 외 영역 클릭하면 모달 열기
+                item.addEventListener('click', () => openStatusModal(s));
+
                 listContainer.appendChild(item);
             });
+
+            // (선택) 렌더 직후 버튼 상태 갱신
+            if (typeof updateBatchBtn === 'function') updateBatchBtn();
+
         }
 
 
@@ -1041,6 +1081,71 @@
             }
         }
 
+        // [신규] 전체 선택 토글
+        function toggleAllChecks(source) {
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+            updateBatchBtn();
+        }
+
+        // [신규] 일괄 처리 버튼 표시/숨김
+        function updateBatchBtn() {
+            const checkedCount = document.querySelectorAll('.student-checkbox:checked').length;
+            const btn = document.getElementById('btnBatchExpected');
+            if (checkedCount > 0) {
+                btn.style.display = 'block';
+                btn.innerHTML = `<i class="bi bi-check-all"></i> ${checkedCount}명 등원예정 처리`;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        // [수정] 일괄 처리 실행 (사유 입력 없이 바로 처리)
+        function openBatchModal() {
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            if (checkboxes.length === 0) return;
+
+            if (confirm(`선택한 ${checkboxes.length}명을 '등원예정' 처리하시겠습니까?`)) {
+                processBatchUpdate(checkboxes); // 인자 없이 호출
+            }
+        }
+
+        // [신규] 일괄 처리 실행 (큐에 쌓기)
+        // [수정] 일괄 처리 로직
+        function processBatchUpdate(checkboxes) { // reason 인자 제거
+            checkboxes.forEach(cb => {
+                const rowIndex = cb.value;
+                const name = cb.getAttribute('data-name');
+
+                // 1. UI 즉시 삭제
+                const card = document.getElementById(`student-card-${rowIndex}`);
+                if (card) card.remove();
+
+                // 2. 카운트 감소
+                const countEl = document.getElementById('nonArrivalCount');
+                if (countEl) countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
+
+                // 3. 큐에 추가
+                requestQueue.push({
+                    payload: {
+                        action: "updateStatus",
+                        rowIndex: rowIndex,
+                        type: "expected",
+                        reason: ""  // [중요] 빈 값으로 보내야 백엔드에서 기존 사유를 유지함
+                    },
+                    studentName: name,
+                    typeStr: "등원예정"
+                });
+            });
+
+            // 4. 후처리
+            const checkAll = document.getElementById('checkAll');
+            if (checkAll) checkAll.checked = false;
+
+            updateBatchBtn();
+            updateQueueStatus();
+            processQueue();
+        }
 
 
     </script>
