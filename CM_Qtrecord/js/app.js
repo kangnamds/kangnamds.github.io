@@ -602,14 +602,19 @@ async function processQueue() {
         const result = await response.json();
 
         // ====================================================
-        // [수정된 부분] 수면 로그 필터링 로직 (3회 미만 숨김)
+        // [수정된 부분] 로그 필터링 및 강제 표시 로직
         // ====================================================
         let alertMsg = result.message || "";
 
-        // "수면" 또는 "수면주의"가 1회, 2회인 경우 문구에서 삭제
+        // 1. 수면 로그 필터링 (1~2회는 삭제)
         alertMsg = alertMsg.replace(/(수면(?:주의)?\s*[12]회(?:,\s*)?|,\s*수면(?:주의)?\s*[12]회)/g, '').trim();
         // 앞뒤 콤마 정리
         alertMsg = alertMsg.replace(/^,\s*|\s*,$/g, '');
+
+        // 2. 야간자습 미확인 강제 표시 (변수명 수정됨: finalMsg -> alertMsg)
+        if (payload.type === '야간자습 미확인' && (!alertMsg || alertMsg === "")) {
+            alertMsg = "야간자습 미확인";
+        }
 
         // 메시지가 있을 때만 로그에 추가
         if (alertMsg && alertMsg !== "") {
@@ -623,7 +628,7 @@ async function processQueue() {
                 classNum: payload.classNum,
                 studentId: payload.studentId,
                 name: payload.name,
-                alertText: alertMsg // 필터링된 메시지 사용
+                alertText: alertMsg // 최종 메시지 사용
             });
 
             if (typeof renderAlertsForActiveTab === 'function') {
@@ -654,6 +659,7 @@ async function processQueue() {
         }, 3000);
     }
 }
+
 
 
 window.addEventListener('load', () => {
