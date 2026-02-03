@@ -42,7 +42,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-4 space-y-6">
-        
+
         <!-- 로딩 화면 -->
         <div id="loader" class="hidden text-center py-12">
             <i class="fas fa-circle-notch fa-spin text-4xl text-indigo-500"></i>
@@ -50,57 +50,87 @@
         </div>
 
         <!-- 필터 컨트롤 패널 -->
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-end">
-            <!-- 기간 선택 -->
-            <div class="flex items-center gap-2">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">시작일</label>
-                    <div class="relative group">
-                        <input type="date" id="startDate" class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition" onchange="renderDashboard()">
-                        <i class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap lg:flex-nowrap gap-4 items-end justify-between">
+
+            <!-- 좌측 그룹: 날짜, 반, 검색 -->
+            <div class="flex flex-wrap gap-4 items-end w-full lg:w-auto">
+                <!-- 기간 선택 -->
+                <div class="flex items-center gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">시작일</label>
+                        <div class="relative group">
+                            <input type="date" id="startDate" class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition" onchange="renderDashboard()">
+                            <i class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                    <span class="text-gray-400 pb-2 font-bold">~</span>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">종료일</label>
+                        <div class="relative group">
+                            <input type="date" id="endDate" class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition" onchange="renderDashboard()">
+                            <i class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
+                        </div>
                     </div>
                 </div>
-                <span class="text-gray-400 pb-2 font-bold">~</span>
+
+                <!-- 반 선택 -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">종료일</label>
-                    <div class="relative group">
-                        <input type="date" id="endDate" class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition" onchange="renderDashboard()">
-                        <i class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">반 (Class)</label>
+                    <div class="relative">
+                        <select id="classFilter" class="appearance-none border border-gray-300 rounded px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-indigo-500 outline-none bg-white pr-8 cursor-pointer hover:border-indigo-300 transition" onchange="renderDashboard()">
+                            <option value="All">전체</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- [신규] 지도유형 선택 -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">지도유형</label>
+                    <div class="relative">
+                        <select id="typeFilter" class="appearance-none border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:ring-2 focus:ring-indigo-500 outline-none bg-white pr-8 cursor-pointer hover:border-indigo-300 transition" onchange="renderDashboard()">
+                            <option value="All">전체 유형</option>
+                            <!-- JS로 자동 추가됨 -->
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- 검색 (크기 제한 적용: max-w-xs) -->
+                <div class="flex-grow min-w-[200px] max-w-xs">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">통합 검색</label>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+                        <input type="text" id="searchInput" placeholder="이름, 학번 검색..." class="pl-9 border border-gray-300 rounded px-3 py-2 text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none transition hover:border-indigo-300" onkeyup="renderDashboard()">
                     </div>
                 </div>
             </div>
 
-            <!-- 반 선택 -->
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">반 (Class)</label>
-                <div class="relative">
-                    <select id="classFilter" class="appearance-none border border-gray-300 rounded px-3 py-2 text-sm w-28 focus:ring-2 focus:ring-indigo-500 outline-none bg-white pr-8 cursor-pointer hover:border-indigo-300 transition" onchange="renderDashboard()">
-                        <option value="All">전체</option>
-                    </select>
-                    <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none text-xs"></i>
-                </div>
-            </div>
-
-            <!-- 검색 -->
-            <div class="flex-grow min-w-[200px]">
-                <label class="block text-xs font-bold text-gray-500 mb-1">통합 검색</label>
-                <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
-                    <input type="text" id="searchInput" placeholder="이름, 학번 검색..." class="pl-9 border border-gray-300 rounded px-3 py-2 text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none transition hover:border-indigo-300" onkeyup="renderDashboard()">
-                </div>
-            </div>
-
-            <!-- ★ 추가됨: 경고만 보기 토글 -->
-            <div class="flex items-center h-[38px] px-2">
-                <label class="flex items-center cursor-pointer gap-2 select-none text-sm font-bold text-gray-600 hover:text-indigo-600 transition">
+            <!-- 우측 그룹: 토글 버튼 2개 (세로 배치 & 원래 크기 복원) -->
+            <div class="flex flex-col gap-3 justify-center border-l pl-5 border-gray-200 min-w-[150px] shrink-0 pb-1 h-full mt-2 lg:mt-0">
+                <!-- 1. 경고만 보기 -->
+                <label class="flex items-center cursor-pointer gap-2.5 select-none text-xs font-bold text-gray-600 hover:text-indigo-600 transition">
                     <div class="relative">
                         <input type="checkbox" id="alertOnlyFilter" class="sr-only peer" onchange="renderDashboard()">
-                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <!-- 원래 크기 (w-9 h-5) 복원 -->
+                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                     </div>
                     <span>경고 누적만 보기</span>
                 </label>
+
+                <!-- 2. 야간자습 미확인 -->
+                <label class="flex items-center cursor-pointer gap-2.5 select-none text-xs font-bold text-gray-600 hover:text-slate-800 transition">
+                    <div class="relative">
+                        <input type="checkbox" id="nightFilter" class="sr-only peer" onchange="renderDashboard()">
+                        <!-- 원래 크기 (w-9 h-5) 복원 -->
+                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-700"></div>
+                    </div>
+                    <span>야간자습 미확인</span>
+                </label>
             </div>
+
         </div>
+
 
         <!-- 요약 통계 카드 -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -143,7 +173,7 @@
                     <span id="resultCount" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">0건</span>
                 </div>
             </div>
-            
+
             <div class="overflow-x-auto min-h-[300px] custom-scrollbar">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-gray-100 text-gray-600 border-b border-gray-200 whitespace-nowrap">
@@ -278,28 +308,51 @@
                     select.appendChild(opt);
                 });
             }
+            // 2. [신규] 지도유형 목록 초기화
+            // normalizeType 함수를 이용해 '전자기기 위반 (패드)' 같은 것도 '전자기기 위반'으로 통일해서 수집 가능
+            // 여기서는 원본 데이터를 그대로 수집하되, 빈 값은 제외
+            const types = [...new Set(data.map(r => r.type).filter(t => t && t.trim() !== ''))].sort();
+            const typeSelect = document.getElementById('typeFilter');
+
+            if (typeSelect.options.length === 1) {
+                types.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t;
+                    opt.innerText = t;
+                    typeSelect.appendChild(opt);
+                });
+            }
         }
 
         function renderDashboard() {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             const classVal = document.getElementById('classFilter').value;
+            const typeVal = document.getElementById('typeFilter').value; // ★ 추가됨
             const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
-            const alertOnly = document.getElementById('alertOnlyFilter').checked; // ★ 체크박스 값 확인
+
+            const alertOnly = document.getElementById('alertOnlyFilter').checked;
+            const nightOnly = document.getElementById('nightFilter').checked;
 
             const filtered = rawData.filter(item => {
                 const isDateInRange = item.date >= startDate && item.date <= endDate;
                 const isClassMatch = classVal === 'All' || String(item.classNum) === classVal;
-                const isSearchMatch = !searchVal || 
-                                      String(item.name).toLowerCase().includes(searchVal) || 
-                                      String(item.studentId).includes(searchVal);
-                
-                // ★ 경고 필터: 체크되어 있으면 경고 있는 것만(true), 체크 안되면 모두(true)
-                const isAlertMatch = alertOnly ? (item.alertText && String(item.alertText).trim() !== '') : true;
 
-                return isDateInRange && isClassMatch && isSearchMatch && isAlertMatch;
+                // ★ [신규] 유형 필터 로직
+                // '전체 유형'이거나, 데이터의 type이 선택된 값과 정확히 일치(또는 포함)하는지 확인
+                const isTypeMatch = typeVal === 'All' || String(item.type) === typeVal;
+
+                const isSearchMatch = !searchVal ||
+                    String(item.name).toLowerCase().includes(searchVal) ||
+                    String(item.studentId).includes(searchVal);
+
+                const isAlertMatch = alertOnly ? (item.alertText && String(item.alertText).trim() !== '') : true;
+                const isNightMatch = nightOnly ? (String(item.type).includes('야간') && (!item.consultation || String(item.consultation).trim() === '')) : true;
+
+                return isDateInRange && isClassMatch && isTypeMatch && isSearchMatch && isAlertMatch && isNightMatch;
             });
 
+            // ... 정렬 및 업데이트 로직 그대로 유지 ...
             filtered.sort((a, b) => {
                 const dtA = a.date + a.time;
                 const dtB = b.date + b.time;
@@ -309,6 +362,8 @@
             updateStats(filtered);
             updateTable(filtered);
         }
+
+
 
         function updateStats(data) {
             document.getElementById('totalCount').innerText = data.length;
