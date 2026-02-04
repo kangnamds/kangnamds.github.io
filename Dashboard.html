@@ -264,9 +264,17 @@
         let currentRecord = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
+            // [복구됨] 오늘 날짜 구하기 (YYYY-MM-DD 형식)
+            // 한국 시간(KST) 기준 날짜를 정확히 얻기 위해 오프셋 보정
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000; // ms 단위
+            const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
+            
+            // 날짜 필터에 오늘 날짜 세팅
             document.getElementById('startDate').value = today;
             document.getElementById('endDate').value = today;
+            
+            // 데이터 불러오기 시작
             fetchData();
         });
 
