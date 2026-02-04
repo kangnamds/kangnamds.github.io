@@ -601,30 +601,43 @@ async function processQueue() {
         const result = await response.json();
 
         // ----------------------------------------------------
-        // [수정됨] 로그용 메시지 vs 팝업용 메시지 분리
+        // 1. [로그용] 전체 메시지 (기존 필터링 유지)
         // ----------------------------------------------------
-
-        // 1. 하단 로그용 메시지 (alertMsg) - 필터링 적용
         let alertMsg = result.message || "";
-
-        // 수면 로그 필터링 (1~2회는 삭제 -> 로그에 안 뜸)
         alertMsg = alertMsg.replace(/(수면(?:주의)?\s*[12]회(?:,\s*)?|,\s*수면(?:주의)?\s*[12]회)/g, '').trim();
         alertMsg = alertMsg.replace(/^,\s*|\s*,$/g, '');
 
-        // 야간자습 미확인 강제 표시 (로그용)
         if (payload.type === '야간자습 미확인' && (!alertMsg || alertMsg === "")) {
             alertMsg = "야간자습 미확인";
         }
 
-        // 2. 팝업용 메시지 (popupMsg) - 필터링 없음! 원본 그대로 표시
-        // 서버 메시지가 있으면 그거 쓰고, 없으면 선택한 타입(예: 수면주의)을 보여줌
-        let popupMsg = result.message;
-        if (!popupMsg || popupMsg.trim() === "") {
-            popupMsg = payload.type; // "수면주의" 등
+        // ----------------------------------------------------
+        // 2. [팝업용] 현재 항목만 추출 (NEW!)
+        // ----------------------------------------------------
+        let popupMsg = result.message || "";
+
+        if (popupMsg && popupMsg !== "") {
+            // 콤마로 분리해서 배열로 만듦 ["수면 3회", "전자기기 1회"]
+            const parts = popupMsg.split(',').map(s => s.trim());
+
+            // 현재 입력한 타입(payload.type)과 일치하는 부분만 찾음
+            // 예: "전자기기 위반" -> "전자기기"로 검색
+            const keyword = payload.type.replace("주의", "").replace(" 위반", "").trim();
+
+            const relevantPart = parts.find(p => p.includes(keyword));
+
+            if (relevantPart) {
+                popupMsg = relevantPart; // 찾았으면 그것만 표시 ("전자기기 위반 2회")
+            } else {
+                // 못 찾았으면(기타 등등) 그냥 전체 표시하되, 너무 길면 잘림 방지
+                popupMsg = result.message;
+            }
+        } else {
+            popupMsg = payload.type; // 서버 메시지 없으면 그냥 타입 표시
         }
+        // ----------------------------------------------------
 
-
-        // [A] 하단 로그 추가 (필터링된 alertMsg 사용)
+        // 하단 로그 추가
         if (alertMsg && alertMsg !== "") {
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
@@ -644,10 +657,8 @@ async function processQueue() {
             }
         }
 
-        // [B] 성공 알림 팝업 (원본 popupMsg 사용 -> 1회부터 무조건 뜸)
-        alert(`✅ 기록되었습니다!\n\n${payload.location} ${payload.seat}\n학생: ${payload.classNum} ${payload.studentId} ${payload.name}\n내용: ${popupMsg}`);
-
-        // ----------------------------------------------------
+        // 성공 알림 팝업 (깔끔하게 현재 건만!)
+        alert(`✅ 기록되었습니다!\n\n학생: ${payload.name}\n내용: ${popupMsg}`);
 
         requestQueue.shift();
 
@@ -671,6 +682,7 @@ async function processQueue() {
         }, 3000);
     }
 }
+
 
 
 
