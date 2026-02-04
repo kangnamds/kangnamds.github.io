@@ -590,7 +590,6 @@ async function processQueue() {
     }
 
     try {
-        // [중요] 변수명 자동 감지 (SCRIPT_URL 또는 SCRIPTURL 사용)
         const targetUrl = (typeof SCRIPT_URL !== 'undefined') ? SCRIPT_URL : SCRIPTURL;
 
         const response = await fetch(targetUrl, {
@@ -601,22 +600,31 @@ async function processQueue() {
 
         const result = await response.json();
 
-        // ====================================================
-        // [수정된 부분] 로그 필터링 및 강제 표시 로직
-        // ====================================================
+        // ----------------------------------------------------
+        // [수정됨] 로그용 메시지 vs 팝업용 메시지 분리
+        // ----------------------------------------------------
+
+        // 1. 하단 로그용 메시지 (alertMsg) - 필터링 적용
         let alertMsg = result.message || "";
 
-        // 1. 수면 로그 필터링 (1~2회는 삭제)
+        // 수면 로그 필터링 (1~2회는 삭제 -> 로그에 안 뜸)
         alertMsg = alertMsg.replace(/(수면(?:주의)?\s*[12]회(?:,\s*)?|,\s*수면(?:주의)?\s*[12]회)/g, '').trim();
-        // 앞뒤 콤마 정리
         alertMsg = alertMsg.replace(/^,\s*|\s*,$/g, '');
 
-        // 2. 야간자습 미확인 강제 표시 (변수명 수정됨: finalMsg -> alertMsg)
+        // 야간자습 미확인 강제 표시 (로그용)
         if (payload.type === '야간자습 미확인' && (!alertMsg || alertMsg === "")) {
             alertMsg = "야간자습 미확인";
         }
 
-        // 메시지가 있을 때만 로그에 추가
+        // 2. 팝업용 메시지 (popupMsg) - 필터링 없음! 원본 그대로 표시
+        // 서버 메시지가 있으면 그거 쓰고, 없으면 선택한 타입(예: 수면주의)을 보여줌
+        let popupMsg = result.message;
+        if (!popupMsg || popupMsg.trim() === "") {
+            popupMsg = payload.type; // "수면주의" 등
+        }
+
+
+        // [A] 하단 로그 추가 (필터링된 alertMsg 사용)
         if (alertMsg && alertMsg !== "") {
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
@@ -628,14 +636,18 @@ async function processQueue() {
                 classNum: payload.classNum,
                 studentId: payload.studentId,
                 name: payload.name,
-                alertText: alertMsg // 최종 메시지 사용
+                alertText: alertMsg
             });
 
             if (typeof renderAlertsForActiveTab === 'function') {
                 renderAlertsForActiveTab();
             }
         }
-        // ====================================================
+
+        // [B] 성공 알림 팝업 (원본 popupMsg 사용 -> 1회부터 무조건 뜸)
+        alert(`✅ 기록되었습니다!\n\n${payload.location} ${payload.seat}\n학생: ${payload.classNum} ${payload.studentId} ${payload.name}\n내용: ${popupMsg}`);
+
+        // ----------------------------------------------------
 
         requestQueue.shift();
 
@@ -659,6 +671,8 @@ async function processQueue() {
         }, 3000);
     }
 }
+
+
 
 
 
