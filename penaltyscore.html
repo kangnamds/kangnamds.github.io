@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>벌점 관리</title>
+    <title>벌점 관리 시스템</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -139,6 +139,27 @@
             box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
         }
 
+        /* 버튼 스타일 수정 */
+        .btn-refresh {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #4a5568;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+            .btn-refresh:hover {
+                background: #f7fafc;
+                border-color: #cbd5e0;
+                transform: rotate(180deg);
+            }
+
         .quick-btn {
             margin: 4px;
             border: 2px solid #4c51bf;
@@ -223,7 +244,7 @@
 
     <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-3 pt-2">
-            <h2 class="header-title fw-bold m-0 ps-2">📝 벌점 관리</h2>
+            <h2 class="header-title fw-bold m-0 ps-2">📝 벌점 관리 시스템</h2>
             <span id="statusBadge" class="status-badge me-3">연결 중...</span>
         </div>
 
@@ -332,19 +353,28 @@
                     </div>
                 </div>
 
-                <!-- 3. 조회 -->
+                <!-- 3. 조회 (디자인 개선됨) -->
                 <div id="search" class="tab-section" style="display:none;">
                     <div class="row justify-content-center">
                         <div class="col-xl-11">
-                            <div class="input-group input-group-lg mb-4 shadow-sm">
-                                <input type="text" class="form-control border-end-0" id="searchKeyword"
-                                       placeholder="이름 또는 학번 입력 (실시간 검색)"
-                                       oninput="doSearchLocal()">
-                                <button class="btn btn-outline-secondary border-start-0 border-end-0 bg-white"
-                                        type="button" onclick="clearSearch()">
-                                    ❌
+
+                            <!-- 예쁜 검색창 디자인 -->
+                            <div class="d-flex gap-3 mb-4 align-items-center">
+                                <div class="position-relative flex-grow-1">
+                                    <span class="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">🔍</span>
+                                    <input type="text" class="form-control form-control-lg border-0 shadow-sm ps-5 pe-5"
+                                           id="searchKeyword"
+                                           placeholder="이름 또는 학번 검색 (실시간)"
+                                           oninput="doSearchLocal()"
+                                           style="background-color: #f8f9fa; height: 50px;">
+                                    <button class="btn position-absolute top-50 end-0 translate-middle-y me-2 text-muted border-0 bg-transparent"
+                                            type="button" onclick="clearSearch()" style="font-size: 1.5rem; line-height: 1;">
+                                        &times;
+                                    </button>
+                                </div>
+                                <button class="btn btn-refresh shadow-sm" onclick="reloadHistory()" title="새로고침">
+                                    ↻
                                 </button>
-                                <button class="btn btn-secondary px-5" onclick="reloadHistory()">새로고침</button>
                             </div>
 
                             <div id="searchStudentInfo"></div>
@@ -691,14 +721,14 @@
                     }
 
                     html += `
-                        <tr class="${rowClass}">
-                            <td>${dateStr}</td>
-                            <td class="fw-bold text-wrap text-break">${r.item}</td>
-                            <td>${scoreDisplay}</td>
-                            <td>${totalDisplay}</td>
-                            <td>${r.writer || '-'}</td>
-                            <td class="text-muted small text-wrap text-break">${r.note || '-'}</td>
-                        </tr>`;
+                            <tr class="${rowClass}">
+                                <td>${dateStr}</td>
+                                <td class="fw-bold text-wrap text-break">${r.item}</td>
+                                <td>${scoreDisplay}</td>
+                                <td>${totalDisplay}</td>
+                                <td>${r.writer || '-'}</td>
+                                <td class="text-muted small text-wrap text-break">${r.note || '-'}</td>
+                            </tr>`;
                 });
                 tbody.innerHTML = html;
                 document.getElementById('searchStatus').innerText = `총 ${results.length}건`;
@@ -707,4 +737,3 @@
     </script>
 </body>
 </html>
-
