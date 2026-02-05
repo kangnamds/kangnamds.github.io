@@ -7,34 +7,216 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* (스타일은 이전과 동일하므로 생략 없이 그대로 유지) */
-        * { font-family: 'Noto Sans KR', sans-serif; }
-        body { background: linear-gradient(135deg, #4c51bf 0%, #6b46c1 100%); min-height: 100vh; padding: 20px; }
-        .container-fluid { max-width: 100%; padding: 0 20px; }
-        .content-container { display: flex; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2); min-height: 85vh; width: 100%; }
-        .header-title { color: white; padding: 10px 10px 20px 10px; margin-bottom: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .status-badge { font-size: 0.9em; padding: 8px 16px; border-radius: 20px; background-color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-weight: bold;}
-        .sidebar { width: 250px; background: linear-gradient(180deg, #ffffff 0%, #f8fafb 100%); border-right: 1px solid #eee; padding: 30px 0; flex-shrink: 0; }
-        .content-area { flex: 1; padding: 40px; overflow-y: auto; }
-        .sidebar-btn { display: block; width: 100%; text-align: left; padding: 18px 30px; border: none; background: transparent; color: #495057; font-weight: 600; font-size: 1.15em; cursor: pointer; border-left: 5px solid transparent; margin: 5px 0; transition: all 0.2s; }
-        .sidebar-btn:hover { background-color: #f0f5ff; color: #4c51bf; padding-left: 35px; }
-        .sidebar-btn.active { background: linear-gradient(90deg, #4c51bf15 0%, transparent 100%); color: #4c51bf; border-left-color: #4c51bf; font-weight: 700; padding-left: 30px; }
-        .form-control, .form-select { border: 2px solid #e2e8f0; border-radius: 8px; padding: 10px 15px; font-size: 1rem; }
-        .form-control:focus, .form-select:focus { border-color: #4c51bf; box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1); }
-        .form-label { font-weight: 600; color: #4a5568; margin-bottom: 6px; font-size: 0.95em; }
-        .btn-primary { background: linear-gradient(135deg, #4c51bf 0%, #6b46c1 100%); border: none; padding: 12px; font-weight: 700; font-size: 1.05em; border-radius: 8px; box-shadow: 0 4px 10px rgba(76, 81, 191, 0.3); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(76, 81, 191, 0.4); }
-        .btn-success { background: linear-gradient(135deg, #059669 0%, #047857 100%); border: none; padding: 12px; font-weight: 700; font-size: 1.05em; border-radius: 8px; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3); }
-        .quick-btn { margin: 4px; border: 2px solid #4c51bf; color: #4c51bf; font-weight: 700; padding: 8px 16px; border-radius: 6px; background: white; font-size: 0.9em; }
-        .quick-btn:hover { background: #4c51bf; color: white; transform: translateY(-2px); }
-        .student-tag { background: #4c51bf; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.95em; margin: 4px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
-        .delete-tag { margin-left: 10px; cursor: pointer; color: #fed7d7; font-weight: bold; }
-        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-custom th { background-color: #f7fafc; font-weight: 800; color: #2d3748; border-bottom: 2px solid #4c51bf; padding: 15px; font-size: 1em; }
-        .table-custom td { vertical-align: middle; font-size: 1em; padding: 15px; border-bottom: 1px solid #e2e8f0; }
-        .info-banner { background: #ebf8ff; border-left: 5px solid #4c51bf; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
-        .info-label { font-size: 0.9em; color: #718096; margin-right: 10px; font-weight: 600; }
-        .info-value { font-weight: 800; color: #2d3748; margin-right: 25px; font-size: 1.1em; }
+        * {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #4c51bf 0%, #6b46c1 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 화면 전체 사용 */
+        .container-fluid {
+            max-width: 100%;
+            padding: 0 20px;
+        }
+
+        /* 메인 컨테이너 */
+        .content-container {
+            display: flex;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-height: 85vh;
+            width: 100%;
+        }
+
+        .header-title {
+            color: white;
+            padding: 10px 10px 20px 10px;
+            margin-bottom: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .status-badge {
+            font-size: 0.9em;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background-color: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            font-weight: bold;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafb 100%);
+            border-right: 1px solid #eee;
+            padding: 30px 0;
+            flex-shrink: 0;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .sidebar-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 18px 30px;
+            border: none;
+            background: transparent;
+            color: #495057;
+            font-weight: 600;
+            font-size: 1.15em;
+            cursor: pointer;
+            border-left: 5px solid transparent;
+            margin: 5px 0;
+            transition: all 0.2s;
+        }
+
+            .sidebar-btn:hover {
+                background-color: #f0f5ff;
+                color: #4c51bf;
+                padding-left: 35px;
+            }
+
+            .sidebar-btn.active {
+                background: linear-gradient(90deg, #4c51bf15 0%, transparent 100%);
+                color: #4c51bf;
+                border-left-color: #4c51bf;
+                font-weight: 700;
+                padding-left: 30px;
+            }
+
+        .form-control, .form-select {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 1rem;
+        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: #4c51bf;
+                box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
+            }
+
+        .form-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 6px;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4c51bf 0%, #6b46c1 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 700;
+            font-size: 1.05em;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(76, 81, 191, 0.3);
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 15px rgba(76, 81, 191, 0.4);
+            }
+
+        .btn-success {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 700;
+            font-size: 1.05em;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+        }
+
+        .quick-btn {
+            margin: 4px;
+            border: 2px solid #4c51bf;
+            color: #4c51bf;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: white;
+            font-size: 0.9em;
+        }
+
+            .quick-btn:hover {
+                background: #4c51bf;
+                color: white;
+                transform: translateY(-2px);
+            }
+
+        .student-tag {
+            background: #4c51bf;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.95em;
+            margin: 4px;
+            display: inline-block;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+
+        .delete-tag {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #fed7d7;
+            font-weight: bold;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+            .table-custom th {
+                background-color: #f7fafc;
+                font-weight: 800;
+                color: #2d3748;
+                border-bottom: 2px solid #4c51bf;
+                padding: 15px;
+                font-size: 1em;
+            }
+
+            .table-custom td {
+                vertical-align: middle;
+                font-size: 1em;
+                padding: 15px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+        .info-banner {
+            background: #ebf8ff;
+            border-left: 5px solid #4c51bf;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: #718096;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-weight: 800;
+            color: #2d3748;
+            margin-right: 25px;
+            font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
@@ -53,7 +235,7 @@
             </div>
 
             <div class="content-area">
-                
+
                 <!-- 1. 개별 입력 -->
                 <div id="single" class="tab-section">
                     <div class="row justify-content-center">
@@ -76,7 +258,6 @@
 
                                 <div class="mb-3">
                                     <label class="form-label">구분</label>
-                                    <!-- [수정] onchange 이벤트 추가 -->
                                     <select class="form-select" id="s_type" onchange="toggleScoreInput('s_')">
                                         <option value="벌점">벌점</option>
                                         <option value="경고">경고</option>
@@ -119,16 +300,13 @@
                                 <label class="form-label">학번 입력</label>
                                 <input type="text" class="form-control" id="multi_input" placeholder="학번 입력 후 Enter" onkeyup="handleEnter(event)" style="font-size: 1.2rem; font-weight: bold;">
                             </div>
-                            
+
                             <div id="studentQueue" class="mb-4 p-3 bg-light border rounded-3 shadow-sm" style="min-height: 100px;">
                                 <div class="text-muted small">대기 목록이 여기에 표시됩니다.</div>
                             </div>
-                            
+
                             <hr class="my-4 opacity-25">
-                            
-                            <!-- [추가] 다중 입력에서도 구분 선택 필요할 수 있음 (현재는 '벌점' 고정) -->
-                            <!-- 여기서는 항목과 점수로만 처리하므로, 점수 칸이 비워지면 경고로 처리할지 고민 필요 -->
-                            <!-- 일단 퀵버튼이 있으므로 그대로 둠 -->
+
                             <div id="quickButtonsArea" class="mb-4 text-center"></div>
 
                             <div class="row g-3 mb-3">
@@ -139,7 +317,7 @@
                                     <input type="number" class="form-control" id="m_score" placeholder="점수" style="font-weight: bold; color: #e53e3e;">
                                 </div>
                             </div>
-                            
+
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <input type="text" class="form-control" id="m_writer" placeholder="작성자 (필수)">
@@ -159,8 +337,14 @@
                     <div class="row justify-content-center">
                         <div class="col-xl-11">
                             <div class="input-group input-group-lg mb-4 shadow-sm">
-                                <input type="text" class="form-control border-end-0" id="searchKeyword" placeholder="이름 또는 학번 입력" onkeyup="if(event.key==='Enter') doSearch()" style="font-size: 1.1em;">
-                                <button class="btn btn-secondary px-5" onclick="doSearch()">검색</button>
+                                <input type="text" class="form-control border-end-0" id="searchKeyword"
+                                       placeholder="이름 또는 학번 입력 (실시간 검색)"
+                                       oninput="doSearchLocal()">
+                                <button class="btn btn-outline-secondary border-start-0 border-end-0 bg-white"
+                                        type="button" onclick="clearSearch()">
+                                    ❌
+                                </button>
+                                <button class="btn btn-secondary px-5" onclick="reloadHistory()">새로고침</button>
                             </div>
 
                             <div id="searchStudentInfo"></div>
@@ -175,7 +359,7 @@
                                         <tr>
                                             <th style="width:15%">날짜</th>
                                             <th style="width:30%">사유</th>
-                                            <th style="width:10%">점수</th> <!-- [수정] 제목은 점수/경고 -->
+                                            <th style="width:10%">점수</th>
                                             <th style="width:10%">누적</th>
                                             <th style="width:10%">작성자</th>
                                             <th style="width:25%">비고</th>
@@ -196,8 +380,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // ============================================
+        // [설정] 배포된 웹 앱 URL을 여기에 넣으세요
         const GAS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFjCVgOOCvqTWS5P45kMuf3y_ivhN3x7pInFdFIlLtiT7UQbsomTWlQkQaK3t6Ff2l/exec';
-        
+        // ============================================
+
         const QUICK_BUTTONS = [
             { label: '지각(1점)', item: '지각', score: 1 },
             { label: '소란(2점)', item: '면학분위기 저해', score: 2 },
@@ -209,6 +396,7 @@
         let STUDENT_DB = {};
         let RULE_DB = [];
         let MULTI_QUEUE = [];
+        let HISTORY_DB = []; // 전체 기록 저장소
         let isDataReady = false;
 
         function switchTab(tabId, btn) {
@@ -221,20 +409,52 @@
         window.onload = function () {
             renderQuickButtons();
             const savedWriter = localStorage.getItem('penalty_writer');
-            if(savedWriter) {
+            if (savedWriter) {
                 document.getElementById('s_writer').value = savedWriter;
                 document.getElementById('m_writer').value = savedWriter;
             }
+
             fetch(`${GAS_SCRIPT_URL}?action=getRules`).then(res => res.json()).then(data => { RULE_DB = data; initDatalist(); });
-            fetch(`${GAS_SCRIPT_URL}?action=getStudents`).then(res => res.json()).then(data => { 
-                STUDENT_DB = data; isDataReady = true; 
-                document.getElementById('statusBadge').innerText = "준비 완료";
-            }).catch(err => document.getElementById('statusBadge').innerText = "연결 실패");
+
+            fetch(`${GAS_SCRIPT_URL}?action=getStudents`).then(res => res.json()).then(data => {
+                STUDENT_DB = data;
+                isDataReady = true;
+                checkAllDataLoaded();
+            });
+
+            reloadHistory();
         };
+
+        function checkAllDataLoaded() {
+            if (isDataReady && HISTORY_DB.length > 0) {
+                const badge = document.getElementById('statusBadge');
+                badge.innerText = "준비 완료";
+                badge.style.background = "rgba(255,255,255,0.9)";
+                badge.style.color = "#667eea";
+                badge.style.fontWeight = "bold";
+            }
+        }
+
+        function reloadHistory() {
+            const status = document.getElementById('searchStatus');
+            status.innerText = "동기화 중...";
+
+            fetch(`${GAS_SCRIPT_URL}?action=getAllHistory`)
+                .then(res => res.json())
+                .then(data => {
+                    HISTORY_DB = data;
+                    status.innerText = `기록 ${data.length}건`;
+                    checkAllDataLoaded();
+
+                    const keyword = document.getElementById('searchKeyword').value.trim();
+                    if (keyword) doSearchLocal();
+                })
+                .catch(err => status.innerText = "동기화 실패");
+        }
 
         function renderQuickButtons() {
             const area = document.getElementById('quickButtonsArea');
-            if(!area) return;
+            if (!area) return;
             QUICK_BUTTONS.forEach(btn => {
                 const b = document.createElement('button');
                 b.className = 'quick-btn';
@@ -256,51 +476,47 @@
 
         function findStudent(id, prefix) {
             id = id.trim();
-            if(!id || !isDataReady) return;
+            if (!id || !isDataReady) return;
             const s = STUDENT_DB[id];
-            if(s) {
-                document.getElementById(prefix+'name').value = s.name;
-                document.getElementById(prefix+'class').value = s.class;
+            if (s) {
+                document.getElementById(prefix + 'name').value = s.name;
+                document.getElementById(prefix + 'class').value = s.class;
             } else {
-                document.getElementById(prefix+'name').value = '';
-                document.getElementById(prefix+'class').value = '';
+                document.getElementById(prefix + 'name').value = '';
+                document.getElementById(prefix + 'class').value = '';
             }
         }
 
-        // [신규] 구분(경고/벌점)에 따라 점수 입력칸 제어
         function toggleScoreInput(prefix) {
             const type = document.getElementById(prefix + 'type').value;
             const scoreInput = document.getElementById(prefix + 'score');
-            
+
             if (type === '경고') {
-                scoreInput.value = ''; // 점수 비우기
-                scoreInput.disabled = true; // 입력 막기
+                scoreInput.value = '';
+                scoreInput.disabled = true;
                 scoreInput.placeholder = "점수 없음";
                 scoreInput.style.backgroundColor = "#e9ecef";
             } else {
-                scoreInput.disabled = false; // 다시 활성화
+                scoreInput.disabled = false;
                 scoreInput.placeholder = "";
                 scoreInput.style.backgroundColor = "white";
             }
         }
 
-        // [수정] 경고 상태일 때는 점수 자동입력 안 되게 막음
         function matchScore(val, prefix) {
-            // 경고 상태면 점수 자동입력 무시
-            if(prefix === 's_') {
+            if (prefix === 's_') {
                 const type = document.getElementById('s_type').value;
-                if(type === '경고') return;
+                if (type === '경고') return;
             }
-
             const r = RULE_DB.find(x => x.item === val);
-            if(r) document.getElementById(prefix+'score').value = r.score;
+            if (r) document.getElementById(prefix + 'score').value = r.score;
         }
 
         function handleEnter(e) {
-            if(e.key === 'Enter') {
+            if (e.key === 'Enter') {
                 const id = e.target.value.trim();
-                if(!STUDENT_DB[id]) { alert("올바른 학번이 아닙니다."); return; }
-                if(!MULTI_QUEUE.find(q => q.id === id)) {
+                if (!STUDENT_DB[id]) { alert("올바른 학번이 아닙니다."); return; }
+                if (!MULTI_QUEUE.find(q => q.id === id)) {
                     MULTI_QUEUE.push({ id, ...STUDENT_DB[id] });
                     renderQueue();
                 }
@@ -310,7 +526,7 @@
 
         function renderQueue() {
             const area = document.getElementById('studentQueue');
-            if(MULTI_QUEUE.length === 0) { area.innerHTML = '<div class="text-muted small">대기 목록이 여기에 표시됩니다.</div>'; return; }
+            if (MULTI_QUEUE.length === 0) { area.innerHTML = '<div class="text-muted small">대기 목록이 여기에 표시됩니다.</div>'; return; }
             let html = '';
             MULTI_QUEUE.forEach((s, i) => {
                 html += `<span class="student-tag">${s.class} ${s.name} <span class="delete-tag" onclick="removeQueue(${i})">&times;</span></span>`;
@@ -324,12 +540,12 @@
             btn.disabled = true;
             btn.innerText = "저장 중...";
             return fetch(GAS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') { alert(res.message); return true; }
-                else { alert("오류: " + res.message); return false; }
-            })
-            .finally(() => { btn.disabled = false; btn.innerText = originalText; });
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success') { alert(res.message); return true; }
+                    else { alert("오류: " + res.message); return false; }
+                })
+                .finally(() => { btn.disabled = false; btn.innerText = originalText; });
         }
 
         function submitSingle() {
@@ -338,12 +554,11 @@
             const type = document.getElementById('s_type').value;
             let score = document.getElementById('s_score').value;
 
-            if(!STUDENT_DB[id]) { alert("학번을 확인하세요."); return; }
-            if(!writer) { alert("작성자를 입력하세요."); return; }
-            
-            // 경고일 때 점수 0으로 처리 (또는 빈 값)
-            if(type === '경고') score = 0;
-            else if(!score) { alert("점수를 입력하세요."); return; }
+            if (!STUDENT_DB[id]) { alert("학번을 확인하세요."); return; }
+            if (!writer) { alert("작성자를 입력하세요."); return; }
+
+            if (type === '경고') score = 0;
+            else if (!score) { alert("점수를 입력하세요."); return; }
 
             localStorage.setItem('penalty_writer', writer);
 
@@ -355,30 +570,27 @@
                 writer: writer,
                 note: document.getElementById('s_note').value
             }];
-            
+
             const btn = document.querySelector('#single button.btn-primary');
             processSubmit(data, btn).then(success => {
-                if(success) {
+                if (success) {
                     document.getElementById('singleForm').reset();
-                    // 리셋 후 기본 상태(벌점)로 돌아오므로 입력창 활성화
-                    toggleScoreInput('s_'); 
+                    toggleScoreInput('s_');
                     document.getElementById('s_writer').value = writer;
                 }
             });
         }
 
         function submitMulti() {
-            if(MULTI_QUEUE.length === 0) { alert("학생을 추가하세요."); return; }
+            if (MULTI_QUEUE.length === 0) { alert("학생을 추가하세요."); return; }
             const writer = document.getElementById('m_writer').value.trim();
-            if(!writer) { alert("작성자를 입력하세요."); return; }
-            
-            // 다중 입력은 기본적으로 '벌점'으로 간주하지만, 점수가 0이면 경고로 처리할 수도 있음.
-            // 여기서는 일단 '벌점'으로 고정하고 점수 입력 필수
+            if (!writer) { alert("작성자를 입력하세요."); return; }
+
             let score = document.getElementById('m_score').value;
-            if(!score) { alert("점수를 입력하세요."); return; }
+            if (!score) { alert("점수를 입력하세요."); return; }
 
             localStorage.setItem('penalty_writer', writer);
-            
+
             const commonData = {
                 item: document.getElementById('m_item').value,
                 score: score,
@@ -386,10 +598,10 @@
                 note: document.getElementById('m_note').value
             };
             const data = MULTI_QUEUE.map(s => ({ id: s.id, class: s.class, name: s.name, type: '벌점', ...commonData }));
-            
+
             const btn = document.querySelector('#multi button.btn-success');
             processSubmit(data, btn).then(success => {
-                if(success) {
+                if (success) {
                     MULTI_QUEUE = []; renderQueue();
                     document.getElementById('m_item').value = '';
                     document.getElementById('m_score').value = '';
@@ -398,89 +610,100 @@
             });
         }
 
-        function doSearch() {
-            const keyword = document.getElementById('searchKeyword').value.trim();
-            if(!keyword) return;
-            const tbody = document.getElementById('searchResultBody');
-            const status = document.getElementById('searchStatus');
-            const infoBanner = document.getElementById('searchStudentInfo');
-            
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>';
-            status.innerText = "조회 중...";
-            infoBanner.innerHTML = '';
+        function clearSearch() {
+            document.getElementById('searchKeyword').value = '';
+            document.getElementById('searchStudentInfo').innerHTML = '';
+            document.getElementById('searchResultBody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">검색어를 입력하세요.</td></tr>';
+            document.getElementById('searchStatus').innerText = '';
+            document.getElementById('searchKeyword').focus();
+        }
 
-            if(isDataReady) {
+        function doSearchLocal() {
+            const keyword = document.getElementById('searchKeyword').value.trim();
+            const tbody = document.getElementById('searchResultBody');
+            const infoBanner = document.getElementById('searchStudentInfo');
+
+            if (!keyword) {
+                clearSearch();
+                return;
+            }
+
+            if (isDataReady) {
                 let matched = [];
-                if(STUDENT_DB[keyword]) matched.push({id:keyword, ...STUDENT_DB[keyword]});
-                else { for(let k in STUDENT_DB) if(STUDENT_DB[k].name.includes(keyword)) matched.push({id:k, ...STUDENT_DB[k]}); }
-                
-                if(matched.length > 0) {
+                if (STUDENT_DB[keyword]) matched.push({ id: keyword, ...STUDENT_DB[keyword] });
+                else { for (let k in STUDENT_DB) if (STUDENT_DB[k].name.includes(keyword)) matched.push({ id: k, ...STUDENT_DB[k] }); }
+
+                if (matched.length > 0) {
                     let html = '';
                     matched.forEach(s => {
                         html += `<div class="info-banner"><span class="info-label">반</span><span class="info-value">${s.class}</span><span class="info-label">이름</span><span class="info-value">${s.name}</span><span class="info-label">학번</span><span class="info-value">${s.id}</span><span class="info-label">위치</span><span class="info-value">${s.quantum || '-'} / ${s.seat || '-'}</span></div>`;
                     });
                     infoBanner.innerHTML = html;
+                } else {
+                    infoBanner.innerHTML = '';
                 }
             }
 
-            fetch(`${GAS_SCRIPT_URL}?action=searchHistory&keyword=${encodeURIComponent(keyword)}`)
-            .then(res => res.json())
-            .then(data => {
-                if(data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">기록이 없습니다.</td></tr>';
-                    status.innerText = "결과 없음";
-                } else {
-                    let html = '';
-                    data.forEach(r => {
-                        // 1. [점수] 스타일링
-                        let scoreDisplay = '';
-                        const scoreNum = Number(r.score);
-                        
-                        if (r.score == 0 || r.score === '0') {
-                            scoreDisplay = '<span class="badge bg-warning text-dark">경고</span>';
-                        } else if (scoreNum >= 10) {
-                            scoreDisplay = `<span class="text-danger fw-black" style="font-weight:900; text-decoration:underline;">${r.score}점</span>`;
+            const results = HISTORY_DB.filter(r => r.id.includes(keyword) || r.name.includes(keyword));
+
+            if (results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">검색 결과가 없습니다.</td></tr>';
+                document.getElementById('searchStatus').innerText = "결과 0건";
+            } else {
+                let html = '';
+                results.forEach(r => {
+                    let dateStr = '-';
+                    if (r.date) {
+                        const d = new Date(r.date);
+                        if (!isNaN(d)) {
+                            const month = d.getMonth() + 1;
+                            const day = d.getDate();
+                            const week = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+                            dateStr = `${month}/${day}(${week})`;
                         } else {
-                            scoreDisplay = `<span class="text-danger fw-bold">${r.score}점</span>`;
+                            dateStr = r.date.substring(5, 10);
                         }
+                    }
 
-                        // 2. [누적 점수] 스타일링
-                        let totalDisplay = '-';
-                        const totalNum = Number(r.total);
+                    let scoreDisplay = '';
+                    const scoreNum = Number(r.score);
+                    if (r.score == 0 || r.score === '0') {
+                        scoreDisplay = '<span class="badge bg-warning text-dark">경고</span>';
+                    } else if (scoreNum >= 10) {
+                        scoreDisplay = `<span class="text-danger fw-black" style="font-weight:900; text-decoration:underline;">${r.score}점</span>`;
+                    } else {
+                        scoreDisplay = `<span class="text-danger fw-bold">${r.score}점</span>`;
+                    }
 
-                        if (r.total && !isNaN(totalNum)) {
-                            if (totalNum >= 50) {
-                                totalDisplay = `<span class="badge rounded-pill" style="background-color: #8B0000; color: white; font-size:0.9em;">${r.total}</span>`;
-                            } else if (totalNum >= 40) {
-                                totalDisplay = `<span class="badge rounded-pill" style="background-color: #FF9999; color: #5a0000; font-size:0.9em;">${r.total}</span>`;
-                            } else if (totalNum >= 30) {
-                                totalDisplay = `<span class="badge rounded-pill bg-primary" style="font-size:0.9em;">${r.total}</span>`;
-                            } else if (totalNum >= 20) {
-                                totalDisplay = `<span class="badge rounded-pill bg-warning text-dark" style="font-size:0.9em;">${r.total}</span>`;
-                            } else {
-                                totalDisplay = `<span class="text-muted fw-bold">${r.total}</span>`;
-                            }
-                        }
+                    let totalDisplay = '-';
+                    const totalNum = Number(r.total);
+                    if (r.total && !isNaN(totalNum)) {
+                        if (totalNum >= 50) totalDisplay = `<span class="badge rounded-pill" style="background-color: #8B0000; color: white;">${r.total}</span>`;
+                        else if (totalNum >= 40) totalDisplay = `<span class="badge rounded-pill" style="background-color: #FF9999; color: #5a0000;">${r.total}</span>`;
+                        else if (totalNum >= 30) totalDisplay = `<span class="badge rounded-pill bg-primary">${r.total}</span>`;
+                        else if (totalNum >= 20) totalDisplay = `<span class="badge rounded-pill bg-warning text-dark">${r.total}</span>`;
+                        else totalDisplay = `<span class="text-muted fw-bold">${r.total}</span>`;
+                    }
 
-                        html += `
-                        <tr>
-                            <td>${r.date.substring(5, 16)}</td>
+                    let rowClass = "";
+                    if (r.item && (r.item.includes("퇴소") || r.item.includes("제적") || r.item.includes("강제"))) {
+                        rowClass = "table-danger";
+                    }
+
+                    html += `
+                        <tr class="${rowClass}">
+                            <td>${dateStr}</td>
                             <td class="fw-bold text-wrap text-break">${r.item}</td>
                             <td>${scoreDisplay}</td>
-                            
-                            <!-- [수정됨] 여기를 꼭 totalDisplay 변수로 넣어야 색깔이 나옵니다! -->
                             <td>${totalDisplay}</td>
-                            
                             <td>${r.writer || '-'}</td>
                             <td class="text-muted small text-wrap text-break">${r.note || '-'}</td>
                         </tr>`;
-                    });
-                    tbody.innerHTML = html;
-                    status.innerText = `총 ${data.length}건`;
-                }
-            });
+                });
+                tbody.innerHTML = html;
+                document.getElementById('searchStatus').innerText = `총 ${results.length}건`;
+            }
         }
-
     </script>
 </body>
 </html>
