@@ -1,131 +1,158 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>강남대성 생활 관리</title>
-    <!-- 구글 폰트 (Noto Sans KR) 로드 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <style>
-        /* 1. 기본 초기화 및 스타일 설정 */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* ==========================================================================
+           1. [공통] 변수 및 기본 설정 (강남대성 민트 테마)
+           ========================================================================== */
+        :root {
+            /* [컬러 팔레트] */
+            --primary-mint: #5DC6C2;
+            /* 메인 민트 */
+            --primary-hover: #4BB3AF;
+            /* 호버 시 진한 민트 */
+            --text-dark: #1a2b4b;
+            /* 텍스트 네이비 */
+            --bg-color: #F4F9F9;
+            /* 배경 연한 민트 그레이 */
+            --card-shadow: 0 10px 20px rgba(93, 198, 194, 0.15);
+            /* 민트 그림자 */
         }
 
         body {
-            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f5f7fa; /* 눈이 편안한 밝은 회색 배경 */
-            color: #333;
-            height: 100vh;
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
         }
 
-        /* 2. 메인 컨테이너 */
         .container {
             width: 100%;
-            max-width: 600px; /* PC에서는 너무 퍼지지 않게 제한 */
-            padding: 2rem;
-            text-align: center;
+            max-width: 600px;
+            padding: 30px;
+            box-sizing: border-box;
         }
 
-        /* 3. 상단 제목 스타일 */
+        /* 타이틀 스타일 */
         h1.title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #1a2b4b; /* 강남대성 느낌의 짙은 네이비 */
-            margin-bottom: 3rem;
-            letter-spacing: -1px;
+            text-align: center;
+            color: var(--text-dark);
+            margin-bottom: 50px;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
         }
 
-        /* 4. 버튼 그룹 레이아웃 */
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem; /* 버튼 사이 간격 */
+        /* 민트색 밑줄 포인트 */
+        h1.title::after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 4px;
+            background-color: var(--primary-mint);
+            margin: 15px auto 0;
+            border-radius: 2px;
         }
 
-        /* 5. 공통 버튼 스타일 */
-        .main-btn {
+        /* 2열 그리드 메뉴 */
+        .grid-menu {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* 메뉴 버튼 스타일 */
+        .menu-btn {
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 100%;
-            height: 80px; /* 커다란 버튼 높이 */
-            font-size: 1.5rem;
-            font-weight: 700;
+            /* 기본 상태: 흰색 배경 */
+            background-color: white;
+            color: var(--text-dark);
             text-decoration: none;
-            border-radius: 12px;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+            /* 모양 및 그림자 */
+            border-radius: 20px;
+            border: 2px solid transparent;
+            box-shadow: var(--card-shadow);
+
+            aspect-ratio: 1 / 1;
+            /* 정사각형 비율 유지 */
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-align: center;
+            word-break: keep-all;
         }
 
-        /* 버튼 호버 효과 (마우스 올렸을 때) */
-        .main-btn:hover {
-            transform: translateY(-2px); /* 살짝 떠오르는 느낌 */
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        /* 호버 효과: 민트색 반전 + 그림자 확대 */
+        .menu-btn:hover {
+            transform: translateY(-5px);
+            background-color: var(--primary-mint);
+            color: white;
+            box-shadow: 0 15px 30px rgba(93, 198, 194, 0.4);
+            border-color: var(--primary-mint);
         }
 
-        .main-btn:active {
-            transform: translateY(0);
+        /* 클릭 효과 */
+        .menu-btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(93, 198, 194, 0.3);
         }
 
-        /* 6. 개별 버튼 색상 */
-        /* 지도교사 버튼: 메인 강조색 (네이비) */
-        .btn-teacher {
-            background-color: #1a2b4b;
-            color: #ffffff;
-            border: 1px solid #1a2b4b;
-        }
-
-        /* CM 버튼: 보조색 (흰색 바탕에 테두리) - 깔끔한 대조 */
-        .btn-cm {
-            background-color: #ffffff;
-            color: #1a2b4b;
-            border: 2px solid #1a2b4b;
-        }
-
-        /* 7. 모바일 반응형 처리 */
+        /* 모바일 반응형 */
         @media (max-width: 480px) {
             h1.title {
-                font-size: 2rem;
-                margin-bottom: 2.5rem;
+                font-size: 1.8rem;
+                margin-bottom: 30px;
             }
-            .main-btn {
-                height: 70px;
+
+            .grid-menu {
+                gap: 15px;
+            }
+
+            .menu-btn {
                 font-size: 1.3rem;
+                border-radius: 16px;
             }
         }
     </style>
+
 </head>
+
 <body>
 
     <div class="container">
         <!-- 상단 제목 -->
         <h1 class="title">강남대성 생활 관리</h1>
 
-        <!-- 버튼 영역 -->
-        <div class="button-group">
-            <!-- 지도교사 버튼: teacher.html 연결 -->
-            <a href="teacher.html" class="main-btn btn-teacher">
+        <!-- 2x2 격자 메뉴 영역 -->
+        <div class="grid-menu">
+            <!-- 지도교사 버튼 -->
+            <a href="teacher_c.html" class="menu-btn">
                 지도교사
             </a>
 
-            <!-- CM 버튼: 현재는 링크 없음 (#) -->
-            <a href="CM_Qtrecord/index.html" class="main-btn btn-cm")>
+            <!-- CM 버튼 -->
+            <a href="CMmenu.html" class="menu-btn">
                 CM
             </a>
         </div>
     </div>
 
 </body>
+
 </html>
-
-

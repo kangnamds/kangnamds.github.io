@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,222 +8,368 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            font-family: 'Noto Sans KR', sans-serif;
+        /* ==========================================================================
+           1. [공통] 변수 및 기본 설정 (강남대성 민트 테마)
+           ========================================================================== */
+        :root {
+            /* [컬러 팔레트] */
+            --primary-mint: #5DC6C2;
+            /* 메인 민트 */
+            --primary-hover: #4BB3AF;
+            /* 호버 시 진한 민트 */
+            --text-dark: #1a2b4b;
+            /* 텍스트 네이비 */
+            --bg-color: #F4F9F9;
+            /* 배경 연한 민트 그레이 */
+            --card-shadow: 0 10px 40px rgba(93, 198, 194, 0.2);
+            /* 카드 그림자 */
+
+            /* [사이드바 관련 변수] */
+            --sidebar-width: 240px;
+            --sidebar-bg: #ffffff;
+            --sidebar-text: #1a2b4b;
+            --active-bg: #F0FBFB;
+            --active-text: #5DC6C2;
+            --border-color: #e0e0e0;
+            --hover-bg: #f8f9fa;
         }
 
         body {
-            background: linear-gradient(135deg, #4c51bf 0%, #6b46c1 100%);
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--primary-mint);
+            /* 배경을 민트 단색으로 (깔끔함 강조) */
             min-height: 100vh;
+            margin: 0;
             padding: 20px;
+
+            /* [핵심 레이아웃] 사이드바만큼 본문 밀어내기 */
+            padding-left: calc(var(--sidebar-width) + 20px) !important;
+            padding-top: 20px !important;
         }
 
-        /* 화면 전체 사용 */
+        .container,
         .container-fluid {
             max-width: 100%;
             padding: 0 20px;
         }
 
-        /* 메인 컨테이너 */
+        /* 메인 컨테이너 (흰색 박스) */
         .content-container {
             display: flex;
+            flex-direction: column;
             background: white;
-            border-radius: 15px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: var(--card-shadow);
             min-height: 85vh;
             width: 100%;
         }
 
-        .header-title {
-            color: white;
-            padding: 10px 10px 20px 10px;
-            margin-bottom: 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .status-badge {
-            font-size: 0.9em;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background-color: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.4);
-            color: white;
-            font-weight: bold;
-        }
-
+        /* ==========================================================================
+           2. [사이드바] 가시성 강화 스타일 (High Visibility)
+           ========================================================================== */
         .sidebar {
-            width: 250px;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafb 100%);
-            border-right: 1px solid #eee;
-            padding: 30px 0;
-            flex-shrink: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background-color: #ffffff;
+            border-right: 1px solid #d1d5db;
+            padding: 20px 0;
+            z-index: 1000;
+            box-shadow: 5px 0 25px rgba(26, 43, 75, 0.15);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-brand {
+            font-size: 1.3rem;
+            font-weight: 800;
+            padding: 0 20px 20px 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--sidebar-text);
+            text-decoration: none;
+            display: block;
+        }
+
+        .nav-brand::after {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 3px;
+            background: var(--primary-mint);
+            margin-top: 10px;
+            border-radius: 2px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 10px;
+            margin: 0;
+        }
+
+        /* 메뉴 링크 (기본 상태) - 글씨 진하게 */
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            color: #4b5563;
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            font-size: 1rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            background-color: #e6fcf5;
+            color: #0ca678;
+            transform: translateX(5px);
+            border-color: #c3fae8;
+        }
+
+        /* 활성화 상태 (Active) - 가시성 개선 (흰글씨 진하게+그림자) */
+        .nav-link.active {
+            background-color: var(--primary-mint);
+            color: #ffffff;
+            font-weight: 900;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(93, 198, 194, 0.5);
+            border: 1px solid #4bb3af;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-icon {
+            margin-right: 10px;
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            color: inherit;
+        }
+
+        /* ==========================================================================
+           3. [상단 탭 메뉴] (Penalty 페이지 전용)
+           ========================================================================== */
+        .top-tabs-container {
+            display: flex;
+            background: #ffffff;
+            border-bottom: 2px solid #eee;
+            padding: 0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 20px 0;
+            border: none;
+            background: transparent;
+            color: #7f8c8d;
+            font-weight: 700;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-bottom: 4px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-mint);
+            background-color: #F0FBFB;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-mint);
+            border-bottom-color: var(--primary-mint);
+            /* 하단 민트색 바 */
+            background-color: #fff;
         }
 
         .content-area {
             flex: 1;
             padding: 40px;
             overflow-y: auto;
+            background-color: var(--bg-color);
         }
 
-        .sidebar-btn {
-            display: block;
-            width: 100%;
-            text-align: left;
-            padding: 18px 30px;
-            border: none;
-            background: transparent;
-            color: #495057;
-            font-weight: 600;
-            font-size: 1.15em;
-            cursor: pointer;
-            border-left: 5px solid transparent;
-            margin: 5px 0;
-            transition: all 0.2s;
+        .header-title {
+            color: white;
+            padding: 10px;
+            margin-bottom: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-weight: 800;
         }
 
-            .sidebar-btn:hover {
-                background-color: #f0f5ff;
-                color: #4c51bf;
-                padding-left: 35px;
-            }
-
-            .sidebar-btn.active {
-                background: linear-gradient(90deg, #4c51bf15 0%, transparent 100%);
-                color: #4c51bf;
-                border-left-color: #4c51bf;
-                font-weight: 700;
-                padding-left: 30px;
-            }
-
-        .form-control, .form-select {
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px 15px;
-            font-size: 1rem;
-        }
-
-            .form-control:focus, .form-select:focus {
-                border-color: #4c51bf;
-                box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
-            }
-
-        .form-label {
-            font-weight: 600;
-            color: #4a5568;
-            margin-bottom: 6px;
-            font-size: 0.95em;
-        }
-
+        /* ==========================================================================
+           4. [UI 컴포넌트] 버튼, 폼, 테이블
+           ========================================================================== */
+        /* 버튼 스타일 */
         .btn-primary {
-            background: linear-gradient(135deg, #4c51bf 0%, #6b46c1 100%);
+            background: var(--primary-mint) !important;
             border: none;
             padding: 12px;
             font-weight: 700;
             font-size: 1.05em;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(76, 81, 191, 0.3);
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(93, 198, 194, 0.3);
         }
 
-            .btn-primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 15px rgba(76, 81, 191, 0.4);
-            }
+        .btn-primary:hover {
+            background: var(--primary-hover) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(93, 198, 194, 0.4);
+        }
 
         .btn-success {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            background: #20bf6b !important;
             border: none;
             padding: 12px;
             font-weight: 700;
             font-size: 1.05em;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(32, 191, 107, 0.3);
         }
 
-        /* 버튼 스타일 수정 */
+        /* 새로고침 버튼 */
         .btn-refresh {
             background: white;
             border: 1px solid #e2e8f0;
-            color: #4a5568;
+            color: var(--text-dark);
             width: 50px;
             height: 50px;
-            border-radius: 8px;
+            border-radius: 12px;
             transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-            .btn-refresh:hover {
-                background: #f7fafc;
-                border-color: #cbd5e0;
-                transform: rotate(180deg);
-            }
+        .btn-refresh:hover {
+            background: #F0FBFB;
+            border-color: var(--primary-mint);
+            color: var(--primary-mint);
+            transform: rotate(180deg);
+        }
 
+        /* 퀵 버튼 */
         .quick-btn {
             margin: 4px;
-            border: 2px solid #4c51bf;
-            color: #4c51bf;
+            border: 2px solid var(--primary-mint);
+            color: var(--primary-mint);
             font-weight: 700;
             padding: 8px 16px;
-            border-radius: 6px;
+            border-radius: 8px;
             background: white;
             font-size: 0.9em;
+            transition: all 0.2s;
         }
 
-            .quick-btn:hover {
-                background: #4c51bf;
-                color: white;
-                transform: translateY(-2px);
-            }
-
-        .student-tag {
-            background: #4c51bf;
+        .quick-btn:hover {
+            background: var(--primary-mint);
             color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(93, 198, 194, 0.3);
+        }
+
+        /* 폼 요소 */
+        .form-control,
+        .form-select {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 15px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-mint);
+            box-shadow: 0 0 0 3px rgba(93, 198, 194, 0.2);
+            outline: none;
+        }
+
+        .form-label {
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
             font-size: 0.95em;
-            margin: 4px;
-            display: inline-block;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         }
 
-        .delete-tag {
-            margin-left: 10px;
-            cursor: pointer;
-            color: #fed7d7;
-            font-weight: bold;
-        }
-
+        /* 테이블 스타일 */
         .table-custom {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
         }
 
-            .table-custom th {
-                background-color: #f7fafc;
-                font-weight: 800;
-                color: #2d3748;
-                border-bottom: 2px solid #4c51bf;
-                padding: 15px;
-                font-size: 1em;
-            }
+        .table-custom th {
+            background-color: #F0FBFB;
+            font-weight: 800;
+            color: var(--text-dark);
+            border-bottom: 2px solid var(--primary-mint);
+            padding: 16px;
+            font-size: 1em;
+        }
 
-            .table-custom td {
-                vertical-align: middle;
-                font-size: 1em;
-                padding: 15px;
-                border-bottom: 1px solid #e2e8f0;
-            }
+        .table-custom td {
+            vertical-align: middle;
+            font-size: 1em;
+            padding: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            background: white;
+        }
+
+        .table-custom tbody tr:hover td {
+            background-color: #fafafa;
+        }
+
+        /* 기타 UI 요소 */
+        .student-tag {
+            background: var(--primary-mint);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.95em;
+            margin: 4px;
+            display: inline-block;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(93, 198, 194, 0.3);
+        }
+
+        .delete-tag {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #fff;
+            opacity: 0.8;
+            font-weight: bold;
+        }
+
+        .delete-tag:hover {
+            opacity: 1;
+        }
+
+        .status-badge {
+            font-size: 0.9em;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background-color: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            font-weight: 700;
+        }
 
         .info-banner {
-            background: #ebf8ff;
-            border-left: 5px solid #4c51bf;
+            background: white;
+            border-left: 5px solid var(--primary-mint);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
         }
 
         .info-label {
@@ -234,13 +381,92 @@
 
         .info-value {
             font-weight: 800;
-            color: #2d3748;
+            color: var(--text-dark);
             margin-right: 25px;
             font-size: 1.1em;
         }
+
+        /* ==========================================================================
+           5. [모바일 반응형] 최적화 (768px 이하)
+           ========================================================================== */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: sticky;
+                top: 0;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding: 10px;
+                overflow-x: auto;
+                white-space: nowrap;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            }
+
+            body {
+                padding-left: 0 !important;
+                padding-top: 0;
+            }
+
+            .nav-brand {
+                border-bottom: none;
+                margin-bottom: 0;
+                padding: 5px 10px;
+                margin-right: 10px;
+                border-right: 1px solid #eee;
+            }
+
+            .nav-brand::after {
+                display: none;
+            }
+
+            .nav-menu {
+                display: flex;
+                padding: 0;
+            }
+
+            .nav-link {
+                margin-bottom: 0;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+        }
     </style>
+
 </head>
+
 <body>
+    <nav class="sidebar">
+        <a href="index.html" class="nav-brand">강남대성</a>
+        <ul class="nav-menu">
+            <li>
+                <a href="Dashboard.html" class="nav-link" id="nav-quantum">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">퀀텀 지도 현황</span>
+                </a>
+            </li>
+            <li>
+                <a href="attendance.html" class="nav-link" id="nav-attendance">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">출결보고</span>
+                </a>
+            </li>
+            <li>
+                <a href="penaltyscore.html" class="nav-link" id="nav-penalty">
+                    <span class="nav-icon">🚫</span>
+                    <span class="nav-text">벌점관리</span>
+                </a>
+            </li>
+            <li>
+                <a href="content_list.html" class="nav-link" id="nav-content">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-text">컨텐츠 배부</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
 
     <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-3 pt-2">
@@ -249,10 +475,17 @@
         </div>
 
         <div class="content-container">
-            <div class="sidebar">
-                <button class="sidebar-btn active" onclick="switchTab('single', this)">개별 입력</button>
-                <button class="sidebar-btn" onclick="switchTab('multi', this)">다중 입력</button>
-                <button class="sidebar-btn" onclick="switchTab('search', this)">조회</button>
+            <!-- [변경됨] 사이드바 제거 후 상단 탭 메뉴 추가 -->
+            <div class="top-tabs-container">
+                <button class="tab-btn active" onclick="showSection('single')">
+                    <i class="bi bi-person-fill me-2"></i>개별 입력
+                </button>
+                <button class="tab-btn" onclick="showSection('multi')">
+                    <i class="bi bi-people-fill me-2"></i>다중 입력
+                </button>
+                <button class="tab-btn" onclick="showSection('search')">
+                    <i class="bi bi-search me-2"></i>조회
+                </button>
             </div>
 
             <div class="content-area">
@@ -265,15 +498,18 @@
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-4">
                                         <label class="form-label">학번</label>
-                                        <input type="text" class="form-control" id="s_id" placeholder="입력" oninput="findStudent(this.value, 's_')" style="font-weight: bold;">
+                                        <input type="text" class="form-control" id="s_id" placeholder="입력"
+                                            oninput="findStudent(this.value, 's_')" style="font-weight: bold;">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">반</label>
-                                        <input type="text" class="form-control bg-light" id="s_class" readonly tabindex="-1">
+                                        <input type="text" class="form-control bg-light" id="s_class" readonly
+                                            tabindex="-1">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">이름</label>
-                                        <input type="text" class="form-control bg-light" id="s_name" readonly tabindex="-1">
+                                        <input type="text" class="form-control bg-light" id="s_name" readonly
+                                            tabindex="-1">
                                     </div>
                                 </div>
 
@@ -287,14 +523,16 @@
 
                                 <div class="mb-3">
                                     <label class="form-label">벌점 항목 (자동완성)</label>
-                                    <input class="form-control" list="ruleOptions" id="s_item" placeholder="항목 검색..." onchange="matchScore(this.value, 's_')">
+                                    <input class="form-control" list="ruleOptions" id="s_item" placeholder="항목 검색..."
+                                        onchange="matchScore(this.value, 's_')">
                                     <datalist id="ruleOptions"></datalist>
                                 </div>
 
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-6">
                                         <label class="form-label">점수</label>
-                                        <input type="number" class="form-control" id="s_score" style="font-weight: bold; color: #e53e3e;">
+                                        <input type="number" class="form-control" id="s_score"
+                                            style="font-weight: bold; color: #e53e3e;">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">작성자 <span class="text-danger">*</span></label>
@@ -307,7 +545,8 @@
                                     <input type="text" class="form-control" id="s_note">
                                 </div>
 
-                                <button type="button" class="btn btn-primary w-100" onclick="submitSingle()">입력 완료</button>
+                                <button type="button" class="btn btn-primary w-100" onclick="submitSingle()">입력
+                                    완료</button>
                             </form>
                         </div>
                     </div>
@@ -319,10 +558,12 @@
                         <div class="col-xl-7 col-lg-9">
                             <div class="mb-3">
                                 <label class="form-label">학번 입력</label>
-                                <input type="text" class="form-control" id="multi_input" placeholder="학번 입력 후 Enter" onkeyup="handleEnter(event)" style="font-size: 1.2rem; font-weight: bold;">
+                                <input type="text" class="form-control" id="multi_input" placeholder="학번 입력 후 Enter"
+                                    onkeyup="handleEnter(event)" style="font-size: 1.2rem; font-weight: bold;">
                             </div>
 
-                            <div id="studentQueue" class="mb-4 p-3 bg-light border rounded-3 shadow-sm" style="min-height: 100px;">
+                            <div id="studentQueue" class="mb-4 p-3 bg-light border rounded-3 shadow-sm"
+                                style="min-height: 100px;">
                                 <div class="text-muted small">대기 목록이 여기에 표시됩니다.</div>
                             </div>
 
@@ -332,10 +573,12 @@
 
                             <div class="row g-3 mb-3">
                                 <div class="col-md-9">
-                                    <input class="form-control" list="ruleOptions" id="m_item" placeholder="항목 선택 (또는 직접 입력)" onchange="matchScore(this.value, 'm_')">
+                                    <input class="form-control" list="ruleOptions" id="m_item"
+                                        placeholder="항목 선택 (또는 직접 입력)" onchange="matchScore(this.value, 'm_')">
                                 </div>
                                 <div class="col-md-3">
-                                    <input type="number" class="form-control" id="m_score" placeholder="점수" style="font-weight: bold; color: #e53e3e;">
+                                    <input type="number" class="form-control" id="m_score" placeholder="점수"
+                                        style="font-weight: bold; color: #e53e3e;">
                                 </div>
                             </div>
 
@@ -361,14 +604,15 @@
                             <!-- 예쁜 검색창 디자인 -->
                             <div class="d-flex gap-3 mb-4 align-items-center">
                                 <div class="position-relative flex-grow-1">
-                                    <span class="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">🔍</span>
+                                    <span
+                                        class="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">🔍</span>
                                     <input type="text" class="form-control form-control-lg border-0 shadow-sm ps-5 pe-5"
-                                           id="searchKeyword"
-                                           placeholder="이름 또는 학번 검색 (실시간)"
-                                           oninput="doSearchLocal()"
-                                           style="background-color: #f8f9fa; height: 50px;">
-                                    <button class="btn position-absolute top-50 end-0 translate-middle-y me-2 text-muted border-0 bg-transparent"
-                                            type="button" onclick="clearSearch()" style="font-size: 1.5rem; line-height: 1;">
+                                        id="searchKeyword" placeholder="이름 또는 학번 검색 (실시간)" oninput="doSearchLocal()"
+                                        style="background-color: #f8f9fa; height: 50px;">
+                                    <button
+                                        class="btn position-absolute top-50 end-0 translate-middle-y me-2 text-muted border-0 bg-transparent"
+                                        type="button" onclick="clearSearch()"
+                                        style="font-size: 1.5rem; line-height: 1;">
                                         &times;
                                     </button>
                                 </div>
@@ -396,7 +640,9 @@
                                         </tr>
                                     </thead>
                                     <tbody id="searchResultBody">
-                                        <tr><td colspan="6" class="text-center py-5 text-muted">검색어를 입력하세요.</td></tr>
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">검색어를 입력하세요.</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -429,12 +675,30 @@
         let HISTORY_DB = []; // 전체 기록 저장소
         let isDataReady = false;
 
-        function switchTab(tabId, btn) {
+        // [변경됨] 탭 전환 함수 (기존 switchTab 함수를 이것으로 교체하세요)
+        function showSection(sectionId) {
+            // 1. 모든 탭 섹션 숨기기
+            // (기존 HTML 구조에서 섹션들은 .tab-section 클래스를 가지고 있습니다)
             document.querySelectorAll('.tab-section').forEach(el => el.style.display = 'none');
-            document.getElementById(tabId).style.display = 'block';
-            document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+
+            // 2. 선택된 섹션 보이기
+            // (HTML ID가 'single', 'multi', 'search' 로 되어 있으므로 그대로 사용)
+            const target = document.getElementById(sectionId);
+            if (target) {
+                target.style.display = 'block';
+            }
+
+            // 3. 버튼 활성화 상태 업데이트 (.tab-btn 클래스 사용)
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+
+                // 현재 클릭된 버튼 식별 (onclick 속성에 해당 sectionId가 있는지 확인)
+                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(sectionId)) {
+                    btn.classList.add('active');
+                }
+            });
         }
+
 
         window.onload = function () {
             renderQuickButtons();
@@ -734,6 +998,9 @@
                 document.getElementById('searchStatus').innerText = `총 ${results.length}건`;
             }
         }
+
+        document.getElementById('nav-penalty').classList.add('active');
     </script>
 </body>
+
 </html>

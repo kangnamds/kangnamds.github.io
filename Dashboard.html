@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,18 +10,256 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        input[type="date"] { position: relative; }
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            background: transparent; bottom: 0; color: transparent; cursor: pointer;
-            height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
+        /* ==========================================================================
+           1. [공통] 변수 및 기본 설정 (강남대성 민트 테마)
+           ========================================================================== */
+        :root {
+            /* [컬러 팔레트] */
+            --primary-color: #5DC6C2;
+            /* 메인 민트 */
+            --primary-hover: #4BB3AF;
+            /* 호버 시 진한 민트 */
+            --text-color: #1a2b4b;
+            /* 텍스트 네이비 */
+            --bg-color: #F4F9F9;
+            /* 배경 연한 민트 그레이 */
+
+            /* [사이드바 관련 변수] */
+            --sidebar-width: 240px;
+            --sidebar-bg: #ffffff;
+            --sidebar-text: #1a2b4b;
+            --active-bg: #F0FBFB;
+            --active-text: #5DC6C2;
+            --border-color: #e0e0e0;
+            --hover-bg: #f8f9fa;
         }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+
+            /* [핵심 레이아웃] 사이드바만큼 본문 밀어내기 */
+            padding-left: var(--sidebar-width) !important;
+            padding-top: 0 !important;
+            margin: 0;
+        }
+
+        /* 만약 .container가 있다면 중앙 정렬 보정 */
+        .container {
+            margin: 20px auto !important;
+        }
+
+        /* ==========================================================================
+           2. [사이드바] 가시성 강화 스타일 (High Visibility)
+           ========================================================================== */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background-color: #ffffff;
+            border-right: 1px solid #d1d5db;
+            padding: 20px 0;
+            z-index: 1000;
+            box-shadow: 5px 0 25px rgba(26, 43, 75, 0.15);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-brand {
+            font-size: 1.3rem;
+            font-weight: 800;
+            padding: 0 20px 20px 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--sidebar-text);
+            text-decoration: none;
+            display: block;
+        }
+
+        .nav-brand::after {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 3px;
+            background: var(--primary-color);
+            margin-top: 10px;
+            border-radius: 2px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 10px;
+            margin: 0;
+        }
+
+        /* 메뉴 링크 (기본 상태) - 글씨 진하게 */
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            color: #4b5563;
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            font-size: 1rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            background-color: #e6fcf5;
+            color: #0ca678;
+            transform: translateX(5px);
+            border-color: #c3fae8;
+        }
+
+        /* 활성화 상태 (Active) - 가시성 개선 (흰글씨 진하게+그림자) */
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            font-weight: 900;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(93, 198, 194, 0.5);
+            border: 1px solid #4bb3af;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-icon {
+            margin-right: 10px;
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            color: inherit;
+        }
+
+
+        /* ==========================================================================
+           3. [Dashboard 헤더 커스텀] (기존 테일윈드 덮어쓰기)
+           ========================================================================== */
+        /* 1. 상단 헤더 배경색 변경 (indigo -> mint) */
+        header.bg-indigo-700 {
+            background-color: #5DC6C2 !important;
+            /* 민트색 */
+            box-shadow: 0 4px 10px rgba(93, 198, 194, 0.3) !important;
+        }
+
+        /* 2. 헤더 내부 텍스트 */
+        header .text-white {
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            font-weight: 800;
+            /* 헤더 글씨도 조금 더 두껍게 */
+        }
+
+        /* 3. 새로고침 버튼 스타일 변경 */
+        header button.bg-indigo-600 {
+            background-color: rgba(255, 255, 255, 0.25) !important;
+            /* 반투명 흰색 */
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            color: #ffffff !important;
+        }
+
+        header button.bg-indigo-600:hover {
+            background-color: rgba(255, 255, 255, 0.4) !important;
+        }
+
+        /* ==========================================================================
+           4. [UI 컴포넌트] Date Picker, Scrollbar 등
+           ========================================================================== */
+
+        /* 날짜 선택기 아이콘 클릭 영역 확장 */
+        input[type="date"] {
+            position: relative;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
+        }
+
         /* 스크롤바 커스텀 */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c7c7c7;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        /* ==========================================================================
+           5. [모바일 반응형] 최적화 (768px 이하)
+           ========================================================================== */
+        @media (max-width: 768px) {
+
+            /* 사이드바 -> 상단 스크롤 메뉴로 변신 */
+            .sidebar {
+                position: sticky;
+                top: 0;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding: 10px;
+                overflow-x: auto;
+                white-space: nowrap;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            }
+
+            body {
+                padding-left: 0 !important;
+                padding-top: 0;
+            }
+
+            .nav-brand {
+                border-bottom: none;
+                margin-bottom: 0;
+                padding: 5px 10px;
+                margin-right: 10px;
+                border-right: 1px solid #eee;
+            }
+
+            .nav-brand::after {
+                display: none;
+            }
+
+            .nav-menu {
+                display: flex;
+                padding: 0;
+            }
+
+            .nav-link {
+                margin-bottom: 0;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+        }
     </style>
+
 </head>
+
 <body class="bg-slate-50 text-slate-800 font-sans">
 
     <!-- ▼ 설정 영역: 배포된 GAS 웹 앱 URL 입력 ▼ -->
@@ -35,11 +274,44 @@
             <h1 class="text-lg font-bold flex items-center gap-2">
                 <i class="fas fa-clipboard-check"></i> 퀀텀관 지도 현황
             </h1>
-            <button onclick="fetchData()" class="text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded transition shadow border border-indigo-500 flex items-center gap-1 group">
-                <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i> <span>새로고침</span>
+            <button onclick="fetchData()"
+                class="text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded transition shadow border border-indigo-500 flex items-center gap-1 group">
+                <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i>
+                <span>새로고침</span>
             </button>
         </div>
     </header>
+
+    <nav class="sidebar">
+        <a href="index.html" class="nav-brand">강남대성</a>
+        <ul class="nav-menu">
+            <li>
+                <a href="Dashboard.html" class="nav-link" id="nav-quantum">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">퀀텀 지도 현황</span>
+                </a>
+            </li>
+            <li>
+                <a href="attendance.html" class="nav-link" id="nav-attendance">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">출결보고</span>
+                </a>
+            </li>
+            <li>
+                <a href="penaltyscore.html" class="nav-link" id="nav-penalty">
+                    <span class="nav-icon">🚫</span>
+                    <span class="nav-text">벌점관리</span>
+                </a>
+            </li>
+            <li>
+                <a href="content_list.html" class="nav-link" id="nav-content">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-text">컨텐츠 배부</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
 
     <main class="max-w-7xl mx-auto p-4 space-y-6">
 
@@ -50,7 +322,8 @@
         </div>
 
         <!-- 필터 컨트롤 패널 -->
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap lg:flex-nowrap gap-4 items-end justify-between">
+        <div
+            class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap lg:flex-nowrap gap-4 items-end justify-between">
 
             <!-- 좌측 그룹: 날짜, 반, 검색 -->
             <div class="flex flex-wrap gap-4 items-end w-full lg:w-auto">
@@ -59,16 +332,22 @@
                     <div>
                         <label class="block text-xs font-bold text-gray-500 mb-1">시작일</label>
                         <div class="relative group">
-                            <input type="date" id="startDate" class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition" onchange="renderDashboard()">
-                            <i class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
+                            <input type="date" id="startDate"
+                                class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition"
+                                onchange="renderDashboard()">
+                            <i
+                                class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
                         </div>
                     </div>
                     <span class="text-gray-400 pb-2 font-bold">~</span>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 mb-1">종료일</label>
                         <div class="relative group">
-                            <input type="date" id="endDate" class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition" onchange="renderDashboard()">
-                            <i class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
+                            <input type="date" id="endDate"
+                                class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition"
+                                onchange="renderDashboard()">
+                            <i
+                                class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
                         </div>
                     </div>
                 </div>
@@ -77,10 +356,13 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">반 (Class)</label>
                     <div class="relative">
-                        <select id="classFilter" class="appearance-none border border-gray-300 rounded px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-indigo-500 outline-none bg-white pr-8 cursor-pointer hover:border-indigo-300 transition" onchange="renderDashboard()">
+                        <select id="classFilter"
+                            class="appearance-none border border-gray-300 rounded px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-indigo-500 outline-none bg-white pr-8 cursor-pointer hover:border-indigo-300 transition"
+                            onchange="renderDashboard()">
                             <option value="All">전체</option>
                         </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none text-xs"></i>
+                        <i
+                            class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none text-xs"></i>
                     </div>
                 </div>
 
@@ -88,11 +370,14 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">지도유형</label>
                     <div class="relative">
-                        <select id="typeFilter" class="appearance-none border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:ring-2 focus:ring-indigo-500 outline-none bg-white pr-8 cursor-pointer hover:border-indigo-300 transition" onchange="renderDashboard()">
+                        <select id="typeFilter"
+                            class="appearance-none border border-gray-300 rounded px-3 py-2 text-sm w-32 focus:ring-2 focus:ring-indigo-500 outline-none bg-white pr-8 cursor-pointer hover:border-indigo-300 transition"
+                            onchange="renderDashboard()">
                             <option value="All">전체 유형</option>
                             <!-- JS로 자동 추가됨 -->
                         </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none text-xs"></i>
+                        <i
+                            class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none text-xs"></i>
                     </div>
                 </div>
 
@@ -101,29 +386,38 @@
                     <label class="block text-xs font-bold text-gray-500 mb-1">통합 검색</label>
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
-                        <input type="text" id="searchInput" placeholder="이름, 학번 검색..." class="pl-9 border border-gray-300 rounded px-3 py-2 text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none transition hover:border-indigo-300" onkeyup="renderDashboard()">
+                        <input type="text" id="searchInput" placeholder="이름, 학번 검색..."
+                            class="pl-9 border border-gray-300 rounded px-3 py-2 text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none transition hover:border-indigo-300"
+                            onkeyup="renderDashboard()">
                     </div>
                 </div>
             </div>
 
             <!-- 우측 그룹: 토글 버튼 2개 (세로 배치 & 원래 크기 복원) -->
-            <div class="flex flex-col gap-3 justify-center border-l pl-5 border-gray-200 min-w-[150px] shrink-0 pb-1 h-full mt-2 lg:mt-0">
+            <div
+                class="flex flex-col gap-3 justify-center border-l pl-5 border-gray-200 min-w-[150px] shrink-0 pb-1 h-full mt-2 lg:mt-0">
                 <!-- 1. 경고만 보기 -->
-                <label class="flex items-center cursor-pointer gap-2.5 select-none text-xs font-bold text-gray-600 hover:text-indigo-600 transition">
+                <label
+                    class="flex items-center cursor-pointer gap-2.5 select-none text-xs font-bold text-gray-600 hover:text-indigo-600 transition">
                     <div class="relative">
                         <input type="checkbox" id="alertOnlyFilter" class="sr-only peer" onchange="renderDashboard()">
                         <!-- 원래 크기 (w-9 h-5) 복원 -->
-                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div
+                            class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600">
+                        </div>
                     </div>
                     <span>경고 누적만 보기</span>
                 </label>
 
                 <!-- 2. 야간자습 미확인 -->
-                <label class="flex items-center cursor-pointer gap-2.5 select-none text-xs font-bold text-gray-600 hover:text-slate-800 transition">
+                <label
+                    class="flex items-center cursor-pointer gap-2.5 select-none text-xs font-bold text-gray-600 hover:text-slate-800 transition">
                     <div class="relative">
                         <input type="checkbox" id="nightFilter" class="sr-only peer" onchange="renderDashboard()">
                         <!-- 원래 크기 (w-9 h-5) 복원 -->
-                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-700"></div>
+                        <div
+                            class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-700">
+                        </div>
                     </div>
                     <span>야간자습 미확인</span>
                 </label>
@@ -134,43 +428,54 @@
 
         <!-- 요약 통계 카드 -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-indigo-500 flex justify-between items-center hover:shadow-md transition">
+            <div
+                class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-indigo-500 flex justify-between items-center hover:shadow-md transition">
                 <div>
                     <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">총 건수</p>
                     <h3 class="text-2xl font-bold text-indigo-700 mt-1" id="totalCount">-</h3>
                 </div>
-                <div class="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500"><i class="fas fa-list-ol"></i></div>
+                <div class="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500"><i
+                        class="fas fa-list-ol"></i></div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-amber-500 flex justify-between items-center hover:shadow-md transition">
+            <div
+                class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-amber-500 flex justify-between items-center hover:shadow-md transition">
                 <div>
                     <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">수면 주의</p>
                     <h3 class="text-2xl font-bold text-amber-600 mt-1" id="sleepCount">-</h3>
                 </div>
-                <div class="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-500"><i class="fas fa-bed"></i></div>
+                <div class="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-500"><i
+                        class="fas fa-bed"></i></div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-rose-500 flex justify-between items-center hover:shadow-md transition">
+            <div
+                class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-rose-500 flex justify-between items-center hover:shadow-md transition">
                 <div>
                     <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">전자기기</p>
                     <h3 class="text-2xl font-bold text-rose-600 mt-1" id="deviceCount">-</h3>
                 </div>
-                <div class="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center text-rose-500"><i class="fas fa-mobile-alt"></i></div>
+                <div class="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center text-rose-500"><i
+                        class="fas fa-mobile-alt"></i></div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500 flex justify-between items-center hover:shadow-md transition">
+            <div
+                class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500 flex justify-between items-center hover:shadow-md transition">
                 <div>
                     <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">기타 지도</p>
                     <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="etcCount">-</h3>
                 </div>
-                <div class="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500"><i class="fas fa-check"></i></div>
+                <div class="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500"><i
+                        class="fas fa-check"></i></div>
             </div>
         </div>
 
         <!-- 데이터 테이블 -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                <h2 class="font-bold text-gray-700 flex items-center gap-2"><i class="fas fa-history text-indigo-500"></i> 상세 기록</h2>
+                <h2 class="font-bold text-gray-700 flex items-center gap-2"><i
+                        class="fas fa-history text-indigo-500"></i> 상세 기록</h2>
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-gray-400 hidden sm:inline"><i class="fas fa-info-circle"></i> 행을 클릭하여 상담 입력</span>
-                    <span id="resultCount" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">0건</span>
+                    <span class="text-xs text-gray-400 hidden sm:inline"><i class="fas fa-info-circle"></i> 행을 클릭하여 상담
+                        입력</span>
+                    <span id="resultCount"
+                        class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">0건</span>
                 </div>
             </div>
 
@@ -198,18 +503,21 @@
     </main>
 
     <!-- 상담 기록 모달 -->
-    <div id="consultModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden transform transition-all scale-100">
+    <div id="consultModal"
+        class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+        <div
+            class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden transform transition-all scale-100">
             <!-- 모달 헤더 -->
             <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center border-b border-indigo-500">
                 <h3 class="text-white font-bold text-lg flex items-center gap-2">
                     <i class="fas fa-user-edit"></i> 상담 내역 기록
                 </h3>
-                <button onclick="closeModal()" class="text-indigo-200 hover:text-white transition rounded-full p-1 hover:bg-indigo-500">
+                <button onclick="closeModal()"
+                    class="text-indigo-200 hover:text-white transition rounded-full p-1 hover:bg-indigo-500">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
+
             <!-- 모달 본문 -->
             <div class="p-6 space-y-5">
                 <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 flex gap-4 items-center">
@@ -218,15 +526,17 @@
                     </div>
                     <div>
                         <div class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <span id="modalName">홍길동</span> 
-                            <span id="modalClass" class="text-xs bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded">2K</span>
+                            <span id="modalName">홍길동</span>
+                            <span id="modalClass"
+                                class="text-xs bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded">2K</span>
                         </div>
                         <div class="text-sm text-gray-500 mt-0.5">
-                            학번: <span id="modalId" class="font-mono">1234</span> | 
+                            학번: <span id="modalId" class="font-mono">1234</span> |
                             위반: <span id="modalType" class="font-bold text-rose-500">수면주의</span>
                         </div>
                         <div class="text-xs text-gray-400 mt-1">
-                            <i class="far fa-clock"></i> <span id="modalDate">2026-01-22</span> <span id="modalTime">14:00:00</span>
+                            <i class="far fa-clock"></i> <span id="modalDate">2026-01-22</span> <span
+                                id="modalTime">14:00:00</span>
                         </div>
                     </div>
                 </div>
@@ -236,23 +546,29 @@
                         <label class="block text-sm font-bold text-gray-700 mb-1">
                             <i class="far fa-comment-dots text-gray-400 mr-1"></i>상담 내용
                         </label>
-                        <textarea id="consultContent" rows="4" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none transition" placeholder="학생과의 상담 내용 및 지도 사항을 상세히 입력하세요."></textarea>
+                        <textarea id="consultContent" rows="4"
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none transition"
+                            placeholder="학생과의 상담 내용 및 지도 사항을 상세히 입력하세요."></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">
                             <i class="fas fa-chalkboard-teacher text-gray-400 mr-1"></i>생활담임 (지도교사)
                         </label>
-                        <input type="text" id="consultTeacher" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="선생님 성함 입력">
+                        <input type="text" id="consultTeacher"
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                            placeholder="선생님 성함 입력">
                     </div>
                 </div>
             </div>
 
             <!-- 모달 푸터 -->
             <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
-                <button onclick="closeModal()" class="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                <button onclick="closeModal()"
+                    class="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
                     취소
                 </button>
-                <button onclick="saveConsultation(this)" class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2">
+                <button onclick="saveConsultation(this)"
+                    class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2">
                     <i class="fas fa-save"></i> 저장하기
                 </button>
             </div>
@@ -269,11 +585,11 @@
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000; // ms 단위
             const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
-            
+
             // 날짜 필터에 오늘 날짜 세팅
             document.getElementById('startDate').value = today;
             document.getElementById('endDate').value = today;
-            
+
             // 데이터 불러오기 시작
             fetchData();
         });
@@ -286,14 +602,14 @@
 
             const loader = document.getElementById('loader');
             const tbody = document.getElementById('tableBody');
-            
+
             loader.classList.remove('hidden');
             tbody.innerHTML = '';
 
             try {
                 const response = await fetch(API_URL);
                 const data = await response.json();
-                
+
                 rawData = data;
                 initFilters(data);
                 renderDashboard();
@@ -308,7 +624,7 @@
         function initFilters(data) {
             const classes = [...new Set(data.map(r => r.classNum).filter(c => c))].sort();
             const select = document.getElementById('classFilter');
-            if(select.options.length === 1) { 
+            if (select.options.length === 1) {
                 classes.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c;
@@ -396,12 +712,12 @@
                     if (window.getSelection().toString().length > 0) return;
                     openModal(row);
                 };
-                
+
                 tr.className = "hover:bg-indigo-50 transition-colors duration-200 cursor-pointer group border-b border-gray-50 last:border-0";
                 const typeStyle = getTypeStyle(row.type);
-                
+
                 const hasConsult = row.consultation && String(row.consultation).trim() !== '';
-                const consultBadge = hasConsult 
+                const consultBadge = hasConsult
                     ? `<span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-bold shadow-sm whitespace-nowrap">
                          <i class="fas fa-check"></i> 완료
                        </span>`
@@ -430,12 +746,12 @@
                     </td>
                     <!-- ★ 수정됨: 누적 경고 전체 표시 -->
                     <td class="px-6 py-4">
-                        ${row.alertText 
-                            ? `<div class="flex items-start text-rose-600 font-bold text-xs bg-rose-50 px-2 py-1.5 rounded border border-rose-100 whitespace-normal break-words leading-snug text-left max-w-[250px]">
+                        ${row.alertText
+                        ? `<div class="flex items-start text-rose-600 font-bold text-xs bg-rose-50 px-2 py-1.5 rounded border border-rose-100 whitespace-normal break-words leading-snug text-left max-w-[250px]">
                                 <i class="fas fa-exclamation-triangle mr-1.5 mt-0.5 flex-shrink-0"></i>
                                 <span>${row.alertText}</span>
-                               </div>` 
-                            : '<span class="text-gray-300 text-xs pl-2">-</span>'}
+                               </div>`
+                        : '<span class="text-gray-300 text-xs pl-2">-</span>'}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex flex-col items-start gap-1">
@@ -444,11 +760,11 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 text-xs text-gray-500 relative">
-                        ${row.note 
-                            ? `<div class="bg-gray-50 p-2 rounded border border-gray-100 max-w-[180px] break-keep leading-snug whitespace-normal">
+                        ${row.note
+                        ? `<div class="bg-gray-50 p-2 rounded border border-gray-100 max-w-[180px] break-keep leading-snug whitespace-normal">
                                 ${row.note}
-                               </div>` 
-                            : ''}
+                               </div>`
+                        : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -497,26 +813,26 @@
                 method: 'POST',
                 body: JSON.stringify(payload)
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.status === 'success') {
-                    currentRecord.consultation = content;
-                    currentRecord.teacher = teacher;
-                    renderDashboard(); 
-                    closeModal();
-                    alert("✅ 상담 내역이 저장되었습니다.");
-                } else {
-                    alert("❌ 저장 실패: " + result.message);
-                }
-            })
-            .catch(error => {
-                console.error(error);
-                alert("⚠️ 저장 중 오류가 발생했습니다.");
-            })
-            .finally(() => {
-                btnElement.innerHTML = originalText;
-                btnElement.disabled = false;
-            });
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        currentRecord.consultation = content;
+                        currentRecord.teacher = teacher;
+                        renderDashboard();
+                        closeModal();
+                        alert("✅ 상담 내역이 저장되었습니다.");
+                    } else {
+                        alert("❌ 저장 실패: " + result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert("⚠️ 저장 중 오류가 발생했습니다.");
+                })
+                .finally(() => {
+                    btnElement.innerHTML = originalText;
+                    btnElement.disabled = false;
+                });
         }
 
         function getTypeStyle(type) {
@@ -536,6 +852,8 @@
             if (t === '수면주의') return '수면주의';
             return t;
         }
+        document.getElementById('nav-quantum').classList.add('active');
     </script>
 </body>
+
 </html>

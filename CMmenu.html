@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>생활담임 관리 메뉴</title>
+    <title>CM Menu</title>
     <!-- 구글 폰트 (Noto Sans KR) 로드 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,15 +12,21 @@
 
     <style>
         :root {
-            /* [강남대성 디자인 시스템] */
+            /* [강남대성 디자인 시스템 적용] */
             --primary-mint: #5DC6C2;
+            /* 메인 민트 컬러 */
             --primary-hover: #4BB3AF;
+            /* 호버 시 진한 민트 */
 
             --text-dark: #1a2b4b;
+            /* 가독성 좋은 짙은 네이비 */
             --bg-color: #F4F9F9;
+            /* 눈이 편한 미색 배경 */
 
             --disabled-bg: #e0e0e0;
+            /* 비활성 버튼 배경 */
             --disabled-text: #95a5a6;
+            /* 비활성 버튼 텍스트 */
         }
 
         body {
@@ -41,7 +47,7 @@
             box-sizing: border-box;
         }
 
-        /* 제목 스타일 (민트 포인트) */
+        /* 제목 스타일 (민트색 밑줄 포인트) */
         h1.title {
             text-align: center;
             color: var(--text-dark);
@@ -77,10 +83,11 @@
 
             background-color: white;
             color: var(--text-dark);
-            text-decoration: none;
-
-            border-radius: 20px;
             border: 2px solid transparent;
+
+            text-decoration: none;
+            border-radius: 20px;
+            /* 둥근 모서리 */
             box-shadow: 0 10px 20px rgba(93, 198, 194, 0.15);
             /* 민트빛 그림자 */
 
@@ -88,7 +95,7 @@
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 
             font-weight: 700;
-            font-size: 1.15rem;
+            font-size: 1.2rem;
             text-align: center;
             padding: 10px;
             word-break: keep-all;
@@ -96,11 +103,11 @@
 
         /* 아이콘 스타일 */
         .icon {
-            font-size: 2.8rem;
-            margin-bottom: 12px;
+            font-size: 3rem;
+            margin-bottom: 15px;
         }
 
-        /* 호버 효과 (민트 반전) */
+        /* 호버 효과 (민트색 반전) */
         .menu-btn:hover:not(.disabled) {
             transform: translateY(-5px);
             background-color: var(--primary-mint);
@@ -109,7 +116,7 @@
             border-color: var(--primary-mint);
         }
 
-        /* 준비중 버튼 스타일 (비활성) */
+        /* 준비중 버튼 스타일 (비활성화) */
         .menu-btn.disabled {
             background-color: var(--disabled-bg);
             color: var(--disabled-text);
@@ -144,38 +151,21 @@
 <body>
 
     <div class="dashboard-container">
-        <!-- 제목 클래스 추가 -->
-        <h1 class="title">관리 메뉴</h1>
+        <!-- 제목에 클래스 적용 -->
+        <h1 class="title">CM 업무</h1>
 
         <div class="grid-menu">
-            <!-- 1. 퀀텀 지도 현황 -->
-            <a href="Dashboard.html" class="menu-btn">
+            <!-- 1. 퀀텀 감독기록 -->
+            <a href="CM_Qtrecord/index.html" class="menu-btn">
                 <span class="icon">📝</span>
-                <span>퀀텀 지도 현황</span>
+                <span>퀀텀 감독기록</span>
             </a>
 
-            <!-- 2. 출결 보고 -->
-            <a href="attendance.html" class="menu-btn">
-                <span class="icon">🏫</span>
-                <span>출결 보고</span>
+            <!-- 2. 학생 조회 -->
+            <a href="search.html" class="menu-btn">
+                <span class="icon">🔍</span>
+                <span>학생 조회</span>
             </a>
-
-            <!-- 3. 벌점 관리 -->
-            <a href="penaltyscore.html" class="menu-btn">
-                <span class="icon">🚫</span>
-                <span>벌점 관리</span>
-            </a>
-
-            <!-- 4. 컨텐츠 배부 명단 -->
-            <a href="content_list.html" class="menu-btn">
-                <span class="icon">📚</span>
-                <span>컨텐츠 배부 명단</span>
-            </a>
-
-            <!-- 5. 준비중 -->
-            <!-- <a href="#" class="menu-btn disabled" onclick="alert('준비 중인 기능입니다.'); return false;"> -->
-            <!-- <span class="icon">🚧</span><span>준비중</span> -->
-            <!-- </a> -->
         </div>
     </div>
 
