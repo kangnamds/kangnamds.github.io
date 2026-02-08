@@ -64,7 +64,7 @@
         /* 2x2 격자 레이아웃 */
         .grid-menu {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
         }
 
@@ -172,10 +172,16 @@
                 <span>컨텐츠 배부 명단</span>
             </a>
 
-            <!-- 5. 준비중 -->
-            <!-- <a href="#" class="menu-btn disabled" onclick="alert('준비 중인 기능입니다.'); return false;"> -->
-            <!-- <span class="icon">🚧</span><span>준비중</span> -->
-            <!-- </a> -->
+            <!-- 5. 학생 검색 -->
+            <a href="search_tc.html" class="menu-btn">
+                <span class="icon">🔍</span>
+                <span>학생 검색</span>
+            </a>
+
+            <!-- 6. 준비중 -->
+            <a href="#" class="menu-btn disabled" onclick="alert('준비 중인 기능입니다.'); return false;">
+                <span class="icon">🚧</span><span>준비중</span>
+            </a>
         </div>
     </div>
 

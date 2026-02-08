@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학생 검색</title>
+  <!-- 폰트: Pretendard 느낌 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* [공통 변수] */
+    :root {
+      --primary-bg: #5DC6C2;
+      /* 메인 민트 */
+      --primary-hover: #4BB3AF;
+      /* 호버 시 진한 민트 */
+      --sidebar-width: 240px;
+      --sidebar-bg: #ffffff;
+      --border-color: #d1d5db;
+      --text-navy: #1a2b4b;
+      --text-gray: #4b5563;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    body {
+      padding-left: var(--sidebar-width) !important;
+      padding-top: 0 !important;
+      margin: 0;
+      background-color: #F4F9F9;
+      /* 전체 배경 */
+      min-height: 100vh;
+    }
+
+    /* ==================== [1. 사이드바 스타일] ==================== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      padding: 20px 0;
+      z-index: 1000;
+      /* 가시성 강화를 위한 진한 그림자 */
+      box-shadow: 5px 0 25px rgba(26, 43, 75, 0.15);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 브랜드 로고 영역 */
+    .nav-brand {
+      font-size: 1.3rem;
+      font-weight: 800;
+      padding: 0 20px 20px 20px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-navy);
+      text-decoration: none;
+      display: block;
+    }
+
+    .nav-brand::after {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 3px;
+      background: var(--primary-bg);
+      margin-top: 10px;
+      border-radius: 2px;
+    }
+
+    .nav-menu {
+      list-style: none;
+      padding: 0 10px;
+      margin: 0;
+    }
+
+    /* [메뉴 링크 스타일] */
+    .nav-link {
+      display: flex;
+      align-items: center;
+      padding: 14px 18px;
+      color: var(--text-gray);
+      text-decoration: none;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+      font-size: 1rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    /* 호버 효과 */
+    .nav-link:hover {
+      background-color: #e6fcf5;
+      color: #0ca678;
+      transform: translateX(5px);
+      border-color: #c3fae8;
+    }
+
+    /* [활성화(Active) 스타일] */
+    .nav-link.active {
+      background-color: var(--primary-bg);
+      color: #ffffff;
+      font-weight: 900;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 15px rgba(93, 198, 194, 0.5);
+      border: 1px solid #4bb3af;
+    }
+
+    .nav-icon {
+      margin-right: 10px;
+      font-size: 1.1rem;
+      width: 24px;
+      text-align: center;
+      color: inherit;
+    }
+
+
+    /* ==================== [2. 메인 컨텐츠] ==================== */
+    .main-content {
+      padding: 40px;
+      /* 여백 넉넉하게 */
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* 모바일 헤더 (평소엔 숨김) */
+    .mobile-header {
+      display: none;
+      padding: 15px;
+      background: #fff;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      margin: -20px -20px 20px -20px;
+      /* padding 상쇄 */
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-navy);
+    }
+
+
+    /* ==================== [3. 검색 기능 스타일] ==================== */
+    .search-bar {
+      margin-bottom: 25px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 15px 45px 15px 20px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      outline: none;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary-bg);
+      box-shadow: 0 0 0 4px rgba(93, 198, 194, 0.15);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-size: 1.2rem;
+    }
+
+    .btn-reset {
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 0 18px;
+      height: 52px;
+      cursor: pointer;
+      color: var(--text-gray);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+    }
+
+    .btn-reset:hover {
+      background: #f8fafc;
+      color: var(--text-navy);
+    }
+
+
+    /* [리스트 테이블] */
+    .list-container {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      overflow: hidden;
+    }
+
+    .list-info {
+      padding: 15px 25px;
+      text-align: right;
+      font-size: 0.9rem;
+      color: #6b7280;
+      border-bottom: 1px solid #f3f4f6;
+      background: #fff;
+      font-weight: 500;
+    }
+
+    /* 헤더 */
+    .list-header {
+      display: grid;
+      grid-template-columns: 0.8fr 1.5fr 1.5fr 0.8fr 1.5fr 1fr 0.8fr;
+      /* 비율 조정 */
+      padding: 15px 25px;
+      background: #F0FBFB;
+      /* 아주 연한 민트 */
+      border-bottom: 2px solid var(--primary-bg);
+      font-weight: 800;
+      color: var(--text-navy);
+      font-size: 0.95rem;
+    }
+
+    /* 리스트 아이템 */
+    .list-item {
+      display: grid;
+      grid-template-columns: 0.8fr 1.5fr 1.5fr 0.8fr 1.5fr 1fr 0.8fr;
+      padding: 16px 25px;
+      border-bottom: 1px solid #f3f4f6;
+      align-items: center;
+      font-size: 1rem;
+      background: #fff;
+      transition: background 0.1s;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .list-item:hover {
+      background-color: #f8fcfc;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .btn-del {
+      background: none;
+      border: none;
+      color: #d1d5db;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 5px;
+      text-align: center;
+      transition: color 0.2s;
+    }
+
+    .btn-del:hover {
+      color: #ef4444;
+      transform: scale(1.1);
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 60px;
+      color: #9ca3af;
+      font-size: 1rem;
+    }
+
+
+    /* ==================== [4. 모바일 반응형] ==================== */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        /* 가로 정렬 */
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 10px;
+        overflow-x: auto;
+        white-space: nowrap;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      body {
+        padding-left: 0 !important;
+      }
+
+      .nav-brand {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding: 5px 10px;
+        margin-right: 10px;
+        border-right: 1px solid #eee;
+      }
+
+      .nav-brand::after {
+        display: none;
+      }
+
+      .nav-menu {
+        display: flex;
+        padding: 0;
+      }
+
+      .nav-link {
+        margin-bottom: 0;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+      }
+
+      .main-content {
+        padding: 20px 15px;
+      }
+
+      /* 여백 줄임 */
+      .mobile-header {
+        display: none;
+      }
+
+      /* 사이드바가 상단바로 변하므로 헤더 숨김 */
+
+      .list-container {
+        overflow-x: auto;
+      }
+
+      .list-header,
+      .list-item {
+        min-width: 700px;
+      }
+
+      /* 가로 스크롤 발생 */
+    }
+
+    /* [로딩 오버레이 스타일 (Dashboard와 동일)] */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #5DC6C2;
+      /* 민트색 */
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 1. 사이드바 -->
+  <nav class="sidebar">
+    <a href="index.html" class="nav-brand">강남대성</a>
+    <ul class="nav-menu">
+      <li>
+        <a href="CM_Qtrecord/index.html" class="nav-link">
+          <span class="nav-icon">📝</span>
+          <span class="nav-text">퀀텀 감독 기록</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-link active">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-text">학생 검색</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- 2. 메인 컨텐츠 -->
+  <div class="main-content">
+
+    <!-- 검색바 -->
+    <div class="search-bar">
+      <div class="search-input-wrapper">
+        <input type="text" id="searchInput" class="search-input" placeholder="이름 또는 학번 입력 (엔터)" disabled
+          onkeypress="handleEnter(event)">
+        <span class="search-icon">🔍</span>
+      </div>
+      <button class="btn-reset" onclick="clearList()">
+        <span>↻</span> 초기화
+      </button>
+    </div>
+
+    <!-- 결과 리스트 -->
+    <div class="list-container">
+      <div class="list-info" id="countInfo">기록 0건</div>
+
+      <!-- 헤더 -->
+      <div class="list-header">
+        <div>반</div>
+        <div>학번</div>
+        <div>이름</div>
+        <div>성별</div>
+        <div>퀀텀관</div>
+        <div>좌석</div>
+        <div style="text-align:center;">삭제</div>
+      </div>
+
+      <!-- 리스트 바디 -->
+      <div id="listBody">
+        <div class="empty-msg" id="loadingArea" style="padding: 60px 0;">
+          <div class="spinner" style="margin: 0 auto 15px auto;"></div>
+          <div style="font-weight:700; color:#5DC6C2;">데이터 동기화 중...</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // ★★★ [필수] 배포된 웹 앱 URL 입력 ★★★
+    const API_URL = "https://script.google.com/macros/s/AKfycbyx_OuYBolCxTldCopxJv4FmU1BRKqB-DLGFOxY7eTc_W5AUHytLvxcARvLK7FwMwyogw/exec";
+
+    let allData = [];
+    let searchHistory = [];
+
+    window.onload = function () {
+      fetchData();
+    };
+
+    // 1. 데이터 가져오기 (최초 1회)
+    function fetchData() {
+      fetch(API_URL)
+        .then(res => res.json())
+        .then(data => {
+          // 1) 에러 처리
+          if (data.error) {
+            // 로딩바가 있던 자리에 에러 메시지 표시
+            document.getElementById('listBody').innerHTML = `<div class="empty-msg">오류: ${data.error}</div>`;
+          }
+          // 2) 정상 데이터 수신
+          else {
+            allData = data;
+
+            // 검색창 활성화
+            const input = document.getElementById('searchInput');
+            input.disabled = false;
+            input.focus();
+
+            // ★ 핵심: 로딩바를 없애고 안내 메시지로 덮어쓰기
+            // (별도의 removeChild나 display:none 필요 없음)
+            document.getElementById('listBody').innerHTML = '<div class="empty-msg">검색어를 입력하세요.</div>';
+          }
+        })
+        .catch(err => {
+          // 통신 실패 시 메시지로 교체
+          document.getElementById('listBody').innerHTML = `<div class="empty-msg">통신 실패.<br><small>${err}</small></div>`;
+        });
+    }
+
+
+    function handleEnter(e) {
+      if (e.key === 'Enter') {
+        const input = document.getElementById('searchInput');
+        const query = input.value.trim().toLowerCase();
+
+        if (!query) return;
+
+        const result = allData.find(row => {
+          const id = String(row[1]).toLowerCase();
+          const name = String(row[2]).toLowerCase();
+          return id === query || name.includes(query);
+        });
+
+        if (result) {
+          searchHistory.unshift(result);
+          renderHistory();
+          input.value = '';
+        } else {
+          alert('일치하는 학생이 없습니다.');
+        }
+      }
+    }
+
+    function renderHistory() {
+      const listBody = document.getElementById('listBody');
+      const countInfo = document.getElementById('countInfo');
+      countInfo.innerText = `기록 ${searchHistory.length}건`;
+
+      if (searchHistory.length === 0) {
+        listBody.innerHTML = '<div class="empty-msg">검색어를 입력하세요.</div>';
+        return;
+      }
+
+      let html = '';
+      searchHistory.forEach((student, index) => {
+        html += `
+          <div class="list-item">
+            <div>${student[0]}</div>
+            <div style="color:var(--primary-bg); font-weight:700;">${student[1]}</div>
+            <div style="font-weight:700; font-size:1.05rem;">${student[2]}</div>
+            <div>${student[3]}</div>
+            <div>${student[4]}</div>
+            <div style="font-weight:700;">${student[5]}</div>
+            <div style="text-align:center;">
+              <button class="btn-del" onclick="removeItem(${index})">✕</button>
+            </div>
+          </div>
+        `;
+      });
+      listBody.innerHTML = html;
+    }
+
+    function removeItem(index) {
+      searchHistory.splice(index, 1);
+      renderHistory();
+    }
+
+    function clearList() {
+      searchHistory = [];
+      renderHistory();
+      document.getElementById('searchInput').focus();
+    }
+  </script>
+</body>
+
+</html>
