@@ -274,11 +274,18 @@
             <h1 class="text-lg font-bold flex items-center gap-2">
                 <i class="fas fa-clipboard-check"></i> 퀀텀관 지도 현황
             </h1>
-            <button onclick="fetchData()"
-                class="text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded transition shadow border border-indigo-500 flex items-center gap-1 group">
-                <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i>
-                <span>새로고침</span>
-            </button>
+            <!-- 상단 네비게이션 안쪽 버튼 -->
+            <div class="flex items-center gap-2">
+                <!-- 마지막 업데이트 시간 표시 (선택사항) -->
+                <span id="lastSyncTime" class="text-xs text-indigo-200 hidden sm:inline"></span>
+
+                <button onclick="fetchData(true)"
+                    class="text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded transition shadow border border-indigo-500 flex items-center gap-1 group"
+                    title="전체 데이터를 서버에서 다시 받아옵니다">
+                    <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-700"></i>
+                    <span>전체 동기화</span>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -600,7 +607,8 @@
             fetchData();
         });
 
-        async function fetchData() {
+        // ★ [핵심 로직] 데이터 가져오기 (하이브리드 캐싱 방식)
+        async function fetchData(forceReload = false) {
             if (!API_URL.includes("script.google.com")) {
                 alert("API_URL을 설정해주세요!");
                 return;
@@ -609,21 +617,99 @@
             const loader = document.getElementById('loader');
             const tbody = document.getElementById('tableBody');
 
-            loader.classList.remove('hidden');
-            tbody.innerHTML = '';
+            // 1. 강제 새로고침이거나 캐시가 없으면 -> 로딩 표시
+            if (forceReload || !localStorage.getItem('dashboardData')) {
+                loader.classList.remove('hidden');
+                tbody.innerHTML = '';
+            }
 
             try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
+                // 오늘 날짜 구하기 (YYYY-MM-DD)
+                const now = new Date();
+                const offset = now.getTimezoneOffset() * 60000;
+                const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
 
-                rawData = data;
-                initFilters(data);
-                renderDashboard();
+                // 2. 로컬 캐시 확인
+                const localData = localStorage.getItem('dashboardData');
+                let cachedRawData = localData ? JSON.parse(localData) : [];
+
+                if (!forceReload && cachedRawData.length > 0) {
+                    // ★ 캐시가 있으면 일단 먼저 보여줌 (Fast Paint)
+                    console.log("🚀 로컬 캐시로 즉시 로딩");
+                    rawData = cachedRawData;
+                    initFilters(rawData);
+                    renderDashboard();
+                    updateLastSyncTime();
+
+                    // 그리고 백그라운드에서 오늘 데이터만 가져와서 병합 (Background Update)
+                    updateTodayDataOnly(today);
+                } else {
+                    // ★ 캐시가 없거나 강제 리로드면 -> 전체 데이터 받기
+                    console.log("🔄 전체 데이터 새로 다운로드");
+                    const response = await fetch(API_URL); // 파라미터 없으면 전체 반환
+                    const allData = await response.json();
+
+                    rawData = allData;
+
+                    // 캐시 저장
+                    localStorage.setItem('dashboardData', JSON.stringify(allData));
+                    localStorage.setItem('lastFullSync', new Date().toISOString()); // 마지막 전체 동기화 시간
+
+                    // 화면 그리기
+                    initFilters(rawData);
+                    renderDashboard();
+                    updateLastSyncTime();
+                    if (loader) loader.classList.add('hidden');
+                }
+
             } catch (error) {
                 console.error("데이터 로드 실패:", error);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold">데이터를 불러오지 못했습니다. URL을 확인해주세요.</td></tr>';
+                if (forceReload) { // 강제 로드 중 에러면 메시지 표시
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold">데이터를 불러오지 못했습니다.</td></tr>';
+                }
             } finally {
-                loader.classList.add('hidden');
+                // 전체 로드일 때만 여기서 로더 숨김 (부분 업데이트는 내부에서 처리)
+                if (forceReload || !localStorage.getItem('dashboardData')) {
+                    loader.classList.add('hidden');
+                }
+            }
+        }
+
+        // [보조 함수] 오늘 데이터만 가져와서 병합하기
+        async function updateTodayDataOnly(todayDate) {
+            try {
+                console.log(`📅 오늘(${todayDate}) 데이터만 서버 요청 중...`);
+                // 서버에 오늘 날짜 데이터만 요청
+                const response = await fetch(`${API_URL}?date=${todayDate}`);
+                const todayData = await response.json();
+
+                // 병합 로직 (Merge Strategy)
+                // 1. 기존 rawData에서 "오늘 데이터"를 모두 제거 (구버전 삭제)
+                // 2. 서버에서 받아온 "최신 오늘 데이터"를 추가
+
+                const otherDaysData = rawData.filter(item => item.date !== todayDate);
+                const mergedData = [...otherDaysData, ...todayData];
+
+                // 날짜/시간 역순 정렬 (최신순) - 정렬을 미리 해두면 렌더링 시 빠름
+                mergedData.sort((a, b) => {
+                    const dtA = a.date + a.time;
+                    const dtB = b.date + b.time;
+                    return dtA < dtB ? 1 : -1;
+                });
+
+                // 데이터 갱신 및 재저장
+                rawData = mergedData;
+                localStorage.setItem('dashboardData', JSON.stringify(rawData));
+
+                console.log("✅ 오늘 데이터 동기화 완료");
+
+                // 화면 갱신 (사용자가 보고 있는 필터 상태 유지하면서)
+                // 너무 깜빡거리지 않게 테이블 내용만 살짝 업데이트하는 느낌
+                renderDashboard();
+                updateLastSyncTime();
+
+            } catch (e) {
+                console.error("오늘 데이터 동기화 실패 (기존 데이터 유지)", e);
             }
         }
 
@@ -824,7 +910,9 @@
                     if (result.status === 'success') {
                         currentRecord.consultation = content;
                         currentRecord.teacher = teacher;
+                        localStorage.setItem('dashboardData', JSON.stringify(rawData));
                         renderDashboard();
+                        updateLastSyncTime();
                         closeModal();
                         alert("✅ 상담 내역이 저장되었습니다.");
                     } else {
@@ -858,6 +946,17 @@
             if (t === '수면주의') return '수면주의';
             return t;
         }
+
+        function updateLastSyncTime() {
+            const span = document.getElementById('lastSyncTime');
+            if (!span) return;
+
+            const now = new Date();
+            // 시:분:초 형식으로 표시
+            const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            span.innerText = `최근 동기화: ${timeStr}`;
+        }
+
         document.getElementById('nav-quantum').classList.add('active');
     </script>
 </body>
