@@ -617,42 +617,75 @@
             position: relative;
         }
 
-        /* 인쇄용 스타일 */
         @media print {
-            body * {
+            body {
                 visibility: hidden;
+                background: white;
+                margin: 0;
+                padding: 0;
             }
 
-            #plan-section,
-            #plan-section * {
+            /* [수정] 분석 리포트 영역: 97%로 축소하여 한 장에 넣기 */
+            #analysis-section.active {
                 visibility: visible;
-            }
-
-            #plan-section {
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 100%;
+
+                /* ★핵심: 전체를 95%로 살짝 줄여서 한 장 확보 */
+                zoom: 0.95;
             }
 
+            #analysis-section.active * {
+                visibility: visible;
+            }
+
+            /* [수정] 카드 간격 다이어트 */
+            .dash-card {
+                page-break-inside: avoid;
+                border: 1px solid #ccc;
+                box-shadow: none;
+                margin-bottom: 10px !important;
+                /* 카드 사이 간격 축소 */
+                padding: 10px !important;
+                /* 카드 안쪽 여백 축소 */
+            }
+
+            /* [수정] 차트 높이 인쇄 시에만 더 줄이기 */
+            .radar-chart-box {
+                height: 220px !important;
+                /* 인쇄할 땐 오각형 더 작게 */
+            }
+
+            .line-chart-box {
+                height: 200px !important;
+                /* 인쇄할 땐 꺾은선 더 작게 */
+                margin-bottom: 20px !important;
+                /* 아래 여백도 최소화 */
+            }
+
+            /* [수정] 제목 여백 축소 */
+            .dash-card h3 {
+                margin: 5px 0 5px 0 !important;
+                /* 제목 위아래 간격 좁히기 */
+                font-size: 16px !important;
+            }
+
+            /* 공통 숨김 */
             .nav-menu,
-            .search-box,
             header,
             .mode-control,
             #save-fab,
-            .edit-controls {
+            .edit-controls,
+            .search-box,
+            .download-panel,
+            button {
                 display: none !important;
             }
-
-            .plan-table {
-                font-size: 10pt;
-            }
-
-            td,
-            th {
-                border: 1px solid #000 !important;
-            }
         }
+
+
 
         /* 통계 페이지 스타일 */
         .stats-header {
@@ -881,9 +914,13 @@
 
         .radar-chart-box {
             position: relative;
-            height: 250px;
+            height: 240px;
+            /* 기존(아마 300px 이상) -> 240px로 축소 */
             width: 100%;
-            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
         }
 
         /* 오른쪽 패널: 추이 그래프 */
@@ -921,8 +958,11 @@
 
         .line-chart-box {
             position: relative;
-            height: 320px;
+            height: 220px;
+            /* 차트 자체 높이를 줄여서 날씬하게 */
             width: 100%;
+            margin-bottom: 60px;
+            /* ★중요★ 아래 'AI 코멘트'와 겹치지 않도록 빈 공간 넉넉히 확보 */
         }
 
         /* 모바일 대응 (세로 배치) */
@@ -945,7 +985,7 @@
 
 <body>
     <header>
-        <h1>QUANTUM LIBRARY</h1>
+        <h1>강남대성 OnTact</h1>
         <!-- 출결 모드 스위치 -->
         <div class="mode-control">
             <span class="toggle-label">출결체크</span>
@@ -963,7 +1003,7 @@
             <!-- 1. 좌석 배정 -->
             <div class="nav-item active" onclick="switchPage('seat')">
                 <span class="nav-icon">🪑</span>
-                <span class="nav-text">좌석 배정</span>
+                <span class="nav-text">출결 체크</span>
             </div>
 
             <!-- 2. 시간표 관리 -->
@@ -975,7 +1015,7 @@
             <!-- ★ [추가] 3. 학습 통계 -->
             <div class="nav-item" onclick="switchPage('stats')">
                 <span class="nav-icon">📊</span>
-                <span class="nav-text">학습 통계</span>
+                <span class="nav-text">개인 통계</span>
             </div>
 
             <!-- [추가] 4. 분석 리포트 탭 -->
