@@ -979,6 +979,35 @@
                 height: 250px;
             }
         }
+
+        /* 출결 모드 좌석표: 모바일에서 가로 스크롤 */
+        .seat-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 좌석표는 고정 폭 + 왼쪽 정렬 */
+        .seat-grid {
+            display: inline-block;
+            /* 내용 크기대로, 가운데 정렬 방지 */
+            white-space: nowrap;
+            /* 줄바꿈 방지 (가로로 길게) */
+        }
+
+        /* 모바일에서만 강제 적용하고 싶으면 */
+        @media (max-width: 768px) {
+            .seat-scroll-wrapper {
+                margin-bottom: 6px;
+            }
+
+            .seat-grid {
+                transform: scale(0.95);
+                /* 3% 정도만 살짝 줄이기 느낌으로 */
+                transform-origin: left top;
+            }
+        }
     </style>
 
 </head>
@@ -1040,793 +1069,795 @@
             </div>
 
             <!-- 탭 1 -->
-            <div class="tab-content" id="tab1">
-                <div class="grid-wrapper">
-                    <table>
-                        <tr>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="7">
-                                    7
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="22">
-                                    22
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="23">
-                                    23
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="39">
-                                    39
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="40">
-                                    40
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="57">
-                                    57
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="58">
-                                    58
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="75">
-                                    75
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="8">
-                                    8
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="21">
-                                    21
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="24">
-                                    24
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="38">
-                                    38
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="41">
-                                    41
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="56">
-                                    56
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="59">
-                                    59
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="74">
-                                    74
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="76">
-                                    76
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="6">
-                                    6
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="9">
-                                    9
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="20">
-                                    20
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="25">
-                                    25
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="37">
-                                    37
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="42">
-                                    42
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="55">
-                                    55
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="60">
-                                    60
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="73">
-                                    73
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="77">
-                                    77
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="5">
-                                    5
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="10">
-                                    10
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="19">
-                                    19
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="26">
-                                    26
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="36">
-                                    36
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="43">
-                                    43
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="54">
-                                    54
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="61">
-                                    61
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="72">
-                                    72
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="4">
-                                    4
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="11">
-                                    11
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="18">
-                                    18
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="27">
-                                    27
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="35">
-                                    35
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="44">
-                                    44
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="53">
-                                    53
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="62">
-                                    62
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="71">
-                                    71
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="3">
-                                    3
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="12">
-                                    12
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="17">
-                                    17
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="28">
-                                    28
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="34">
-                                    34
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="45">
-                                    45
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="52">
-                                    52
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="63">
-                                    63
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="70">
-                                    70
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="78">
-                                    78
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="2">
-                                    2
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="13">
-                                    13
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="16">
-                                    16
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="29">
-                                    29
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="33">
-                                    33
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="46">
-                                    46
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="51">
-                                    51
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="64">
-                                    64
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="69">
-                                    69
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="79">
-                                    79
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="1">
-                                    1
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="14">
-                                    14
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="15">
-                                    15
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="30">
-                                    30
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="32">
-                                    32
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="47">
-                                    47
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="50">
-                                    50
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="65">
-                                    65
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="68">
-                                    68
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="80">
-                                    80
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="31">
-                                    31
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="48">
-                                    48
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="49">
-                                    49
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="66">
-                                    66
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="67">
-                                    67
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="81">
-                                    81
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+            <div class="seat-scroll-wrapper">
+                <div class="tab-content" id="tab1">
+                    <div class="grid-wrapper">
+                        <table>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="7">
+                                        7
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="22">
+                                        22
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="23">
+                                        23
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="39">
+                                        39
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="40">
+                                        40
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="57">
+                                        57
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="58">
+                                        58
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="75">
+                                        75
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="8">
+                                        8
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="21">
+                                        21
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="24">
+                                        24
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="38">
+                                        38
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="41">
+                                        41
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="56">
+                                        56
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="59">
+                                        59
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="74">
+                                        74
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="76">
+                                        76
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="6">
+                                        6
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="9">
+                                        9
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="20">
+                                        20
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="25">
+                                        25
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="37">
+                                        37
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="42">
+                                        42
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="55">
+                                        55
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="60">
+                                        60
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="73">
+                                        73
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="77">
+                                        77
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="5">
+                                        5
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="10">
+                                        10
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="19">
+                                        19
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="26">
+                                        26
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="36">
+                                        36
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="43">
+                                        43
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="54">
+                                        54
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="61">
+                                        61
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="72">
+                                        72
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="4">
+                                        4
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="11">
+                                        11
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="18">
+                                        18
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="27">
+                                        27
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="35">
+                                        35
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="44">
+                                        44
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="53">
+                                        53
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="62">
+                                        62
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="71">
+                                        71
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="3">
+                                        3
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="12">
+                                        12
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="17">
+                                        17
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="28">
+                                        28
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="34">
+                                        34
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="45">
+                                        45
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="52">
+                                        52
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="63">
+                                        63
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="70">
+                                        70
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="78">
+                                        78
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="2">
+                                        2
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="13">
+                                        13
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="16">
+                                        16
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="29">
+                                        29
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="33">
+                                        33
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="46">
+                                        46
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="51">
+                                        51
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="64">
+                                        64
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="69">
+                                        69
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="79">
+                                        79
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="1">
+                                        1
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="14">
+                                        14
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="15">
+                                        15
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="30">
+                                        30
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="32">
+                                        32
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="47">
+                                        47
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="50">
+                                        50
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="65">
+                                        65
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="68">
+                                        68
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="80">
+                                        80
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="31">
+                                        31
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="48">
+                                        48
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="49">
+                                        49
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="66">
+                                        66
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="67">
+                                        67
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="81">
+                                        81
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
-            </div>
-            <div class="tab-content" id="tab2">
-                <div class="grid-wrapper">
-                    <table>
-                        <tr>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="110">
-                                    110
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="109">
-                                    109
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="98">
-                                    98
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="97">
-                                    97
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="87">
-                                    87
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="86">
-                                    86
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="119">
-                                    119
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="111">
-                                    111
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="108">
-                                    108
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="99">
-                                    99
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="96">
-                                    96
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="88">
-                                    88
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="85">
-                                    85
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="118">
-                                    118
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="112">
-                                    112
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="107">
-                                    107
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="100">
-                                    100
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="95">
-                                    95
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="89">
-                                    89
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="84">
-                                    84
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="117">
-                                    117
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="113">
-                                    113
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="106">
-                                    106
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="101">
-                                    101
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="94">
-                                    94
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="90">
-                                    90
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="83">
-                                    83
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="116">
-                                    116
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="114">
-                                    114
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="105">
-                                    105
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="102">
-                                    102
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="93">
-                                    93
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="91">
-                                    91
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="82">
-                                    82
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="115">
-                                    115
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="104">
-                                    104
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="103">
-                                    103
-                                </div>
-                            </td>
-                            <td class="seat-cell">
-                                <div class="seat" data-seat="92">
-                                    92
-                                </div>
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                            <td class="aisle-cell">
-                            </td>
-                        </tr>
-                    </table>
+                <div class="tab-content" id="tab2">
+                    <div class="grid-wrapper">
+                        <table>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="110">
+                                        110
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="109">
+                                        109
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="98">
+                                        98
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="97">
+                                        97
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="87">
+                                        87
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="86">
+                                        86
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="119">
+                                        119
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="111">
+                                        111
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="108">
+                                        108
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="99">
+                                        99
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="96">
+                                        96
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="88">
+                                        88
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="85">
+                                        85
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="118">
+                                        118
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="112">
+                                        112
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="107">
+                                        107
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="100">
+                                        100
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="95">
+                                        95
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="89">
+                                        89
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="84">
+                                        84
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="117">
+                                        117
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="113">
+                                        113
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="106">
+                                        106
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="101">
+                                        101
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="94">
+                                        94
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="90">
+                                        90
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="83">
+                                        83
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="116">
+                                        116
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="114">
+                                        114
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="105">
+                                        105
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="102">
+                                        102
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="93">
+                                        93
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="91">
+                                        91
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="82">
+                                        82
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="115">
+                                        115
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="104">
+                                        104
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="103">
+                                        103
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="92">
+                                        92
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
