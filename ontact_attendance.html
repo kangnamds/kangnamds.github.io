@@ -980,7 +980,7 @@
             }
         }
 
-        /* 출결 모드 좌석표: 모바일에서 가로 스크롤 */
+        /* 공통: 가로 스크롤 래퍼 */
         .seat-scroll-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -988,30 +988,44 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* 테이블이 가운데 정렬돼 있으면 왼쪽 기준으로 보이게 */
+        /* 공통: 좌석표는 내용 크기대로 */
         .grid-wrapper {
             width: max-content;
-            /* 내용 크기만큼만, 쓸데없이 넓지 않게 */
-            margin: 0;
-            /* 가운데 정렬 제거 */
         }
 
-        /* 좌석표는 고정 폭 + 왼쪽 정렬 */
+        /* 공통: 줄바꿈 없이 가로로 */
         .seat-grid {
             display: inline-block;
             white-space: nowrap;
         }
 
+        /* ✅ PC(768px 초과)에서는 가운데 정렬 */
+        @media (min-width: 769px) {
+            .seat-scroll-wrapper {
+                text-align: center;
+                /* 래퍼 기준 가운데 */
+            }
 
-        /* 모바일에서만 강제 적용하고 싶으면 */
+            .grid-wrapper {
+                margin: 0 auto;
+                /* 가운데 정렬 */
+            }
+        }
+
+        /* ✅ 모바일에서는 왼쪽 기준 + 살짝 축소 (원하면) */
         @media (max-width: 768px) {
             .seat-scroll-wrapper {
+                text-align: left;
                 margin-bottom: 6px;
+            }
+
+            .grid-wrapper {
+                margin: 0;
+                /* 좌측 정렬 */
             }
 
             .seat-grid {
                 transform: scale(0.95);
-                /* 좌석 모양 유지하면서 전체만 5% 축소 */
                 transform-origin: left top;
             }
         }
