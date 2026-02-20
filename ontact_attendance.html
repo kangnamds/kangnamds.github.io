@@ -988,13 +988,20 @@
             -webkit-overflow-scrolling: touch;
         }
 
+        /* 테이블이 가운데 정렬돼 있으면 왼쪽 기준으로 보이게 */
+        .grid-wrapper {
+            width: max-content;
+            /* 내용 크기만큼만, 쓸데없이 넓지 않게 */
+            margin: 0;
+            /* 가운데 정렬 제거 */
+        }
+
         /* 좌석표는 고정 폭 + 왼쪽 정렬 */
         .seat-grid {
             display: inline-block;
-            /* 내용 크기대로, 가운데 정렬 방지 */
             white-space: nowrap;
-            /* 줄바꿈 방지 (가로로 길게) */
         }
+
 
         /* 모바일에서만 강제 적용하고 싶으면 */
         @media (max-width: 768px) {
@@ -1004,7 +1011,7 @@
 
             .seat-grid {
                 transform: scale(0.95);
-                /* 3% 정도만 살짝 줄이기 느낌으로 */
+                /* 좌석 모양 유지하면서 전체만 5% 축소 */
                 transform-origin: left top;
             }
         }
@@ -1069,8 +1076,8 @@
             </div>
 
             <!-- 탭 1 -->
-            <div class="seat-scroll-wrapper">
-                <div class="tab-content" id="tab1">
+            <div class="tab-content" id="tab1">
+                <div class="seat-scroll-wrapper">
                     <div class="grid-wrapper">
                         <table>
                             <tr>
@@ -1607,7 +1614,9 @@
                         </table>
                     </div>
                 </div>
-                <div class="tab-content" id="tab2">
+            </div>
+            <div class="tab-content" id="tab2">
+                <div class="seat-scroll-wrapper">
                     <div class="grid-wrapper">
                         <table>
                             <tr>
