@@ -392,6 +392,97 @@
             min-height: 44px;
             /* 터치하기 좋은 높이 */
         }
+
+        /* 수업조회 테이블 전체 */
+        #lesson-page .table thead th {
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 0.6rem 0.5rem;
+            vertical-align: middle;
+        }
+
+        /* 바디 셀 스타일 - 세로 라인 제거, 가로 라인만 유지 */
+        #lesson-page .table tbody td {
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.95rem;
+            padding: 0.7rem 0.5rem;
+            line-height: 1.5;
+            border-bottom: 1px solid #eef0f3;
+            /* 부드러운 가로 라인 */
+            border-left: none;
+            /* 세로 라인 명시적 제거 */
+            border-right: none;
+            /* 세로 라인 명시적 제거 */
+            color: #495057;
+        }
+
+        /* 오늘수업(강좌) 열만 왼쪽 정렬 + 적당한 폭 고정 */
+        #lesson-page .table th.col-lesson,
+        #lesson-page .table td.col-lesson {
+            text-align: left;
+            width: 45%;
+            /* 수업열 폭 줄임 */
+        }
+
+        /* 테이블의 가장 바깥쪽 테두리는 살리고 싶다면 */
+        #lesson-page .table-responsive {
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+            border: 1px solid #e3e6f0;
+        }
+
+        #lesson-page .table {
+            margin-bottom: 0;
+            border: none;
+        }
+
+        /* 헤더 스타일: 금일요약 헤더 느낌(배경색) */
+        #lesson-page .table thead {
+            background-color: var(--primary-bg) !important;
+            color: white;
+        }
+
+        #lesson-page .table thead th {
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: bold;
+            padding: 0.8rem 0.5rem;
+            border-bottom: 2px solid #dce1e6;
+            /* 헤더 아래쪽 라인만 살짝 두껍게 */
+            border-left: none;
+            border-right: none;
+            background-color: var(--primary-bg) !important;
+            color: white;
+        }
+
+        /* 바디 셀 스타일 */
+        #lesson-page .table tbody td {
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.95rem;
+            /* 텍스트 크기 증가 */
+            padding: 0.7rem 0.5rem;
+            /* 행 간격 (높이) 넓힘 */
+            line-height: 1.5;
+            border-bottom: 1px solid #f0f0f0;
+            /* 선 연하게 */
+            color: #495057;
+        }
+
+        /* 호버 시 행 하이라이트 (리스트 느낌) */
+        #lesson-page .table tbody tr:hover {
+            background-color: #f8f9fc;
+        }
+
+        /* 수업 열만 좌측 정렬 */
+        #lesson-page .table th.col-lesson,
+        #lesson-page .table td.col-lesson {
+            text-align: left !important;
+            width: 45%;
+        }
     </style>
 
 
@@ -433,7 +524,7 @@
             </li>
             <li>
                 <a href="sms.html" class="nav-link" id="nav-sms">
-                    <span class="nav-icon">📩</span>
+                    <span class="nav-icon">💬</span>
                     <span class="nav-text">출결 문자</span>
                 </a>
             </li>
@@ -448,7 +539,10 @@
             <button class="tab-button active" onclick="showPage('upload-page', this)">데이터 업로드</button>
             <button class="tab-button" onclick="showPage('input-page', this)">미등원 기록 입력</button>
             <button class="tab-button" onclick="showPage('summary-page', this)">금일 요약</button>
-            <button class="tab-button" onclick="showPage('history-page', this)">기록 조회</button>
+            <button id="nav-lesson" class="btn btn-outline-secondary tab-button"
+                onclick="showPage('lesson-page', this)">
+                수업조회
+            </button>
         </div>
 
         <!-- [PAGE 1] 데이터 업로드 -->
@@ -683,10 +777,47 @@
         </section>
 
 
-        <!-- [PAGE 3] 기록 조회 -->
-        <section id="history-page" class="page-section">
-            <div class="alert alert-info text-center">기록 조회 기능은 준비 중입니다.</div>
+        <!-- [PAGE 3] 수업 조회 -->
+        <section id="lesson-page" class="page-section">
+            <div class="custom-card">
+                <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+                    <select id="lessonClassFilter" class="form-select w-auto fw-bold" onchange="refreshLessonView()">
+                        <option value="all">전체 반</option>
+                    </select>
+
+                    <button class="btn btn-outline-secondary btn-sm fw-bold ms-auto" onclick="printLessonView()">
+                        <i class="bi bi-printer-fill me-1"></i>현재 화면 출력
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-2">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th style="width:80px;">반</th>
+                                <th style="width:120px;">학번</th>
+                                <th style="width:100px;">이름</th>
+                                <th class="col-lesson">오늘수업(강좌)</th>
+                                <th style="width:100px;">강의실</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lessonTableBody" class="small">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    반을 선택하면 수업 정보가 표시됩니다.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="lessonSummaryBox" class="mt-2 small text-muted">
+                    강좌별 매칭 인원 수가 여기에 표시됩니다.
+                </div>
+            </div>
         </section>
+
+
 
     </div>
 
@@ -698,6 +829,27 @@
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz0HbGoNv6CW868O2_w-o-2IYr_EC73F6YTm9DnTLs_FZm9JqtnXgg-SgiSiCWbaT2LUg/exec";
         let requestQueue = [];
+
+        // ===== 수업조회/시간표 관련 상수 & 전역 =====
+        const CLASSSHEET_ID = '1jtye6oY0gHPDn7xJla75uG_fhdy_yktx9v4SObCFHRg';
+        const STUDENT_SHEET_NAME = '☆정규시즌';   // 학번 + 강좌명(L열~)
+        const ROOM_SHEET_NAME = '강의실';         // 강좌명(A열) + 강의실(C열)
+
+        // 오늘 결석/등원예정 학생 목록
+        let absentExpectedToday = [];
+
+        // 시간표 원본/가공 데이터
+        let studentLessonRawRows = [];   // ☆정규시즌 gviz 원본 row들
+        let roomMap = {};                // 강좌명(key) -> 강의실
+        let studentLessonsMap = {};      // 학번 -> 오늘 수업 배열
+        let lessonViewRows = [];         // 수업조회 테이블용 최종 rows
+        let lectureCounts = [];          // 강좌별 인원 요약
+        // ========================================
+
+        // gviz 로딩 완료 플래그
+        let isStudentSheetLoaded = false;
+        let isRoomSheetLoaded = false;
+
         let isProcessingQueue = false;
         // 위 주소를 본인의 웹 앱 URL로 꼭 바꿔주세요!
 
@@ -891,8 +1043,18 @@
                 .then(res => {
                     if (res.success) {
                         allAttendanceData = res.data;
+                        // [추가] 오늘 결석/등원예정 학생만 추출
+                        absentExpectedToday = allAttendanceData.filter(d => {
+                            const status = (d.status || '').trim();
+                            return status.includes('결석') || status.includes('등원예정');
+                        });
+
                         initClassDropdown();
                         updateSummaryUI();
+
+                        // [선택] 수업조회용 시간표 데이터 미리 로드
+                        loadStudentLessonSheet();
+                        loadRoomSheet();
                     } else {
                         document.getElementById('reportSummary').textContent = "데이터 로드 실패";
                     }
@@ -1526,10 +1688,390 @@
             processQueue();
         }
 
+        // ============================
+        // 수업조회: gviz로 시간표 읽기
+        // ============================
+
+        // 1) 학생별수업(☆정규시즌) 시트 로드
+        function loadStudentLessonSheet() {
+            const old = document.getElementById('gviz_student_sheet');
+            if (old) old.remove();
+
+            const script = document.createElement('script');
+            script.id = 'gviz_student_sheet';
+
+            const tq = encodeURIComponent('select *');
+            const sheetName = encodeURIComponent(STUDENT_SHEET_NAME);
+
+            script.src =
+                `https://docs.google.com/spreadsheets/d/${CLASSSHEET_ID}/gviz/tq` +
+                `?tq=${tq}&tqx=responseHandler:handleStudentLessonData&sheet=${sheetName}`;
+
+            document.body.appendChild(script);
+        }
+
+        // 2) 강의실 시트 로드
+        function loadRoomSheet() {
+            const old = document.getElementById('gviz_room_sheet');
+            if (old) old.remove();
+
+            const script = document.createElement('script');
+            script.id = 'gviz_room_sheet';
+
+            const tq = encodeURIComponent('select *');
+            const sheetName = encodeURIComponent(ROOM_SHEET_NAME);
+
+            script.src =
+                `https://docs.google.com/spreadsheets/d/${CLASSSHEET_ID}/gviz/tq` +
+                `?tq=${tq}&tqx=responseHandler:handleRoomData&sheet=${sheetName}`;
+
+            document.body.appendChild(script);
+        }
+
+        // gviz 공통: DataTable에서 2차원 values 추출 헬퍼
+        function gvizToValues(response) {
+            const table = response.table;
+            const rows = table.rows || [];
+            return rows.map(r => (r.c || []).map(c => (c ? c.v : '')));
+        }
+
+        // ☆정규시즌 응답 처리
+        function handleStudentLessonData(response) {
+            try {
+                const values = gvizToValues(response);
+                studentLessonRawRows = values; // 헤더 포함 여부에 따라 필요시 slice(1)
+
+                isStudentSheetLoaded = true;
+                buildStudentLessonsMapIfReady();
+            } catch (e) {
+                console.error('handleStudentLessonData error', e);
+            }
+        }
+
+        // 강의실 응답 처리
+        function handleRoomData(response) {
+            try {
+                const values = gvizToValues(response);
+                roomMap = {};
+
+                // 0번째 행을 헤더로 가정하고, 1행부터 데이터라고 보면:
+                for (let i = 1; i < values.length; i++) {
+                    const row = values[i];
+                    const lectureKeyRaw = row[0];                  // A열: 강좌명 원본
+                    const room = String(row[2] || '').trim();      // C열: 강의실
+                    const lectureKey = normalizeLectureKey(lectureKeyRaw);
+                    if (!lectureKey) continue;
+                    roomMap[lectureKey] = room;
+                }
+
+                isRoomSheetLoaded = true;
+                buildStudentLessonsMapIfReady();
+            } catch (e) {
+                console.error('handleRoomData error', e);
+            }
+        }
+
+        // 두 시트가 다 로드되면, 학번 -> 오늘 수업 Map 구성
+        function buildStudentLessonsMapIfReady() {
+            if (!isStudentSheetLoaded || !isRoomSheetLoaded) return;
+
+            studentLessonsMap = {};
+
+            // 오늘 요일 계산 (월/화/수/목/금)
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const today = new Date();
+            const todayDay = days[today.getDay()];
+
+            if (!studentLessonRawRows || studentLessonRawRows.length === 0) return;
+
+            // 첫 행을 헤더로 가정
+            const header = studentLessonRawRows[0];
+            const rows = studentLessonRawRows.slice(1);
+
+            // ☆정규시즌 구조:
+            // J열: 학번 (0-based index 기준 -> 9)
+            // L열 이후: 강좌명들 (11, 12, 13, ...)
+            const idxId = 9;
+            const firstLectureCol = 11; // L열
+
+            rows.forEach(r => {
+                const id = String(r[idxId] || '').trim();
+                if (!id) return;
+
+                const lessons = [];
+
+                for (let c = firstLectureCol; c < r.length; c++) {
+                    const keyRaw = r[c];                  // L열 이후 셀
+                    const key = normalizeLectureKey(keyRaw);
+                    if (!key) continue;
+
+                    const parts = String(keyRaw).split(','); // 여기서만 표시용으로 과목/선생/요일/교시 분해
+                    if (parts.length < 4) continue;
+
+                    const subject = parts[0].trim();
+                    const teacher = parts[1].trim();
+                    const day = parts[2].trim();
+                    const period = parts[3].trim();
+
+                    if (day !== todayDay) continue;       // 오늘 요일 필터
+
+                    const room = roomMap[key] || '';
+
+                    lessons.push({
+                        key,
+                        subject,
+                        teacher,
+                        day,
+                        period,
+                        room
+                    });
+                }
+
+                if (lessons.length > 0) {
+                    studentLessonsMap[id] = lessons;
+                }
+            });
+
+            // 수업조회용 최종 데이터 구성
+            buildLessonViewRows();
+        }
+
+        // 강좌명 문자열 정규화: "과목,선생,요일,교시"에서 공백 정리
+        function normalizeLectureKey(raw) {
+            if (!raw) return '';
+            const parts = String(raw).split(',');
+            if (parts.length < 4) {
+                return String(raw).trim();
+            }
+
+            const subject = parts[0].trim(); // 과목은 키에서 제외 (표시용으로만 사용)
+            const teacher = parts[1].trim();
+            const day = parts[2].trim();
+            const period = parts[3].trim().replace(/\s/g, ''); // 교시 공백 제거
+
+            // 정규화 key는 "선생님,요일,교시"만 사용
+            return [teacher, day, period].join(',');
+        }
+
+        // absentExpectedToday + studentLessonsMap -> lessonViewRows, lectureCounts 생성
+        function buildLessonViewRows() {
+            lessonViewRows = [];
+            lectureCounts = [];
+
+            if (!absentExpectedToday || absentExpectedToday.length === 0) return;
+
+            // 1) 학생별 row 생성
+            absentExpectedToday.forEach(stu => {
+                const id = String(stu.id || '').trim();
+                const lessons = (studentLessonsMap[id] || []).slice(); // 복사본
+
+                // [추가] 교시 오름차순 정렬
+                lessons.sort(comparePeriodAsc);
+
+                lessonViewRows.push({
+                    class: stu.class,
+                    id: id,
+                    name: stu.name,
+                    status: (stu.status || '').trim(),
+                    lessons
+                });
+            });
+
+            // 2) 강좌별 인원 수 집계
+            const lectureCountMap = {};
+            lessonViewRows.forEach(row => {
+                row.lessons.forEach(lesson => {
+                    const k = lesson.key;
+                    if (!lectureCountMap[k]) {
+                        lectureCountMap[k] = {
+                            key: k,
+                            room: lesson.room || '',
+                            count: 0
+                        };
+                    }
+                    lectureCountMap[k].count += 1;
+                });
+            });
+
+            lectureCounts = Object.values(lectureCountMap);
+
+            // [추가] 수업조회 탭 반 드롭다운 채우기
+            initLessonClassFilter();
+
+            // 기본 렌더링 (필터 없음 상태)
+            refreshLessonView();
+        }
+
+        // 수업조회 화면 갱신 (반/검색 필터 적용)
+        function refreshLessonView() {
+            const classFilterEl = document.getElementById('lessonClassFilter');
+            const searchEl = document.getElementById('lessonSearchInput');
+            const tbody = document.getElementById('lessonTableBody');
+
+            if (!tbody) return;
+
+            const classFilter = classFilterEl ? classFilterEl.value : 'all';
+            const keyword = (searchEl ? searchEl.value : '').trim();
+
+            let rows = lessonViewRows || [];
+
+            // 반 필터
+            if (classFilter && classFilter !== 'all') {
+                rows = rows.filter(r => String(r.class || '') === classFilter);
+            }
+
+            // 강좌/선생/교시/강의실 검색
+            if (keyword) {
+                const kw = keyword.toLowerCase();
+                rows = rows.filter(r => {
+                    if (!r.lessons || r.lessons.length === 0) return false;
+                    return r.lessons.some(le => {
+                        const text = [
+                            le.key,
+                            le.subject,
+                            le.teacher,
+                            le.period,
+                            le.room
+                        ].join(' ').toLowerCase();
+                        return text.includes(kw);
+                    });
+                });
+            }
+
+            // 테이블 렌더링
+            tbody.innerHTML = '';
+            if (rows.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="5" class="text-center text-muted py-4">조회 결과가 없습니다.</td></tr>';
+            } else {
+                rows.forEach(r => {
+                    const tr = document.createElement('tr');
+
+                    const tdClass = `<td>${r.class || ''}</td>`;
+                    const tdId = `<td>${r.id || ''}</td>`;
+                    const tdName = `<td>${r.name || ''}</td>`;
+
+                    // 오늘수업(강좌) 셀: 여러 개면 줄바꿈
+                    let lectureLines = '';
+                    let roomLines = '';
+
+                    if (r.lessons && r.lessons.length > 0) {
+                        lectureLines = r.lessons.map(le =>
+                            `${le.subject}(${le.teacher}, ${le.period})`
+                        ).join('<br>');
+
+                        roomLines = r.lessons.map(le =>
+                            le.room || '-'
+                        ).join('<br>');
+                    } else {
+                        lectureLines = '-';
+                        roomLines = '-';
+                    }
+
+                    const tdLecture = `<td class="col-lesson">${lectureLines}</td>`;
+                    const tdRoom = `<td>${roomLines}</td>`;
+
+                    tr.innerHTML = tdClass + tdId + tdName + tdLecture + tdRoom;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            renderLessonSummary(rows);
+        }
+
+        // 수업조회 탭 반 드롭다운 초기화
+        function initLessonClassFilter() {
+            const select = document.getElementById('lessonClassFilter');
+            if (!select) return;
+
+            const classes = [
+                ...new Set(
+                    (absentExpectedToday || [])
+                        .map(d => d.class)
+                        .filter(c => c)
+                )
+            ].sort();
+
+            const current = select.value || 'all';
+
+            select.innerHTML = '<option value="all">전체 반</option>';
+            classes.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                select.appendChild(opt);
+            });
+
+            if (classes.includes(current)) {
+                select.value = current;
+            } else {
+                select.value = 'all';
+            }
+        }
+
+
+        // 강좌별 인원 요약 렌더링 (현재 화면 필터 기준)
+        function renderLessonSummary(filteredRows) {
+            const box = document.getElementById('lessonSummaryBox');
+            if (!box) return;
+
+            if (!filteredRows || filteredRows.length === 0) {
+                box.innerHTML = '<span class="text-muted">현재 조건에 해당하는 강좌가 없습니다.</span>';
+                return;
+            }
+
+            // 현재 화면에 보이는 학생들 기준으로 다시 집계
+            const lectureCountMap = {};
+
+            filteredRows.forEach(row => {
+                (row.lessons || []).forEach(lesson => {
+                    const key = lesson.key;
+                    const room = lesson.room || '';
+
+                    if (!lectureCountMap[key]) {
+                        lectureCountMap[key] = { key, room, count: 0 };
+                    }
+                    lectureCountMap[key].count += 1;
+                });
+            });
+
+            const lectureCountsFiltered = Object.values(lectureCountMap);
+            // [추가] 교시 오름차순 정렬
+            lectureCountsFiltered.sort((a, b) => {
+                const pa = parseInt(String(a.key).match(/\d+/)?.[0] || '0', 10);
+                const pb = parseInt(String(b.key).match(/\d+/)?.[0] || '0', 10);
+                return pa - pb;
+            });
+            if (lectureCountsFiltered.length === 0) {
+                box.innerHTML = '<span class="text-muted">현재 조건에 해당하는 강좌가 없습니다.</span>';
+                return;
+            }
+
+            let html = '<div class="fw-bold mb-1">강좌별 매칭 인원 (현재 화면 기준)</div>';
+            lectureCountsFiltered.forEach(item => {
+                html += `<div>• ${item.key} (${item.room || '강의실 미지정'}) : ${item.count}명</div>`;
+            });
+
+            box.innerHTML = html;
+        }
+
+
+        // 현재 화면 출력
+        function printLessonView() {
+            window.print();
+        }
+
+        // "7-8교시" 같은 문자열에서 첫 교시 숫자 추출 후 비교 (오름차순)
+        function comparePeriodAsc(a, b) {
+            const pa = parseInt(String(a.period || '').match(/\d+/)?.[0] || '0', 10);
+            const pb = parseInt(String(b.period || '').match(/\d+/)?.[0] || '0', 10);
+            return pa - pb;
+        }
+
+
         document.getElementById('nav-attendance').classList.add('active');
 
     </script>
 </body>
-
 
 </html>
