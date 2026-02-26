@@ -411,11 +411,29 @@
 
         /* [출결 모드 UI 로직] */
 
-        /* 1. 출결 모드 활성화 시 기본 스타일 (모든 학생 클릭 가능) */
+        /* ★ [추가] 기본 상태(출결 모드 꺼짐): 클릭 및 터치 원천 차단 */
+        td[data-seat-num] {
+            pointer-events: none;
+            /* 클릭/터치 이벤트 완전 무시 */
+            user-select: none;
+            cursor: default;
+        }
+
+        /* 1. 출결 모드 활성화 시: 클릭 가능하게 복구 */
+        .attendance-mode-active td[data-seat-num] {
+            pointer-events: auto !important;
+            /* 클릭 이벤트 다시 활성화 */
+            cursor: pointer !important;
+        }
+
         .attendance-mode-active .seat-occupied {
             border: 2px solid #e2e8f0;
-            cursor: pointer;
             transition: all 0.2s;
+        }
+
+        /* (옵션) 모드 켜진 상태에서 누를 때 살짝 투명해지는 터치 피드백 */
+        .attendance-mode-active td[data-seat-num]:active {
+            opacity: 0.7;
         }
 
         /* 2. 자습 중인 학생만 강조 (민트 글로우 + 애니메이션) */
@@ -1087,10 +1105,22 @@
             <div class="tab-buttons">
                 <button class="tab-btn active" onclick="showTab('tab1')">4관(송민) 7층1</button>
                 <button class="tab-btn" onclick="showTab('tab2')">4관(송민) 7층2</button>
+                <button class="tab-btn" onclick="showTab('tab3', '3관(두원) 6층1')">
+                    3관(두원) 6층1
+                </button>
+                <button class="tab-btn" onclick="showTab('tab4', '3관(두원) 6층2')">
+                    3관(두원) 6층2
+                </button>
+                <button class="tab-btn" onclick="showTab('tab5', '3관(두원) 7층1')">
+                    3관(두원) 7층1
+                </button>
+                <button class="tab-btn" onclick="showTab('tab6', '3관(두원) 7층2')">
+                    3관(두원) 7층2
+                </button>
             </div>
 
             <!-- 탭 1 -->
-            <div class="tab-content" id="tab1">
+            <div class="tab-content active" id="tab1" data-room="4관(송민) 7층">
                 <div class="seat-scroll-wrapper">
                     <div class="grid-wrapper">
                         <table>
@@ -1629,7 +1659,7 @@
                     </div>
                 </div>
             </div>
-            <div class="tab-content" id="tab2">
+            <div class="tab-content" id="tab2" data-room="4관(송민) 7층">
                 <div class="seat-scroll-wrapper">
                     <div class="grid-wrapper">
                         <table>
@@ -1877,6 +1907,1188 @@
                                 <td class="aisle-cell">
                                 </td>
                                 <td class="aisle-cell">
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content" id="tab3" data-room="3관(두원) 6층">
+                <div class="seat-scroll-wrapper">
+                    <div class="grid-wrapper">
+                        <table>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="5">
+                                        5
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="6">
+                                        6
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="15">
+                                        15
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="16">
+                                        16
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="26">
+                                        26
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="27">
+                                        27
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="38">
+                                        38
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="39">
+                                        39
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="49">
+                                        49
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="50">
+                                        50
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="61">
+                                        61
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="62">
+                                        62
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="4">
+                                        4
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="7">
+                                        7
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="14">
+                                        14
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="17">
+                                        17
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="25">
+                                        25
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="28">
+                                        28
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="37">
+                                        37
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="40">
+                                        40
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="48">
+                                        48
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="51">
+                                        51
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="60">
+                                        60
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="63">
+                                        63
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="8">
+                                        8
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="13">
+                                        13
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="18">
+                                        18
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="29">
+                                        29
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="36">
+                                        36
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="47">
+                                        47
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="52">
+                                        52
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="59">
+                                        59
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="3">
+                                        3
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="9">
+                                        9
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="12">
+                                        12
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="19">
+                                        19
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="24">
+                                        24
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="30">
+                                        30
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="35">
+                                        35
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="41">
+                                        41
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="46">
+                                        46
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="53">
+                                        53
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="58">
+                                        58
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="64">
+                                        64
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="2">
+                                        2
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="10">
+                                        10
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="11">
+                                        11
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="20">
+                                        20
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="23">
+                                        23
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="31">
+                                        31
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="34">
+                                        34
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="42">
+                                        42
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="45">
+                                        45
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="54">
+                                        54
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="57">
+                                        57
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="65">
+                                        65
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="1">
+                                        1
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="21">
+                                        21
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="22">
+                                        22
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="32">
+                                        32
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="33">
+                                        33
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="43">
+                                        43
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="44">
+                                        44
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="55">
+                                        55
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="56">
+                                        56
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="66">
+                                        66
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content" id="tab4" data-room="3관(두원) 6층">
+                <div class="seat-scroll-wrapper">
+                    <div class="grid-wrapper">
+                        <table>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="91">
+                                        91
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="90">
+                                        90
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="86">
+                                        86
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="85">
+                                        85
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="80">
+                                        80
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="79">
+                                        79
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="76">
+                                        76
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="75">
+                                        75
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="70">
+                                        70
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="69">
+                                        69
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="92">
+                                        92
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="89">
+                                        89
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="87">
+                                        87
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="84">
+                                        84
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="81">
+                                        81
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="78">
+                                        78
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="77">
+                                        77
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="74">
+                                        74
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="71">
+                                        71
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="68">
+                                        68
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="93">
+                                        93
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="88">
+                                        88
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="83">
+                                        83
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="82">
+                                        82
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="73">
+                                        73
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="72">
+                                        72
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="67">
+                                        67
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content" id="tab5" data-room="3관(두원) 7층">
+                <div class="seat-scroll-wrapper">
+                    <div class="grid-wrapper">
+                        <table>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="1">
+                                        1
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="2">
+                                        2
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="3">
+                                        3
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="4">
+                                        4
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="5">
+                                        5
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="6">
+                                        6
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="23">
+                                        23
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="24">
+                                        24
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="25">
+                                        25
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="26">
+                                        26
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="7">
+                                        7
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="8">
+                                        8
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="9">
+                                        9
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="10">
+                                        10
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="11">
+                                        11
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="12">
+                                        12
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="13">
+                                        13
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="14">
+                                        14
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="15">
+                                        15
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="16">
+                                        16
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="17">
+                                        17
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="18">
+                                        18
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="19">
+                                        19
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="20">
+                                        20
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="21">
+                                        21
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="22">
+                                        22
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content" id="tab6" data-room="3관(두원) 7층">
+                <div class="seat-scroll-wrapper">
+                    <div class="grid-wrapper">
+                        <table>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="27">
+                                        27
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="28">
+                                        28
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="35">
+                                        35
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="36">
+                                        36
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="37">
+                                        37
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="38">
+                                        38
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="39">
+                                        39
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="40">
+                                        40
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="41">
+                                        41
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="42">
+                                        42
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="43">
+                                        43
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="44">
+                                        44
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="45">
+                                        45
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="46">
+                                        46
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="47">
+                                        47
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="48">
+                                        48
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="49">
+                                        49
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="50">
+                                        50
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="51">
+                                        51
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="52">
+                                        52
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="53">
+                                        53
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="54">
+                                        54
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="29">
+                                        29
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="30">
+                                        30
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="31">
+                                        31
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="32">
+                                        32
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="33">
+                                        33
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="34">
+                                        34
+                                    </div>
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="aisle-cell">
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="55">
+                                        55
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="56">
+                                        56
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="57">
+                                        57
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="58">
+                                        58
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="59">
+                                        59
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="60">
+                                        60
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="61">
+                                        61
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="62">
+                                        62
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="63">
+                                        63
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="64">
+                                        64
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="65">
+                                        65
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="66">
+                                        66
+                                    </div>
+                                </td>
+                                <td class="seat-cell">
+                                    <div class="seat" data-seat="67">
+                                        67
+                                    </div>
                                 </td>
                             </tr>
                         </table>
@@ -2197,7 +3409,10 @@
             }
 
             function initSeats() {
-                const tds = document.querySelectorAll('#tab1 td, #tab2 td');
+                // [수정 전] const tds = document.querySelectorAll('#tab1 td, #tab2 td');
+                // [수정 후] 모든 탭 콘텐츠 안의 td를 찾는다.
+                const tds = document.querySelectorAll('.tab-content td');
+
                 tds.forEach(td => {
                     const text = td.innerText.trim();
                     if (text && !isNaN(text)) {
@@ -2244,20 +3459,39 @@
             }
 
             function renderMap() {
+                // 1. 모든 좌석 초기화 (변경 없음)
                 document.querySelectorAll('td[data-seat-num]').forEach(td => {
                     td.querySelector('.student-info').innerText = '';
                     td.classList.remove('seat-occupied', 'seat-class-now', 'seat-disabled');
                     td.removeAttribute('data-student-id');
                 });
+
+                // 2. 학생 데이터 배치
                 globalData.master.forEach(student => {
-                    const seatNum = String(student['좌석']).trim();
-                    const td = document.querySelector(`td[data-seat-num="${seatNum}"]`);
+                    const seatNum = String(student['좌석']).trim(); // 실제 시트의 헤더명(ex: '좌석' 또는 '좌석번호')
+                    const roomName = String(student['독서실명']).trim(); // ★ 실제 시트의 독서실명 헤더명 확인 필수!
+
+                    // 좌석 번호나 독서실명이 비어있으면 패스
+                    if (!seatNum || !roomName) return;
+
+                    // ★ 핵심: 해당 독서실명(data-room)을 가진 탭들 안에서 해당 번호(data-seat-num)를 가진 td를 찾는다!
+                    // 따옴표 안에 따옴표가 들어가므로 이스케이프 처리에 주의 (템플릿 리터럴 사용)
+                    const selector = `.tab-content[data-room="${roomName}"] td[data-seat-num="${seatNum}"]`;
+                    const td = document.querySelector(selector);
+
                     if (td) {
                         td.classList.remove('empty-seat');
                         td.classList.add('seat-occupied');
                         td.setAttribute('data-student-id', student['학번']);
                         td.querySelector('.student-info').innerText = student['이름'];
-                        checkSchedule(td, student['학번']);
+
+                        // 기존에 있던 스케줄 체크 함수 호출
+                        if (typeof checkSchedule === 'function') {
+                            checkSchedule(td, student['학번']);
+                        }
+                    } else {
+                        // (선택) 디버깅용: 매칭되는 좌석을 못 찾았을 때 콘솔에 로그 찍기
+                        // console.log(`좌석 없음: ${roomName} ${seatNum}번 (${student['이름']})`);
                     }
                 });
             }
@@ -2343,10 +3577,21 @@
             function showTab(tabId) {
                 document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
                 document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
                 document.getElementById(tabId).classList.add('active');
-                if (tabId === 'tab1') document.querySelectorAll('.tab-btn')[0].classList.add('active');
-                if (tabId === 'tab2') document.querySelectorAll('.tab-btn')[1].classList.add('active');
+
+                // 클릭한 버튼을 이벤트 객체를 이용해 동적으로 찾거나,
+                // HTML 쪽 onclick="showTab(event, 'tab3')" 처럼 event를 넘기는 방식을 써야 하는데,
+                // 제일 단순하게는 tabId 번호로 매칭하는 거야.
+                const tabNum = tabId.replace('tab', ''); // '1', '2', '3'...
+                const btnIndex = parseInt(tabNum) - 1;
+
+                const btns = document.querySelectorAll('.tab-btn');
+                if (btns[btnIndex]) {
+                    btns[btnIndex].classList.add('active');
+                }
             }
+
 
             // ==========================================
             // [시간표 관리] 검색 & 콤보박스
@@ -2359,6 +3604,7 @@
                 if (!student) return alert("학생 없음");
 
                 const sid = String(student['학번']);
+                const roomName = student['독서실명'] || '-';
                 currentStudentId = sid;
 
                 currentStudentPlans = globalData.plan.filter(row => String(row[3]) === sid);
@@ -2375,7 +3621,7 @@
 
                 document.getElementById('profile-area').style.display = 'block';
                 document.getElementById('pf-name-text').innerText = student['이름'];
-                document.getElementById('pf-detail').innerText = `학번: ${sid} | 좌석: ${student['좌석'] || '-'}`;
+                document.getElementById('pf-detail').innerText = `학번: ${sid} | 퀀텀관: ${roomName} | 좌석: ${student['좌석'] || '-'}`;
 
                 updatePeriodSelectBox();
 
