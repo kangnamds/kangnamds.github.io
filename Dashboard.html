@@ -274,16 +274,27 @@
             <h1 class="text-lg font-bold flex items-center gap-2">
                 <i class="fas fa-clipboard-check"></i> 퀀텀관 지도 현황
             </h1>
-            <!-- 상단 네비게이션 안쪽 버튼 -->
+            <!-- 상단 네비게이션 안쪽 버튼 영역 -->
             <div class="flex items-center gap-2">
-                <!-- 마지막 업데이트 시간 표시 (선택사항) -->
-                <span id="lastSyncTime" class="text-xs text-indigo-200 hidden sm:inline"></span>
+                <!-- 마지막 업데이트 시간 -->
+                <span id="lastSyncTime"
+                    class="text-xs text-white opacity-90 hidden sm:inline font-medium tracking-wide mr-2"></span>
 
+                <!-- 1. 전체 동기화 버튼 (기존 테마 스타일 적용) -->
                 <button onclick="fetchData(true)"
-                    class="text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded transition shadow border border-indigo-500 flex items-center gap-1 group"
+                    class="text-sm bg-indigo-600 px-3 py-1.5 rounded transition shadow flex items-center gap-1 group"
                     title="전체 데이터를 서버에서 다시 받아옵니다">
-                    <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-700"></i>
+                    <i class="fas fa-database text-white text-xs"></i>
                     <span>전체 동기화</span>
+                </button>
+
+                <!-- 2. 오늘 동기화 버튼 (기존 테마 스타일 적용) -->
+                <button onclick="syncTodayManual()"
+                    class="text-sm bg-indigo-600 px-3 py-1.5 rounded transition shadow flex items-center gap-1 group"
+                    title="오늘 데이터만 빠르게 갱신합니다">
+                    <i
+                        class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500 text-white text-xs"></i>
+                    <span class="font-bold">오늘 동기화</span>
                 </button>
             </div>
         </div>
@@ -324,7 +335,7 @@
             </li>
             <li>
                 <a href="sms.html" class="nav-link" id="nav-sms">
-                    <span class="nav-icon">📩</span>
+                    <span class="nav-icon">💬</span>
                     <span class="nav-text">출결 문자</span>
                 </a>
             </li>
@@ -719,6 +730,34 @@
             }
         }
 
+        // [신규] 수동으로 '오늘 동기화' 버튼을 눌렀을 때 실행되는 함수
+        async function syncTodayManual() {
+            // 버튼 UI 변경 (로딩 중 표시)
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>동기화 중...</span>';
+            btn.disabled = true;
+
+            try {
+                // 오늘 날짜 구하기 (KST 기준)
+                const now = new Date();
+                const offset = now.getTimezoneOffset() * 60000;
+                const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
+
+                // 이미 만들어둔 함수 재활용
+                await updateTodayDataOnly(today);
+
+            } catch (error) {
+                console.error("수동 동기화 실패:", error);
+                alert("오늘 데이터 동기화에 실패했습니다.");
+            } finally {
+                // 버튼 UI 복구
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        }
+
+
         function initFilters(data) {
             const classes = [...new Set(data.map(r => r.classNum).filter(c => c))].sort();
             const select = document.getElementById('classFilter');
@@ -966,6 +1005,5 @@
         document.getElementById('nav-quantum').classList.add('active');
     </script>
 </body>
-
 
 </html>
