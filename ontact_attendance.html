@@ -3974,10 +3974,10 @@
                                 const targetPeriod = FULL_TIMELINE[i];
 
                                 // 점심(4.5) / 저녁(9.5) 처리
-                                if (targetPeriod === "4.5교시" || targetPeriod === "9.5교시") {
-                                    records.push({ ...baseRecord, 교시: targetPeriod });
-                                    continue;
-                                }
+                                // if (targetPeriod === "4.5교시" || targetPeriod === "9.5교시") {
+                                //     records.push({ ...baseRecord, 교시: targetPeriod });
+                                //     continue;
+                                // }
 
                                 // 일반 교시: 계획표(todayPlans)에 있는지 확인
                                 if (todayPlans.includes(targetPeriod)) {
