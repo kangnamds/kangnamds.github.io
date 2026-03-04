@@ -3909,6 +3909,8 @@
                 const fab = document.getElementById('save-fab');
                 const originalText = fab.innerText;
                 fab.innerText = "⏳";
+                // ★ [추가 1] 저장 중일 때는 버튼 터치 완전 차단
+                fab.style.pointerEvents = "none";
 
                 try {
                     const currentPeriod = getCurrentPeriodName() || "교시없음";
@@ -4033,6 +4035,8 @@
 
                 } catch (err) { alert("오류: " + err); }
                 finally { fab.innerText = originalText; }
+                // ★ [추가 2] 처리가 다 끝나면 다시 터치 가능하게 복구
+                fab.style.pointerEvents = "auto";
             }
 
             // ==========================================
