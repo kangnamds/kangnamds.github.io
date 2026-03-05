@@ -559,11 +559,23 @@ function openModal(seatNum, info) {
     document.getElementById('guidanceModal').style.display = 'flex';
 }
 function closeModal() { document.getElementById('guidanceModal').style.display = 'none'; }
+
 function submitForm() {
+    // ★ 추가
+    const submitBtn = document.querySelector('.btn-submit');
+    if (submitBtn && submitBtn.disabled) return;   // 이미 누른 상태면 무시
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "처리 중...";
+    }
+    //여기까지
+
     const note = document.getElementById('form_note').value;
     let type = "";
     document.getElementsByName('guidance_type').forEach(r => { if (r.checked) type = r.value; });
     if (!type) { alert("유형 선택 필요"); return; }
+    // ★ 추가: 요청 고유 ID 생성
+    const uniqueReqId = Date.now() + "_" + Math.random().toString(36).substring(2, 9);
 
     const payload = {
         location: document.getElementById('form_location').value,
@@ -571,11 +583,20 @@ function submitForm() {
         classNum: document.getElementById('form_class').value,
         studentId: document.getElementById('form_id').value,
         name: document.getElementById('form_name').value,
-        type: type, note: note, user: currentUser
+        type: type, note: note, user: currentUser,
+        reqId: uniqueReqId      // ★ 추가: 이 줄만 더 넣기
     };
     addToQueue(payload);
-    closeModal();
+
+    setTimeout(() => {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "입력 완료";
+        }
+        closeModal();
+    }, 300);
 }
+
 function addToQueue(p) { requestQueue.push(p); processQueue(); }
 
 async function processQueue() {
