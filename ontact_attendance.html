@@ -3385,6 +3385,7 @@
                 initSeats();
                 loadData();
                 showTab('tab1');
+                initExportSelectOptions(); // ★ 이 줄을 추가합니다.
             };
 
             function updateClock() {
@@ -3909,7 +3910,6 @@
                 const fab = document.getElementById('save-fab');
                 const originalText = fab.innerText;
                 fab.innerText = "⏳";
-                // ★ [추가 1] 저장 중일 때는 버튼 터치 완전 차단
 
                 try {
                     const currentPeriod = getCurrentPeriodName() || "교시없음";
@@ -3927,9 +3927,7 @@
                     // 전체 교시 순서 (비교용)
                     const FULL_TIMELINE = [
                         "1교시", "2교시", "3교시", "4교시",
-                        "4.5교시", // 점심
                         "5교시", "6교시", "7교시", "8교시", "9교시",
-                        "9.5교시", // 저녁
                         "야간 자율 학습 1교시", "야간 자율 학습 2교시"
                     ];
                     const currentIdx = FULL_TIMELINE.indexOf(currentPeriod);
@@ -4034,7 +4032,6 @@
 
                 } catch (err) { alert("오류: " + err); }
                 finally { fab.innerText = originalText; }
-                // ★ [추가 2] 처리가 다 끝나면 다시 터치 가능하게 복구
             }
 
             // ==========================================
@@ -4835,6 +4832,72 @@
 
                 document.getElementById('an-comment-text').innerHTML = msg;
             }
+
+            // 다운로드용 주간(최근 5주) 및 월간(최근 3개월) 옵션 동적 생성 함수
+            function initExportSelectOptions() {
+                const weekSelect = document.getElementById('export-week');
+                const monthSelect = document.getElementById('export-month');
+
+                if (!weekSelect || !monthSelect) return;
+
+                // 1. 주간(Week) 옵션 동적 생성 (최근 5주)
+                weekSelect.innerHTML = ''; // 기존 하드코딩 옵션 초기화
+
+                const today = new Date();
+                // 기준일을 '이번 주 월요일'로 맞춤
+                const dayOfWeek = today.getDay(); // 0(일) ~ 6(토)
+                const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+                let currentMonday = new Date(today);
+                currentMonday.setDate(today.getDate() + diffToMonday);
+                currentMonday.setHours(0, 0, 0, 0);
+
+                // 과거로 가면서 5개의 주차 생성
+                for (let i = 0; i < 5; i++) {
+                    const startWeek = new Date(currentMonday);
+                    startWeek.setDate(currentMonday.getDate() - (i * 7)); // i주 전 월요일
+
+                    const endWeek = new Date(startWeek);
+                    endWeek.setDate(startWeek.getDate() + 6); // 일요일
+
+                    // value 양식: YYYY-MM-DD (월요일 기준)
+                    const valYear = startWeek.getFullYear();
+                    const valMonth = String(startWeek.getMonth() + 1).padStart(2, '0');
+                    const valDate = String(startWeek.getDate()).padStart(2, '0');
+                    const valueStr = `${valYear}-${valMonth}-${valDate}`;
+
+                    // 표시 텍스트 양식: O월 O주차 (MM.DD ~ MM.DD)
+                    // 간단히 주차를 계산하는 방식 (월의 몇 번째 주인지)
+                    const weekNum = Math.ceil(startWeek.getDate() / 7);
+                    const textStr = `${startWeek.getMonth() + 1}월 ${weekNum}주차 (${startWeek.getMonth() + 1}.${startWeek.getDate()}~${endWeek.getMonth() + 1}.${endWeek.getDate()})`;
+
+                    const opt = document.createElement('option');
+                    opt.value = valueStr;
+                    opt.text = textStr;
+                    weekSelect.appendChild(opt);
+                }
+
+                // 2. 월간(Month) 옵션 동적 생성 (최근 3개월)
+                monthSelect.innerHTML = ''; // 기존 하드코딩 옵션 초기화
+
+                let currentMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+                for (let i = 0; i < 3; i++) {
+                    const targetMonth = new Date(currentMonthDate);
+                    targetMonth.setMonth(currentMonthDate.getMonth() - i);
+
+                    const valYear = targetMonth.getFullYear();
+                    const valMonth = String(targetMonth.getMonth() + 1).padStart(2, '0');
+                    const valueStr = `${valYear}-${valMonth}`; // 예: 2026-03
+                    const textStr = `${valYear}년 ${targetMonth.getMonth() + 1}월`;
+
+                    const opt = document.createElement('option');
+                    opt.value = valueStr;
+                    opt.text = textStr;
+                    monthSelect.appendChild(opt);
+                }
+            }
+
 
             // ==========================================
             // 5. 엑셀 다운로드 함수
