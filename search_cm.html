@@ -510,14 +510,21 @@
 
         if (!query) return;
 
-        const result = allData.find(row => {
+        // ★ find를 filter로 변경하여 동명이인 모두 찾기
+        const results = allData.filter(row => {
           const id = String(row[1]).toLowerCase();
           const name = String(row[2]).toLowerCase();
           return id === query || name.includes(query);
         });
 
-        if (result) {
-          searchHistory.unshift(result);
+        if (results.length > 0) {
+          // ★ 찾은 모든 학생을 리스트에 추가 (중복 방지 포함)
+          results.forEach(result => {
+            const isDuplicate = searchHistory.some(s => String(s[1]) === String(result[1]));
+            if (!isDuplicate) {
+              searchHistory.unshift(result);
+            }
+          });
           renderHistory();
           input.value = '';
         } else {

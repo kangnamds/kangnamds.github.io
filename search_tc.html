@@ -494,7 +494,7 @@
       </li>
       <li>
         <a href="sms.html" class="nav-link">
-          <span class="nav-icon">📩</span>
+          <span class="nav-icon">💬</span>
           <span class="nav-text">출결 문자</span>
         </a>
       </li>
@@ -593,49 +593,27 @@
 
         if (!query) return;
 
-        const result = allData.find(row => {
+        // ★ find를 filter로 변경하여 동명이인 모두 찾기
+        const results = allData.filter(row => {
           const id = String(row[1]).toLowerCase();
           const name = String(row[2]).toLowerCase();
           return id === query || name.includes(query);
         });
 
-        if (result) {
-          searchHistory.unshift(result);
+        if (results.length > 0) {
+          // ★ 찾은 모든 학생을 리스트에 추가 (중복 방지 포함)
+          results.forEach(result => {
+            const isDuplicate = searchHistory.some(s => String(s[1]) === String(result[1]));
+            if (!isDuplicate) {
+              searchHistory.unshift(result);
+            }
+          });
           renderHistory();
           input.value = '';
         } else {
           alert('일치하는 학생이 없습니다.');
         }
       }
-    }
-
-    function renderHistory() {
-      const listBody = document.getElementById('listBody');
-      const countInfo = document.getElementById('countInfo');
-      countInfo.innerText = `기록 ${searchHistory.length}건`;
-
-      if (searchHistory.length === 0) {
-        listBody.innerHTML = '<div class="empty-msg">검색어를 입력하세요.</div>';
-        return;
-      }
-
-      let html = '';
-      searchHistory.forEach((student, index) => {
-        html += `
-          <div class="list-item">
-            <div>${student[0]}</div>
-            <div style="color:var(--primary-bg); font-weight:700;">${student[1]}</div>
-            <div style="font-weight:700; font-size:1.05rem;">${student[2]}</div>
-            <div>${student[3]}</div>
-            <div>${student[4]}</div>
-            <div style="font-weight:700;">${student[5]}</div>
-            <div style="text-align:center;">
-              <button class="btn-del" onclick="removeItem(${index})">✕</button>
-            </div>
-          </div>
-        `;
-      });
-      listBody.innerHTML = html;
     }
 
     function removeItem(index) {
@@ -756,6 +734,5 @@
 
   </script>
 </body>
-
 
 </html>
