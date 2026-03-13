@@ -586,7 +586,7 @@
             </li>
             <li>
                 <a href="sms.html" class="nav-link" id="nav-sms">
-                    <span class="nav-icon">📩</span>
+                    <span class="nav-icon">💬</span>
                     <span class="nav-text">출결 문자</span>
                 </a>
             </li>
@@ -614,6 +614,9 @@
                 </button>
                 <button class="tab-btn" onclick="showSection('search')">
                     <i class="bi bi-search me-2"></i>조회
+                </button>
+                <button class="tab-btn" onclick="showSection('recent')">
+                    <i class="bi bi-clock-history me-2"></i>최근 로그
                 </button>
             </div>
 
@@ -849,6 +852,42 @@
                     </div>
                 </div>
 
+                <!-- [추가할 코드] 5. 최근 입력 로그 -->
+                <div id="recent" class="tab-section" style="display:none;">
+                    <div class="row justify-content-center">
+                        <div class="col-xl-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="fw-bold m-0 text-dark">🕒 최근 입력 로그 <span class="text-muted small">(최근
+                                        50건)</span></h4>
+                                <button class="btn btn-sm btn-mint-outline" onclick="reloadHistoryWithAnimation()"
+                                    id="btnRefreshRecent">
+                                    <i class="bi bi-arrow-clockwise refresh-icon"></i> 새로고침
+                                </button>
+                            </div>
+
+                            <div class="table-responsive rounded-3 shadow-sm border"
+                                style="max-height: 600px; overflow-y: auto;">
+                                <table class="table table-hover table-custom mb-0">
+                                    <thead style="position: sticky; top: 0; z-index: 1;">
+                                        <tr>
+                                            <th style="width:15%">입력일시</th>
+                                            <th style="width:20%">학생 정보</th>
+                                            <th style="width:30%">위반 항목</th>
+                                            <th style="width:10%" class="text-center">점수</th>
+                                            <th style="width:10%" class="text-center">작성자</th>
+                                            <th style="width:15%">비고</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentLogBody">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">데이터를 불러오는 중...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -898,6 +937,10 @@
             // 4. [추가됨] 랭킹 탭이면 데이터 갱신
             if (sectionId === 'ranking') {
                 renderRanking();
+            }
+
+            if (sectionId === 'recent') {
+                renderRecentLogs();
             }
         }
 
@@ -957,9 +1000,20 @@
 
                     const keyword = document.getElementById('searchKeyword').value.trim();
                     if (keyword) doSearchLocal();
+
+                    // [추가된 부분] 랭킹 탭 갱신
+                    if (document.getElementById('ranking') && document.getElementById('ranking').style.display === 'block') {
+                        renderRanking();
+                    }
+
+                    // [추가된 부분] 최근 로그 탭 갱신
+                    if (document.getElementById('recent') && document.getElementById('recent').style.display === 'block') {
+                        renderRecentLogs();
+                    }
                 })
                 .catch(err => status.innerText = "동기화 실패");
         }
+
 
         function renderQuickButtons() {
             const area = document.getElementById('quickButtonsArea');
@@ -1151,9 +1205,6 @@
             });
         }
 
-
-
-
         function submitMulti() {
             if (MULTI_QUEUE.length === 0) { alert("학생을 추가하세요."); return; }
             const writer = document.getElementById('m_writer').value.trim();
@@ -1172,13 +1223,27 @@
             };
             const data = MULTI_QUEUE.map(s => ({ id: s.id, class: s.class, name: s.name, type: '벌점', ...commonData }));
 
+            // 저장할 학번들 미리 백업 (하이라이트용)
+            const insertedIds = MULTI_QUEUE.map(s => s.id);
+
             const btn = document.querySelector('#multi button.btn-success');
+
             processSubmit(data, btn).then(success => {
                 if (success) {
                     MULTI_QUEUE = []; renderQueue();
                     document.getElementById('m_item').value = '';
                     document.getElementById('m_score').value = '';
                     document.getElementById('m_note').value = '';
+
+                    // [추가된 부분] 저장 성공 시 화면 전환 및 하이라이트
+                    highlightedIds = insertedIds;
+                    showSection('recent');
+
+                    // 로딩 메시지 표시 후 데이터 새로고침
+                    const tbody = document.getElementById('recentLogBody');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2"></div>최신 데이터 동기화 중...</td></tr>';
+
+                    reloadHistory();
                 }
             });
         }
@@ -1426,10 +1491,86 @@
             }, 1000);
         }
 
+        /* =========================================
+       [추가] 최근 입력 로그 관련 변수 및 함수
+       ========================================= */
+        let highlightedIds = []; // 방금 입력한 학번 저장용 배열
+
+        function renderRecentLogs() {
+            const tbody = document.getElementById('recentLogBody');
+            if (!HISTORY_DB || HISTORY_DB.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">데이터가 없습니다.</td></tr>';
+                return;
+            }
+
+            // 1. 원본 배열 복사 후 날짜(date) 기준으로 확실하게 내림차순 정렬 (최신이 0번 인덱스로)
+            let list = [...HISTORY_DB].sort((a, b) => {
+                const dateA = new Date(a.date).getTime() || 0;
+                const dateB = new Date(b.date).getTime() || 0;
+                return dateB - dateA; // 큰 값(최신)이 앞으로 오도록
+            });
+
+            // 2. 상위 50개만 자르기
+            list = list.slice(0, 50);
+
+            let html = '';
+            list.forEach(item => {
+                const s = STUDENT_DB[item.id] || { name: item.name, class: item.class };
+
+                // ★ String()으로 감싸서 무조건 문자열로 비교하도록 수정 (중요!)
+                const isHighlight = highlightedIds.map(String).includes(String(item.id)) ? 'background-color: #d1fae5; border-left: 4px solid #10b981;' : '';
+
+                // 날짜 포맷팅 (YYYY-MM-DD HH:mm)
+                let dateStr = '-';
+                if (item.date) {
+                    const d = new Date(item.date);
+                    if (!isNaN(d)) {
+                        // 한국 시간에 맞게 포맷팅 (원하는 형태로 수정 가능)
+                        const yy = String(d.getFullYear()).slice(2);
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        const hh = String(d.getHours()).padStart(2, '0');
+                        const min = String(d.getMinutes()).padStart(2, '0');
+                        dateStr = `${yy}-${mm}-${dd} ${hh}:${min}`;
+                    } else {
+                        dateStr = String(item.date).replace('T', ' ').substring(0, 16);
+                    }
+                }
+
+                html += `
+        <tr style="${isHighlight} transition: background-color 2s ease;">
+            <td class="text-muted small">${dateStr}</td>
+            <td>
+                <div class="fw-bold text-dark" style="font-size:1.05em;">${s.name}</div>
+                <div class="small text-muted">${s.class}반 | ${item.id}</div>
+            </td>
+            <td class="fw-bold text-dark">${item.item}</td>
+            <td class="text-center">
+                <span class="badge bg-danger" style="font-size: 1em;">${item.score}점</span>
+            </td>
+            <td class="text-center">${item.writer || '-'}</td>
+            <td class="text-muted small">${item.note || '-'}</td>
+        </tr>`;
+            });
+
+            tbody.innerHTML = html;
+
+            // ★ 5초(5000ms) 뒤 하이라이트 제거 (데이터 로딩 딜레이를 고려하여 넉넉하게)
+            if (highlightedIds.length > 0) {
+                setTimeout(() => {
+                    highlightedIds = [];
+                    const rows = tbody.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        row.style.backgroundColor = '';
+                        row.style.borderLeft = ''; // 테두리도 원상복구
+                    });
+                }, 5000); // 2500 -> 5000으로 증가
+            }
+        }
+
+
         document.getElementById('nav-penalty').classList.add('active');
     </script>
 </body>
 
-
 </html>
-
