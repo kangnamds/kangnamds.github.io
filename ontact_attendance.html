@@ -3427,21 +3427,57 @@
 
             async function loadData() {
                 try {
-                    const res = await fetch(API_URL);
+                    // 1. [로컬 스토리지 캐싱] 
+                    // 브라우저에 저장된 이전 데이터가 있으면 즉시 화면에 렌더링합니다. (체감속도 1초)
+                    const cachedDataStr = localStorage.getItem('quantumAttendanceCache');
+                    if (cachedDataStr) {
+                        const cached = JSON.parse(cachedDataStr);
+                        globalData.master = cached.master;
+                        globalData.plan = cached.plan;
+                        globalData.attendance = cached.todayAttendance;
+
+                        document.getElementById('api-status').innerText = "● 최신화 진행 중...";
+                        document.getElementById('api-status').style.color = "#f59e0b"; // 주황색
+
+                        renderMap();
+                        restoreAttendance();
+                    } else {
+                        // 캐시가 아예 없는 최초 접속 시
+                        document.getElementById('api-status').innerText = "● 데이터 불러오는 중...";
+                        document.getElementById('api-status').style.color = "#3b82f6"; // 파란색
+                    }
+
+                    // 2. [백그라운드 통신] 백엔드에서 최신 데이터를 비동기로 가져옵니다. (10초 이상 걸려도 상관없음)
+                    // ★ 주의: API_URL 뒤에 ?mode=init_data 파라미터를 꼭 붙여야 합니다.
+                    const res = await fetch(API_URL + "?mode=init_data");
                     const json = await res.json();
+
                     if (json.status === 'success') {
                         globalData.master = json.master;
                         globalData.plan = json.plan;
                         globalData.attendance = json.todayAttendance;
+
+                        // 3. 최신 데이터를 로컬 스토리지에 덮어씌움 (다음 번 빠른 접속을 위해)
+                        localStorage.setItem('quantumAttendanceCache', JSON.stringify({
+                            master: json.master,
+                            plan: json.plan,
+                            todayAttendance: json.todayAttendance,
+                            timestamp: new Date().getTime() // 갱신 시간 기록용
+                        }));
+
+                        // 4. 최신 데이터로 화면 살짝 업데이트 (깜빡임 없이 부드럽게)
                         document.getElementById('api-status').innerText = "● 실시간 연결됨";
-                        document.getElementById('api-status').style.color = "#2ecc71";
+                        document.getElementById('api-status').style.color = "#2ecc71"; // 녹색
+
                         renderMap();
                         restoreAttendance();
-                    } else { throw new Error(json.message); }
+                    } else {
+                        throw new Error(json.message);
+                    }
                 } catch (err) {
-                    console.error(err);
+                    console.error("데이터 로딩 오류:", err);
                     document.getElementById('api-status').innerText = "● 연결 실패";
-                    document.getElementById('api-status').style.color = "#ef4444";
+                    document.getElementById('api-status').style.color = "#ef4444"; // 빨간색
                 }
             }
 
