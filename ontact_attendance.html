@@ -3353,6 +3353,7 @@
             let attendanceData = {};
             let lastPeriod = null;
             let isDataSaved = true;
+            let isInitialLoading = true; // 현재 최신 데이터를 불러오는 중인지 여부
 
             // ★ [시간표 관리용] 전역 변수
             let currentStudentPlans = [];
@@ -3427,6 +3428,7 @@
 
             async function loadData() {
                 try {
+                    isInitialLoading = true; // 통신 시작 (잠금)
                     // 1. [로컬 스토리지 캐싱] 
                     // 브라우저에 저장된 이전 데이터가 있으면 즉시 화면에 렌더링합니다. (체감속도 1초)
                     const cachedDataStr = localStorage.getItem('quantumAttendanceCache');
@@ -3471,6 +3473,9 @@
 
                         renderMap();
                         restoreAttendance();
+
+                        isInitialLoading = false; // 통신 완료 (잠금 해제) ★★★
+
                     } else {
                         throw new Error(json.message);
                     }
@@ -3793,6 +3798,10 @@
             }
 
             async function savePlanChanges() {
+                if (isInitialLoading) {
+                    alert("데이터를 최신화하는 중입니다. 10초 후 '최신화 완료'가 뜨면 저장해주세요!");
+                    return;
+                }
                 if (planChanges.length === 0) return alert("변경 없음");
                 const btn = document.getElementById('btn-save-plan');
                 const originalText = btn.innerText;
@@ -3940,6 +3949,10 @@
             }
 
             async function saveAttendance() {
+                if (isInitialLoading) {
+                    alert("데이터를 최신화하는 중입니다. 10초 후 '최신화 완료'가 뜨면 저장해주세요!");
+                    return;
+                }
                 const count = Object.keys(attendanceData).length;
                 if (count === 0) { alert("데이터 없음"); return; }
 
