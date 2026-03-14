@@ -561,33 +561,60 @@ function openModal(seatNum, info) {
 function closeModal() { document.getElementById('guidanceModal').style.display = 'none'; }
 
 function submitForm() {
-    // ★ 추가
+    // 1. 학번을 먼저 가져옵니다 (큐 검사용)
+    const studentId = document.getElementById('form_id').value;
+
+    // 2. 현재 큐(대기열)에 동일한 학생의 데이터가 전송 대기 중인지 확인
+    const isAlreadyInQueue = requestQueue.some(item => item.studentId === studentId);
+    if (isAlreadyInQueue) {
+        alert("⏳ 현재 이 학생의 기록이 전송 중입니다. 잠시만 기다려주세요.");
+        closeModal();
+        return; // 중단 (새로운 reqId 생성 방지)
+    }
+
+    // 3. 더블클릭 방지 로직 (버튼 비활성화)
     const submitBtn = document.querySelector('.btn-submit');
     if (submitBtn && submitBtn.disabled) return;   // 이미 누른 상태면 무시
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerText = "처리 중...";
     }
-    //여기까지
 
+    // 4. 입력 폼 데이터 가져오기
     const note = document.getElementById('form_note').value;
     let type = "";
     document.getElementsByName('guidance_type').forEach(r => { if (r.checked) type = r.value; });
-    if (!type) { alert("유형 선택 필요"); return; }
-    // ★ 추가: 요청 고유 ID 생성
+
+    if (!type) {
+        alert("유형 선택 필요");
+        // 폼을 닫지 않고 버튼만 다시 활성화해줍니다.
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "입력 완료";
+        }
+        return;
+    }
+
+    // 5. 요청 고유 ID 생성 (중복 기록 완전 차단용)
     const uniqueReqId = Date.now() + "_" + Math.random().toString(36).substring(2, 9);
 
+    // 6. 페이로드(전송 데이터) 구성
     const payload = {
         location: document.getElementById('form_location').value,
         seat: document.getElementById('form_seat').value,
         classNum: document.getElementById('form_class').value,
-        studentId: document.getElementById('form_id').value,
+        studentId: studentId,  // 위에서 가져온 변수 사용
         name: document.getElementById('form_name').value,
-        type: type, note: note, user: currentUser,
-        reqId: uniqueReqId      // ★ 추가: 이 줄만 더 넣기
+        type: type,
+        note: note,
+        user: currentUser,
+        reqId: uniqueReqId      // 서버 캐시 비교용 ID
     };
+
+    // 7. 큐에 추가 (자동 전송 시작)
     addToQueue(payload);
 
+    // 8. 0.3초 뒤 모달 닫기 및 버튼 상태 복구
     setTimeout(() => {
         if (submitBtn) {
             submitBtn.disabled = false;
