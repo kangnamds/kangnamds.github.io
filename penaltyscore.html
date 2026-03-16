@@ -546,9 +546,265 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* ========================================
+   [추가] 인쇄 전용 스타일
+   ======================================== */
+        @media print {
+
+            /* 인쇄 시 다른 불필요한 요소 숨김 (레이아웃 차지 안하게 display: none 처리) */
+            body>*:not(#printReport) {
+                display: none !important;
+            }
+
+            #printReport,
+            #printReport * {
+                visibility: visible;
+            }
+
+            /* 인쇄 템플릿을 화면 최상단으로 딱 붙이기 */
+            #printReport {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* 페이지 여백 최소화 및 불필요한 페이지 넘김 강제 차단 */
+            @page {
+                margin: 15mm;
+                size: A4 portrait;
+            }
+
+            /* html, body 자체의 여백을 날려서 빈 페이지 생성을 막음 */
+            html,
+            body {
+                width: 100%;
+                height: auto !important;
+                /* height: 100% 가 빈페이지 원인일 수 있음 */
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: white !important;
+            }
+        }
+
+        /* 인쇄용 페이지 레이아웃 */
+        .print-page {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            color: #333;
+            background: white;
+        }
+
+        /* 헤더 */
+        .print-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #5DC6C2;
+            padding-bottom: 15px;
+        }
+
+        .print-header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #282828;
+            margin: 0 0 8px 0;
+        }
+
+        .print-date {
+            font-size: 13px;
+            color: #666;
+            margin: 0;
+        }
+
+        /* 학생 정보 박스 */
+        .print-info-box {
+            margin-bottom: 25px;
+            border: 2px solid #5DC6C2;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #F5FAFA;
+        }
+
+        .print-info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .print-info-table td {
+            padding: 12px 15px;
+            border: 1px solid #D0E8E7;
+        }
+
+        .info-label {
+            width: 20%;
+            font-weight: 700;
+            background: #E6F7F6;
+            color: #2D5F5D;
+        }
+
+        .info-value {
+            width: 30%;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .info-total {
+            width: 50%;
+            text-align: center;
+            background: #FEE2E2;
+            vertical-align: middle;
+        }
+
+        .total-score-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #991B1B;
+            margin-bottom: 8px;
+        }
+
+        .total-score-value {
+            font-size: 32px;
+            font-weight: 900;
+            color: #DC2626;
+        }
+
+        /* 섹션 타이틀 */
+        .print-section-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #333;
+            margin: 20px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        /* 벌점 테이블 */
+        .print-penalty-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .print-penalty-table th {
+            background: #5DC6C2;
+            color: white;
+            font-weight: 700;
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #4BB3AF;
+            font-size: 13px;
+        }
+
+        .print-penalty-table td {
+            padding: 9px 8px;
+            border: 1px solid #D1D5DB;
+            font-size: 12px;
+            vertical-align: middle;
+        }
+
+        .print-penalty-table tbody tr:nth-child(even) {
+            background: #FAFAFA;
+        }
+
+        .print-penalty-table tbody tr:hover {
+            background: #F0FBFB;
+        }
+
+        .print-penalty-table .td-no {
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .print-penalty-table .td-date {
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            color: #555;
+        }
+
+        .print-penalty-table .td-item {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .print-penalty-table .td-score {
+            text-align: center;
+            font-weight: 800;
+            color: #DC2626;
+            font-size: 13px;
+        }
+
+        .print-penalty-table .td-writer {
+            text-align: center;
+            color: #555;
+        }
+
+        .print-penalty-table .td-note {
+            color: #666;
+            font-size: 11px;
+        }
     </style>
 
 </head>
+
+<!-- ========================================
+     [추가] 인쇄 전용 벌점 보고서 템플릿
+     ======================================== -->
+<div id="printReport" style="display:none;">
+    <div class="print-page">
+        <!-- 헤더 -->
+        <div class="print-header">
+            <h1>벌점 보고서</h1>
+            <p class="print-date">발급일: <span id="print_issueDate"></span></p>
+        </div>
+
+        <!-- 학생 정보 박스 -->
+        <div class="print-info-box">
+            <table class="print-info-table">
+                <tr>
+                    <td class="info-label">학생 이름</td>
+                    <td class="info-value" id="print_name"></td>
+                    <td class="info-total" rowspan="3">
+                        <div class="total-score-label">총 누적 벌점</div>
+                        <div class="total-score-value" id="print_totalScore"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">학번</td>
+                    <td class="info-value" id="print_studentId"></td>
+                </tr>
+                <tr>
+                    <td class="info-label">반</td>
+                    <td class="info-value" id="print_class"></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 벌점 내역 테이블 -->
+        <h3 class="print-section-title">벌점 내역</h3>
+        <table class="print-penalty-table">
+            <thead>
+                <tr>
+                    <th style="width:8%">No</th>
+                    <th style="width:15%">날짜</th>
+                    <th style="width:30%">위반 항목</th>
+                    <th style="width:10%">점수</th>
+                    <th style="width:12%">작성자</th>
+                    <th style="width:25%">비고</th>
+                </tr>
+            </thead>
+            <tbody id="print_penaltyBody">
+                <!-- 자바스크립트로 동적 생성 -->
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <body>
     <nav class="sidebar">
@@ -1266,6 +1522,7 @@
                 return;
             }
 
+            // 1. 학생 정보 매칭 및 배너(인포 영역) 표시
             if (isDataReady) {
                 let matched = [];
                 if (STUDENT_DB[keyword]) matched.push({ id: keyword, ...STUDENT_DB[keyword] });
@@ -1276,12 +1533,28 @@
                     matched.forEach(s => {
                         html += `<div class="info-banner"><span class="info-label">반</span><span class="info-value">${s.class}</span><span class="info-label">이름</span><span class="info-value">${s.name}</span><span class="info-label">학번</span><span class="info-value">${s.id}</span><span class="info-label">위치</span><span class="info-value">${s.quantum || '-'} / ${s.seat || '-'}</span></div>`;
                     });
+
+                    // [추가된 부분] 매칭된 학생이 딱 1명일 때만 '보고서 출력' 버튼 추가
+                    if (matched.length === 1) {
+                        currentSearchStudentId = matched[0].id; // 전역 변수에 학번 저장
+                        html += `
+                <div class="d-flex justify-content-end mt-2">
+                    <button class="btn btn-danger btn-sm" onclick="generatePrintReport()">
+                        <i class="bi bi-printer-fill me-1"></i> 벌점 보고서 인쇄 (PDF 저장)
+                    </button>
+                </div>`;
+                    } else {
+                        currentSearchStudentId = null; // 여러 명이면 초기화
+                    }
+
                     infoBanner.innerHTML = html;
                 } else {
                     infoBanner.innerHTML = '';
+                    currentSearchStudentId = null; // 매칭 없을 때 초기화
                 }
             }
 
+            // 2. 벌점 내역 검색 및 테이블 생성
             const results = HISTORY_DB.filter(r => r.id.includes(keyword) || r.name.includes(keyword));
 
             if (results.length === 0) {
@@ -1329,19 +1602,20 @@
                     }
 
                     html += `
-                            <tr class="${rowClass}">
-                                <td>${dateStr}</td>
-                                <td class="fw-bold text-wrap text-break">${r.item}</td>
-                                <td>${scoreDisplay}</td>
-                                <td>${totalDisplay}</td>
-                                <td>${r.writer || '-'}</td>
-                                <td class="text-muted small text-wrap text-break">${r.note || '-'}</td>
-                            </tr>`;
+                <tr class="${rowClass}">
+                    <td>${dateStr}</td>
+                    <td class="fw-bold text-wrap text-break">${r.item}</td>
+                    <td>${scoreDisplay}</td>
+                    <td>${totalDisplay}</td>
+                    <td>${r.writer || '-'}</td>
+                    <td class="text-muted small text-wrap text-break">${r.note || '-'}</td>
+                </tr>`;
                 });
                 tbody.innerHTML = html;
                 document.getElementById('searchStatus').innerText = `총 ${results.length}건`;
             }
         }
+
 
         /* [추가할 코드] 랭킹 관련 함수들 */
 
@@ -1566,6 +1840,83 @@
                     });
                 }, 5000); // 2500 -> 5000으로 증가
             }
+        }
+
+        /* =========================================
+       [추가] 인쇄용 보고서 생성 함수
+       ========================================= */
+        let currentSearchStudentId = null; // 현재 조회된 학생 학번 저장
+
+        function generatePrintReport() {
+            if (!currentSearchStudentId) {
+                alert("조회된 학생이 없습니다.");
+                return;
+            }
+
+            const student = STUDENT_DB[currentSearchStudentId];
+            if (!student) {
+                alert("학생 정보를 찾을 수 없습니다.");
+                return;
+            }
+
+            // 해당 학생의 모든 벌점 내역 추출
+            const records = HISTORY_DB.filter(h => String(h.id) === String(currentSearchStudentId));
+
+            if (records.length === 0) {
+                alert("벌점 내역이 없습니다.");
+                return;
+            }
+
+            // 날짜순 정렬 (오래된 것부터)
+            records.sort((a, b) => {
+                const dateA = new Date(a.date).getTime() || 0;
+                const dateB = new Date(b.date).getTime() || 0;
+                return dateA - dateB;
+            });
+
+            // 총 누적 점수 계산
+            const totalScore = records.reduce((sum, r) => sum + (parseInt(r.score) || 0), 0);
+
+            // 발급일
+            const today = new Date().toLocaleDateString('ko-KR');
+
+            // 템플릿에 데이터 채우기
+            document.getElementById('print_issueDate').innerText = today;
+            document.getElementById('print_name').innerText = student.name;
+            document.getElementById('print_studentId').innerText = student.id || currentSearchStudentId;
+            document.getElementById('print_class').innerText = student.class + '반';
+            document.getElementById('print_totalScore').innerText = totalScore + '점';
+
+            // 벌점 내역 테이블 생성
+            const tbody = document.getElementById('print_penaltyBody');
+            tbody.innerHTML = '';
+
+            records.forEach((r, idx) => {
+                let dateStr = '-';
+                if (r.date) {
+                    const d = new Date(r.date);
+                    if (!isNaN(d)) {
+                        const yy = d.getFullYear();
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        dateStr = `${yy}-${mm}-${dd}`;
+                    }
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+            <td class="td-no">${idx + 1}</td>
+            <td class="td-date">${dateStr}</td>
+            <td class="td-item">${r.item || '-'}</td>
+            <td class="td-score">${r.score}점</td>
+            <td class="td-writer">${r.writer || '-'}</td>
+            <td class="td-note">${r.note || '-'}</td>
+        `;
+                tbody.appendChild(tr);
+            });
+
+            // 인쇄 창 열기
+            window.print();
         }
 
 
