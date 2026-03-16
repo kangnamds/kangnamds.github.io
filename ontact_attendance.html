@@ -4202,13 +4202,14 @@
                 const calendarEl = document.getElementById('stats-calendar');
                 const weeklyTableEl = document.getElementById('stats-weekly-table');
 
+                // [로딩 UI]
                 const loadingHTML = `
-        <div style="padding: 40px; text-align: center; grid-column: 1 / -1;">
-            <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #5DC6C2; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto;"></div>
-            <p style="color: #64748b; font-weight: bold;">[${yearMonth}] 데이터를 불러오고 분석하는 중입니다...</p>
-        </div>
-        <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-    `;
+<div style="padding: 40px; text-align: center; grid-column: 1 / -1;">
+<div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #5DC6C2; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto;"></div>
+<p style="color: #64748b; font-weight: bold;">[${yearMonth}] 데이터를 불러오고 분석하는 중입니다...</p>
+</div>
+<style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+`;
 
                 calendarEl.innerHTML = loadingHTML;
                 weeklyTableEl.innerHTML = loadingHTML;
@@ -4216,6 +4217,7 @@
                 try {
                     const [currentY, currentM] = yearMonth.split('-').map(Number);
 
+                    // 1. 앞뒤 달 계산
                     let prevY = currentY, prevM = currentM - 1;
                     if (prevM < 1) { prevY--; prevM = 12; }
                     const prevMonthStr = `${prevY}-${String(prevM).padStart(2, '0')}`;
@@ -4225,104 +4227,82 @@
                     const nextMonthStr = `${nextY}-${String(nextM).padStart(2, '0')}`;
 
                     const monthsToLoad = [prevMonthStr, yearMonth, nextMonthStr];
+
+                    // 2. 캐시 준비
                     let statsCache = JSON.parse(localStorage.getItem('quantumStatsCache') || '{}');
-                    if (!statsCache[currentStatsId]) statsCache[currentStatsId] = {};
+                    if (!statsCache[currentStatsId]) {
+                        statsCache[currentStatsId] = {};
+                    }
 
-                    let allLogs = [];
-                    let allSnaps = [];
-                    let basePlan = null;
-                    let needsSync = false;
-
-                    // ★ 추가: 캐시가 충분히 신선한지(최근인지) 체크
-                    let isCacheFresh = true;
-                    const CACHE_TTL = 1 * 60 * 60 * 1000; // 1시간 (밀리초 단위, 원하시면 숫자를 바꾸면 됩니다)
                     const todayStr = new Date().toISOString().substring(0, 7);
 
-                    monthsToLoad.forEach(mStr => {
-                        const cached = statsCache[currentStatsId][mStr];
-                        if (cached) {
-                            allLogs = allLogs.concat(cached.logs || []);
-                            allSnaps = allSnaps.concat(cached.snaps || []);
-                            if (mStr === yearMonth && cached.base && cached.base.length > 0) {
-                                basePlan = cached.base;
-                            }
-
-                            // 이번 달 데이터인데, 캐시가 1시간 이상 지났다면 낡은 데이터로 간주!
-                            if (mStr === todayStr) {
-                                if (!cached.timestamp || Date.now() - cached.timestamp > CACHE_TTL) {
-                                    isCacheFresh = false;
-                                }
-                            }
+                    // 3. 병렬 호출 (캐시가 있으면 꺼내오고 없으면 fetch)
+                    const promises = monthsToLoad.map(async (mStr) => {
+                        if (mStr < todayStr && statsCache[currentStatsId][mStr]) {
+                            return {
+                                status: 'success',
+                                data: statsCache[currentStatsId][mStr].logs,
+                                mergedPlans: {
+                                    base: statsCache[currentStatsId][mStr].base,
+                                    snaps: statsCache[currentStatsId][mStr].snaps
+                                },
+                                fromCache: true,
+                                month: mStr
+                            };
                         } else {
-                            needsSync = true;
-                            isCacheFresh = false; // 캐시가 하나라도 없으면 무조건 로딩 대기
-                        }
-                    });
-
-                    if (monthsToLoad.includes(todayStr)) {
-                        needsSync = true; // 현재 달은 뒤에서 항상 갱신
-                    }
-
-                    // [1단계] 데이터가 최신(1시간 이내)이면, 스피너 없애고 화면 즉시 그리기
-                    if (isCacheFresh && (allLogs.length > 0 || allSnaps.length > 0 || basePlan)) {
-                        statsDataCache = { data: allLogs, mergedPlans: { base: basePlan || [], snaps: allSnaps } };
-                        updateStatsView(true);
-                    }
-
-                    // [2단계] 백그라운드 통신 (혹은 로딩 대기)
-                    if (needsSync) {
-                        const promises = monthsToLoad.map(async (mStr) => {
-                            // 이미 완전히 지나간 과거 달이고 캐시가 있으면 통신 안 함 (과거는 안 변하니까 영구 사용)
-                            if (mStr < todayStr && statsCache[currentStatsId][mStr]) {
-                                return {
-                                    status: 'success',
-                                    data: statsCache[currentStatsId][mStr].logs,
-                                    mergedPlans: { base: statsCache[currentStatsId][mStr].base, snaps: statsCache[currentStatsId][mStr].snaps },
-                                    month: mStr
-                                };
-                            }
-                            // 현재 달이거나 캐시가 없으면 통신
                             const res = await fetch(API_URL + "?mode=stats&month=" + mStr);
                             const json = await res.json();
                             json.month = mStr;
                             return json;
-                        });
+                        }
+                    });
 
-                        const results = await Promise.all(promises);
+                    const results = await Promise.all(promises);
 
-                        let syncLogs = [];
-                        let syncSnaps = [];
-                        let syncBasePlan = null;
+                    let allLogs = [];
+                    let allSnaps = [];
+                    let basePlan = null;
 
-                        results.forEach(res => {
-                            if (res && res.status === 'success') {
-                                if (res.data) syncLogs = syncLogs.concat(res.data);
-                                if (res.mergedPlans && res.mergedPlans.snaps) syncSnaps = syncSnaps.concat(res.mergedPlans.snaps);
-                                if (res.month === yearMonth && res.mergedPlans && res.mergedPlans.base) {
-                                    syncBasePlan = res.mergedPlans.base;
-                                }
+                    // 4. 데이터 병합 (원본 코드의 방식 그대로 단순 합치기!)
+                    results.forEach(res => {
+                        if (res && res.status === 'success') {
+                            // 출결 기록 합치기
+                            if (res.data) allLogs = allLogs.concat(res.data);
 
-                                // 서버에서 받은 데이터와 함께 "현재 시각"을 타임스탬프로 저장
+                            // 스냅샷 합치기 (오지랖 제거! 전부 concat)
+                            if (res.mergedPlans && res.mergedPlans.snaps) {
+                                allSnaps = allSnaps.concat(res.mergedPlans.snaps);
+                            }
+
+                            // 현재 조회하는 달(yearMonth)의 basePlan 가져오기
+                            if (res.month === yearMonth && res.mergedPlans && res.mergedPlans.base) {
+                                basePlan = res.mergedPlans.base;
+                            }
+
+                            // 서버에서 가져온 과거 데이터만 브라우저에 저장
+                            if (!res.fromCache && res.month < todayStr) {
                                 statsCache[currentStatsId][res.month] = {
                                     logs: res.data || [],
                                     snaps: (res.mergedPlans && res.mergedPlans.snaps) || [],
-                                    base: (res.mergedPlans && res.mergedPlans.base) || [],
-                                    timestamp: Date.now() // ★ 핵심: 캐시 구운 시간 기록
+                                    base: (res.mergedPlans && res.mergedPlans.base) || []
                                 };
                             }
-                        });
+                        }
+                    });
 
-                        localStorage.setItem('quantumStatsCache', JSON.stringify(statsCache));
+                    localStorage.setItem('quantumStatsCache', JSON.stringify(statsCache));
 
-                        statsDataCache = {
-                            data: syncLogs,
-                            mergedPlans: { base: syncBasePlan || [], snaps: syncSnaps }
-                        };
+                    // 5. 전역 변수에 원본 포맷 그대로 할당 (중복 제거 코드 완전 삭제)
+                    statsDataCache = {
+                        data: allLogs,
+                        mergedPlans: {
+                            base: basePlan || [],
+                            snaps: allSnaps
+                        }
+                    };
 
-                        // ⚡ 만약 낡은 데이터라서 화면을 안 그렸었다면 여기서 새로 고침(true)
-                        // ⚡ 최신 데이터라서 먼저 그렸었다면 뒤에서 조용히 덮어쓰기(false)
-                        updateStatsView(!isCacheFresh);
-                    }
+                    // 6. 화면 그리기
+                    updateStatsView(true);
 
                 } catch (err) {
                     console.error(err);
@@ -4330,8 +4310,6 @@
                     weeklyTableEl.innerHTML = '';
                 }
             }
-
-
 
 
             // [수정] 통계 화면 갱신 (탭별 '오늘까지' 합계 분기 처리)
