@@ -643,6 +643,48 @@
                 padding: 0;
             }
 
+            /* ================================================= */
+            /* 🌟 [추가] 개인시간표(Plan) 영역 인쇄 설정 🌟 */
+            /* ================================================= */
+            #plan-section.active {
+                visibility: visible;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+
+            #plan-section.active * {
+                visibility: visible;
+            }
+
+            /* 프로필 여백 정리 및 표 배경색(초록색) 강제 출력 */
+            #plan-section .student-profile {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                margin-bottom: 20px;
+            }
+
+            .plan-table {
+                border-collapse: collapse !important;
+                width: 100% !important;
+            }
+
+            .plan-table th,
+            .plan-table td {
+                border: 1px solid #e2e8f0 !important;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+
+            /* ================================================= */
+            /* 📊 [기존 유지] AI 분석 리포트 영역 인쇄 설정 📊 */
+            /* ================================================= */
             /* [수정] 분석 리포트 영역: 97%로 축소하여 한 장에 넣기 */
             #analysis-section.active {
                 visibility: visible;
@@ -690,7 +732,7 @@
                 font-size: 16px !important;
             }
 
-            /* 공통 숨김 */
+            /* 공통 숨김 (메뉴, 버튼, 헤더 등 인쇄 불필요 요소) */
             .nav-menu,
             header,
             .mode-control,
@@ -702,8 +744,6 @@
                 display: none !important;
             }
         }
-
-
 
         /* 통계 페이지 스타일 */
         .stats-header {
@@ -4290,8 +4330,6 @@
                     weeklyTableEl.innerHTML = '';
                 }
             }
-
-
 
 
 
