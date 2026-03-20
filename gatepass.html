@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>조퇴/외출 관리</title>
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-mint: #5DC6C2;
+      --primary-hover: #4BB3AF;
+      --text-dark: #1a2b4b;
+      --bg-color: #F4F9F9;
+      --card-shadow: 0 10px 40px rgba(93, 198, 194, 0.2);
+      --sidebar-width: 240px;
+      --active-bg: #F0FBFB;
+      /* ★ 사이드바용 추가 변수 (search_tc-2.html 스타일) */
+      --primary-bg: #5DC6C2;
+      --sidebar-bg: #ffffff;
+      --border-color: #d1d5db;
+      --text-navy: #1a2b4b;
+      --text-gray: #4b5563;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--primary-mint);
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      padding-left: calc(var(--sidebar-width) + 20px) !important;
+    }
+
+    .content-container {
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      min-height: 85vh;
+      width: 100%;
+    }
+
+    /* ==================== [1. 사이드바 스타일] ==================== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      padding: 20px 0;
+      z-index: 1000;
+      /* 가시성 강화를 위한 진한 그림자 */
+      box-shadow: 5px 0 25px rgba(26, 43, 75, 0.15);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 브랜드 로고 영역 */
+    .nav-brand {
+      font-size: 1.3rem;
+      font-weight: 800;
+      padding: 0 20px 20px 20px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-navy);
+      text-decoration: none;
+      display: block;
+    }
+
+    .nav-brand::after {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 3px;
+      background: var(--primary-bg);
+      margin-top: 10px;
+      border-radius: 2px;
+    }
+
+    .nav-menu {
+      list-style: none;
+      padding: 0 10px;
+      margin: 0;
+    }
+
+    /* [메뉴 링크 스타일] */
+    .nav-link {
+      display: flex;
+      align-items: center;
+      padding: 14px 18px;
+      color: var(--text-gray);
+      text-decoration: none;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+      font-size: 1rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    /* 호버 효과 */
+    .nav-link:hover {
+      background-color: #e6fcf5;
+      color: #0ca678;
+      transform: translateX(5px);
+      border-color: #c3fae8;
+    }
+
+    /* [활성화(Active) 스타일] */
+    .nav-link.active {
+      background-color: var(--primary-bg);
+      /* 민트색 배경 */
+      color: #ffffff;
+      /* 하얀색 글씨 */
+      font-weight: 900;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 15px rgba(93, 198, 194, 0.5);
+      border: 1px solid var(--primary-hover);
+    }
+
+    .nav-icon {
+      margin-right: 10px;
+      font-size: 1.1rem;
+      width: 24px;
+      text-align: center;
+      color: inherit;
+    }
+
+    /* 탭 스타일 */
+    .top-tabs-container {
+      display: flex;
+      background: #ffffff;
+      border-bottom: 2px solid #eee;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      text-align: center;
+      padding: 20px 10px;
+      border: none;
+      background: transparent;
+      color: #7f8c8d;
+      font-weight: 700;
+      font-size: 1.1em;
+      cursor: pointer;
+      border-bottom: 4px solid transparent;
+      min-width: 120px;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--primary-mint);
+      background-color: var(--active-bg);
+    }
+
+    .tab-btn.active {
+      color: var(--primary-mint);
+      border-bottom-color: var(--primary-mint);
+      background-color: #fff;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+      background-color: var(--bg-color);
+    }
+
+    .tab-section {
+      display: none;
+    }
+
+    /* 폼 및 테이블 스타일 */
+    .btn-primary {
+      background: var(--primary-mint) !important;
+      border: none;
+      padding: 12px;
+      font-weight: 700;
+      border-radius: 12px;
+    }
+
+    .form-control {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 15px;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary-mint);
+      box-shadow: 0 0 0 3px rgba(93, 198, 194, 0.2);
+    }
+
+    /* 테이블 컨테이너 스크롤 고정용 설정 */
+    .table-responsive {
+      max-height: 60vh;
+      /* 화면 높이의 60%를 넘어가면 내부 스크롤 생성 */
+      overflow-y: auto;
+    }
+
+    /* 테이블 스타일 */
+    .table-custom {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-bottom: 0;
+    }
+
+    /* ★ 헤더 고정 (Sticky) 핵심 설정 */
+    .table-custom thead th {
+      position: sticky;
+      top: 0;
+      /* 최상단에 고정 */
+      z-index: 10;
+      /* 데이터(td)보다 위로 올라오도록 설정 */
+      background-color: var(--active-bg);
+      font-weight: 800;
+      color: var(--text-dark);
+      padding: 16px;
+    }
+
+    /* 헤더 아래쪽 테두리 (border-bottom이 sticky 상태에서 스크롤 시 사라지는 현상 방지) */
+    .table-custom thead th::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      border-bottom: 2px solid var(--primary-mint);
+    }
+
+    .table-custom td {
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      background: white;
+      vertical-align: middle;
+    }
+
+    .table-custom tbody tr:hover td {
+      background-color: #fafafa;
+    }
+
+    /* ==================== [모바일 반응형 스타일] ==================== */
+    @media (max-width: 768px) {
+
+      /* 모바일에서는 사이드바가 위로 올라가므로 좌측 여백을 없앱니다 */
+      body {
+        padding: 10px !important;
+        padding-left: 10px !important;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        /* 메뉴들을 가로로 눕힘 */
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 10px;
+        overflow-x: auto;
+        /* 넘치면 가로 스크롤 */
+        white-space: nowrap;
+        /* 텍스트 줄바꿈 방지 */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        z-index: 1000;
+      }
+
+      .nav-brand {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding: 5px 10px;
+        margin-right: 10px;
+        border-right: 1px solid #eee;
+        /* 로고와 메뉴 사이에 세로줄 추가 */
+      }
+
+      .nav-brand::after {
+        display: none;
+        /* 로고 밑줄 숨김 */
+      }
+
+      .nav-menu {
+        display: flex;
+        padding: 0;
+        margin: 0;
+      }
+
+      .nav-link {
+        margin-bottom: 0;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+      }
+
+      /* 메뉴 아이콘과 텍스트가 가로로 예쁘게 나오도록 */
+      .nav-icon {
+        margin-right: 4px;
+      }
+
+      /* 모바일 탭 디자인 축소 */
+      .top-tabs-container {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 5px;
+      }
+
+      .tab-btn {
+        white-space: nowrap;
+        padding: 10px 15px;
+        font-size: 0.9rem;
+      }
+
+      /* 필터 영역 모바일 정렬 */
+      #filter-bar {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 10px;
+      }
+
+      #filter-bar>div {
+        max-width: 100% !important;
+        justify-content: space-between;
+      }
+
+      .content-area {
+        padding: 15px;
+      }
+    }
+
+    /* 새로고침 버튼 전용 스타일 */
+    .btn-refresh-solid {
+      background-color: var(--primary-mint);
+      color: white;
+      border: 1px solid var(--primary-mint);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(93, 198, 194, 0.2);
+    }
+
+    .btn-refresh-solid:hover {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-hover);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .btn-refresh-outline {
+      background-color: white;
+      color: var(--primary-mint);
+      border: 1px solid var(--primary-mint);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn-refresh-outline:hover {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-hover);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    /* 검색창 테두리 고정 */
+    .search-input-custom {
+      border: 2px solid #e0e0e0 !important;
+      background-color: white !important;
+      transition: border-color 0.3s;
+    }
+
+    .search-input-custom:focus {
+      border-color: var(--primary-mint) !important;
+      box-shadow: 0 0 0 3px rgba(93, 198, 194, 0.2) !important;
+    }
+
+    /* 토글 스위치 스타일 */
+    .switch-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .switch-label {
+      font-weight: 600;
+      color: #666;
+      font-size: 0.95rem;
+      user-select: none;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: var(--primary-mint);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(24px);
+    }
+
+    input:checked~.switch-label {
+      color: var(--primary-mint);
+      font-weight: 700;
+    }
+
+    /* input type="number"의 위아래 화살표(스피너) 숨기기 */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    /* 작은 관리 버튼 스타일 (새로고침 스타일 응용) */
+    .btn-manage {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      background-color: white;
+      border: 1px solid var(--primary-mint);
+      color: var(--primary-mint);
+    }
+
+    .btn-manage:hover {
+      background-color: var(--primary-mint);
+      color: white;
+    }
+
+    /* 삭제 버튼 (오버레이 빨간색) */
+    .btn-delete {
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .btn-delete:hover {
+      background-color: #dc3545;
+      color: white;
+      border-color: #dc3545;
+      box-shadow: 0 0 8px rgba(220, 53, 69, 0.4);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 1. 사이드바 -->
+  <nav class="sidebar">
+    <a href="index.html" class="nav-brand">강남대성</a>
+    <ul class="nav-menu">
+      <li>
+        <a href="Dashboard.html" class="nav-link">
+          <span class="nav-icon">📝</span>
+          <span class="nav-text">퀀텀 지도 현황</span>
+        </a>
+      </li>
+      <li>
+        <a href="attendance.html" class="nav-link">
+          <span class="nav-icon">📋</span>
+          <span class="nav-text">출결보고</span>
+        </a>
+      </li>
+      <li>
+        <a href="penaltyscore.html" class="nav-link">
+          <span class="nav-icon">🚫</span>
+          <span class="nav-text">벌점관리</span>
+        </a>
+      </li>
+      <li>
+        <a href="content_list.html" class="nav-link">
+          <span class="nav-icon">📚</span>
+          <span class="nav-text">컨텐츠 배부</span>
+        </a>
+      </li>
+      <li>
+        <a href="search_tc.html" class="nav-link">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-text">학생 검색</span>
+        </a>
+      </li>
+      <li>
+        <a href="sms.html" class="nav-link">
+          <span class="nav-icon">💬</span>
+          <span class="nav-text">출결 문자</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-link active">
+          <span class="nav-icon">🏷️</span>
+          <span class="nav-text">조퇴/외출</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3 pt-2">
+      <h2 class="text-white fw-bold m-0 ps-2">조퇴/외출 관리</h2>
+    </div>
+
+    <!-- ★ 수정된 검색 및 필터 영역 -->
+    <div id="filter-bar" class="d-flex justify-content-between align-items-center mb-4 px-2"
+      style="display: none !important;">
+
+      <div style="flex: 1;">
+        <span id="searchResultCount" class="text-muted fw-bold bg-white px-3 py-2 rounded-pill shadow-sm border"
+          style="font-size: 0.9rem;">
+          검색 결과: -건
+        </span>
+      </div>
+
+      <div class="position-relative" style="flex: 2; max-width: 400px;">
+        <!-- 돋보기 아이콘 크기 약간 조절 -->
+        <span class="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="font-size: 0.95rem;"><i
+            class="bi bi-search"></i></span>
+
+        <!-- ★ 1. form-control-lg 삭제 
+             ★ 2. py-2 (상하 여백), fs-6 (기본 폰트 크기) 추가 -->
+        <input type="text" class="form-control search-input-custom rounded-pill ps-5 py-2 fs-6" id="searchInput"
+          placeholder="반, 학번, 이름 검색" oninput="applyFilters()">
+      </div>
+
+      <div style="flex: 1; display: flex; justify-content: flex-end;">
+        <label class="switch-wrapper bg-white px-3 py-2 rounded-pill shadow-sm border">
+          <!-- ★ 기본 텍스트와 색상을 활성화 상태로 변경 -->
+          <span class="switch-label" id="toggleLabel"
+            style="font-size: 0.9rem; color: var(--primary-mint); font-weight: 700;">오늘만 보기</span>
+          <div class="switch">
+            <!-- ★ checked 속성 추가 -->
+            <input type="checkbox" id="toggleTodayInput" onchange="toggleTodayFilter()" checked>
+            <span class="slider"></span>
+          </div>
+        </label>
+      </div>
+
+    </div>
+
+    <div class="content-container">
+      <!-- 상단 탭 -->
+      <div class="top-tabs-container">
+        <button class="tab-btn active" onclick="switchTab('noid')"><i class="bi bi-person-x me-2"></i>학생증미소지</button>
+        <button class="tab-btn" onclick="switchTab('early')"><i class="bi bi-box-arrow-right me-2"></i>조퇴</button>
+        <button class="tab-btn" onclick="switchTab('out')"><i class="bi bi-door-open me-2"></i>외출</button>
+        <button class="tab-btn" onclick="switchTab('reg-input')"><i class="bi bi-pencil-square me-2"></i>정기조퇴
+          등록</button>
+        <button class="tab-btn" onclick="switchTab('reg-view')"><i class="bi bi-list-check me-2"></i>정기조퇴 현황</button>
+      </div>
+
+      <div class="content-area">
+        <!-- 1. 학생증 미소지 탭 -->
+        <div id="noid" class="tab-section" style="display: block;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold m-0">학생증 미소지 기록</h4>
+            <div class="d-flex gap-2">
+              <!-- 둘 다 outline 스타일로 통일 -->
+              <button class="btn-refresh-outline" onclick="refreshData('학생증 미소지', 'noid-body', 5, 'today')">
+                오늘 새로고침
+              </button>
+              <button class="btn-refresh-outline" onclick="refreshData('학생증 미소지', 'noid-body', 5, 'all')">
+                전체 새로고침
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive rounded-3 shadow-sm border">
+            <table class="table table-hover table-custom mb-0">
+              <thead>
+                <tr>
+                  <th>반</th>
+                  <th>학번</th>
+                  <th>성명</th>
+                  <th>날짜</th>
+                  <th>등원시간</th>
+                </tr>
+              </thead>
+              <tbody id="noid-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. 조퇴 탭 -->
+        <div id="early" class="tab-section">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold m-0">조퇴 기록</h4>
+            <div class="d-flex gap-2">
+              <!-- 둘 다 outline 스타일로 통일 -->
+              <button class="btn-refresh-outline" onclick="refreshData('조퇴', 'early-body', 5, 'today')">
+                오늘 새로고침
+              </button>
+              <button class="btn-refresh-outline" onclick="refreshData('조퇴', 'early-body', 5, 'all')">
+                전체 새로고침
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive rounded-3 shadow-sm border">
+            <table class="table table-hover table-custom mb-0">
+              <thead>
+                <tr>
+                  <th>반</th>
+                  <th>학번</th>
+                  <th>성명</th>
+                  <th>날짜</th>
+                  <th>조퇴시간</th>
+                </tr>
+              </thead>
+              <tbody id="early-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. 외출 탭 -->
+        <div id="out" class="tab-section">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold m-0">외출 기록</h4>
+            <div class="d-flex gap-2">
+              <!-- 둘 다 outline 스타일로 통일 -->
+              <button class="btn-refresh-outline" onclick="refreshData('외출', 'out-body', 7, 'today')">
+                오늘 새로고침
+              </button>
+              <button class="btn-refresh-outline" onclick="refreshData('외출', 'out-body', 7, 'all')">
+                전체 새로고침
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive rounded-3 shadow-sm border">
+            <table class="table table-hover table-custom mb-0">
+              <thead>
+                <tr>
+                  <th>반</th>
+                  <th>학번</th>
+                  <th>성명</th>
+                  <th>날짜</th>
+                  <th>외출시간</th>
+                  <th>복귀시간</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody id="out-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4. 정기조퇴 입력 탭 -->
+        <div id="reg-input" class="tab-section">
+          <div class="row justify-content-center">
+            <div class="col-xl-6 col-lg-8">
+              <div class="d-flex justify-content-between align-items-end mb-4">
+                <h4 class="fw-bold m-0">정기조퇴 등록</h4>
+                <span class="text-danger small fw-bold"><i class="bi bi-info-circle"></i> 요일별 조퇴 시간이 다른 경우 요일별로 각각
+                  등록해주세요.</span>
+              </div>
+
+              <form id="regForm" class="bg-white p-4 rounded-3 shadow-sm border">
+                <!-- ★ 수정(Update) 시 몇 번째 행을 덮어쓸지 기억하는 숨김 필드 -->
+                <input type="hidden" id="edit-row-index" value="">
+                <!-- 학번 입력 (엔터 이벤트 추가) -->
+                <!-- ★ 변경 후 (교체할 코드) -->
+                <div class="mb-3">
+                  <label class="form-label fw-bold text-muted">학번 (입력 후 Enter)</label>
+                  <input type="number" class="form-control" id="reg-id" placeholder="학번을 입력하고 엔터를 치세요"
+                    onkeydown="if(event.key==='Enter'){ event.preventDefault(); autofillStudent(); }">
+                </div>
+
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">반</label>
+                    <input type="text" class="form-control bg-light" id="reg-ban" readonly>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">이름</label>
+                    <input type="text" class="form-control bg-light" id="reg-name" readonly>
+                  </div>
+                </div>
+
+                <!-- 기간 입력 (MMDD 입력 후 Enter 또는 포커스 잃을 때 변환) -->
+                <label class="form-label fw-bold text-muted">기간 (MMDD 입력)</label>
+                <div class="row g-3 mb-4 align-items-center">
+                  <div class="col">
+                    <!-- ★ onblur="formatShortDate(this)" 추가 -->
+                    <input type="text" class="form-control" id="reg-start" placeholder="시작일 (예: 0301)"
+                      onkeydown="if(event.key==='Enter'){ event.preventDefault(); formatShortDate(this, 'reg-end'); }"
+                      onblur="formatShortDate(this)">
+                  </div>
+                  <div class="col-auto text-muted fw-bold">~</div>
+                  <div class="col">
+                    <!-- ★ onblur="formatShortDate(this)" 추가 -->
+                    <input type="text" class="form-control" id="reg-end" placeholder="종료일 (예: 0331)"
+                      onkeydown="if(event.key==='Enter'){ event.preventDefault(); formatShortDate(this, 'reg-time-input'); }"
+                      onblur="formatShortDate(this)">
+                  </div>
+                </div>
+
+                <!-- 요일 체크박스 -->
+                <div class="mb-4">
+                  <label class="form-label fw-bold text-muted d-block">해당 요일 선택</label>
+                  <div class="d-flex flex-wrap gap-2" id="day-checkboxes">
+                    <!-- 자바스크립트로 요일을 합쳐서 전송할 예정입니다 -->
+                    <div class="form-check form-check-inline m-0 border rounded px-3 py-2 bg-light">
+                      <input class="form-check-input" type="checkbox" id="day-mon" value="월">
+                      <label class="form-check-label fw-bold" for="day-mon">월</label>
+                    </div>
+                    <div class="form-check form-check-inline m-0 border rounded px-3 py-2 bg-light">
+                      <input class="form-check-input" type="checkbox" id="day-tue" value="화">
+                      <label class="form-check-label fw-bold" for="day-tue">화</label>
+                    </div>
+                    <div class="form-check form-check-inline m-0 border rounded px-3 py-2 bg-light">
+                      <input class="form-check-input" type="checkbox" id="day-wed" value="수">
+                      <label class="form-check-label fw-bold" for="day-wed">수</label>
+                    </div>
+                    <div class="form-check form-check-inline m-0 border rounded px-3 py-2 bg-light">
+                      <input class="form-check-input" type="checkbox" id="day-thu" value="목">
+                      <label class="form-check-label fw-bold" for="day-thu">목</label>
+                    </div>
+                    <div class="form-check form-check-inline m-0 border rounded px-3 py-2 bg-light">
+                      <input class="form-check-input" type="checkbox" id="day-fri" value="금">
+                      <label class="form-check-label fw-bold" for="day-fri">금</label>
+                    </div>
+                    <div class="form-check form-check-inline m-0 border rounded px-3 py-2 bg-light text-primary">
+                      <input class="form-check-input" type="checkbox" id="day-sat" value="토">
+                      <label class="form-check-label fw-bold" for="day-sat">토</label>
+                    </div>
+                    <div class="form-check form-check-inline m-0 border rounded px-3 py-2 bg-light text-danger">
+                      <input class="form-check-input" type="checkbox" id="day-sun" value="일">
+                      <label class="form-check-label fw-bold" for="day-sun">일</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                  <!-- 시간 변환 -->
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">시간 (HHMM 입력)</label>
+                    <!-- ★ onblur="formatShortTime(this)" 추가 -->
+                    <input type="text" class="form-control" id="reg-time-input" placeholder="예: 1700"
+                      onkeydown="if(event.key==='Enter'){ event.preventDefault(); formatShortTime(this, 'reg-reason'); }"
+                      onblur="formatShortTime(this)">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">사유</label>
+                    <input type="text" class="form-control" id="reg-reason" placeholder="예: 병원 진료"
+                      onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-primary w-100 fs-5 fw-bold"
+                  style="background-color: var(--primary-mint); border:none;" onclick="submitRegularLeave()">
+                  <i class="bi bi-check2-circle"></i> 정기조퇴 등록하기
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 정기조퇴 조회 탭 -->
+        <div id="reg-view" class="tab-section">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold m-0">정기조퇴 현황</h4>
+
+            <!-- 우측 영역 (만료 제외 토글 + 반 필터 + 새로고침) -->
+            <div class="d-flex gap-3 align-items-center">
+
+              <!-- ★ 수정: 만료 제외 토글 (디자인 삐져나감 해결) -->
+              <label class="switch-wrapper bg-white px-3 py-2 rounded-pill shadow-sm border mb-0">
+                <span class="switch-label text-muted" id="toggleExpiredLabel" style="font-size: 0.85rem;">만료 포함</span>
+                <!-- style="width:40px..." 삭제, 순정 클래스만 사용 -->
+                <div class="switch">
+                  <input type="checkbox" id="toggleExpiredInput" onchange="applyFilters()" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
+
+              <!-- 반 필터 드롭다운 -->
+              <select id="regClassFilter" class="form-select w-auto fw-bold"
+                style="border-radius: 6px; font-size: 0.9rem;" onchange="applyFilters()">
+                <option value="all">전체 반</option>
+                <!-- JS로 동적 생성됨 -->
+              </select>
+
+              <button class="btn-refresh-solid" onclick="cachedData['정기조퇴']=null; loadRegularLeave();">
+                <i class="bi bi-arrow-repeat"></i> 새로고침
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive rounded-3 shadow-sm border">
+            <table class="table table-hover table-custom mb-0">
+              <thead>
+                <tr>
+                  <th>반</th>
+                  <th>학번</th>
+                  <th>이름</th>
+                  <th>기간</th>
+                  <th>요일</th>
+                  <th>시간</th>
+                  <th>사유</th>
+                  <!-- ★ 관리 열 너비 130px -> 180px 로 확장 -->
+                  <th class="text-center" style="width: 180px;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="reg-view-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+      <script>
+        // ★ 여기에 본인의 배포된 Apps Script 웹 앱 URL을 넣으세요.
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxN6WVrApk7aNtvYiHKFNTFRNEVtMyRjy-3oVa579zPzZwrLDxbZ34_vfA_o2MP1BdP/exec';
+
+        // [캐시 객체] 탭 이동 시 데이터를 재활용하기 위함
+        const cachedData = { '학생증 미소지': null, '조퇴': null, '외출': null, '정기조퇴': null };
+
+        // ★ 검색 및 필터 상태 관리 변수
+        let currentActiveTab = '학생증 미소지';
+        let isTodayFilterActive = true;
+
+        // 탭 전환 함수
+        function switchTab(sectionId) {
+          document.querySelectorAll('.tab-section').forEach(el => el.style.display = 'none');
+          document.getElementById(sectionId).style.display = 'block';
+
+          document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+          event.currentTarget.classList.add('active');
+
+          // 검색창 초기화
+          document.getElementById('searchInput').value = '';
+
+          // 정기조퇴 입력 탭에서는 검색/필터 바를 숨김
+          const filterBar = document.getElementById('filter-bar');
+          if (sectionId === 'reg-input') {
+            filterBar.style.display = 'none';
+            return;
+          } else {
+            filterBar.style.display = 'flex';
+          }
+
+          // 현재 탭 기록 및 데이터 로드
+          if (sectionId === 'noid') { currentActiveTab = '학생증 미소지'; loadDailyData('학생증 미소지', 'noid-body', 5); }
+          if (sectionId === 'early') { currentActiveTab = '조퇴'; loadDailyData('조퇴', 'early-body', 5); }
+          if (sectionId === 'out') { currentActiveTab = '외출'; loadDailyData('외출', 'out-body', 7); }
+          if (sectionId === 'reg-view') { currentActiveTab = '정기조퇴'; loadRegularLeave(); }
+        }
+
+        window.onload = function () {
+          document.getElementById('filter-bar').style.display = 'flex';
+          loadDailyData('학생증 미소지', 'noid-body', 5);
+          loadClassesList(); // 반 필터 로드
+        };
+
+        async function loadClassesList() {
+          try {
+            const response = await fetch(`${GAS_URL}?action=getClasses`);
+            const classes = await response.json();
+            const select = document.getElementById('regClassFilter');
+            classes.forEach(c => {
+              select.innerHTML += `<option value="${c}">${c}반</option>`;
+            });
+          } catch (e) { console.log('반 목록 로드 실패'); }
+        }
+
+        // 테이블 내부에 로딩 스피너 표시 함수
+        function showTableLoading(tbodyId, colCount) {
+          document.getElementById(tbodyId).innerHTML = `<tr><td colspan="${colCount}" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>데이터를 불러오는 중입니다...</td></tr>`;
+        }
+
+        // 오늘 날짜를 "YYYY-MM-DD" 형태로 반환 (서버 요청용)
+        function getTodayString() {
+          const d = new Date();
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // ★ 수정된 오늘만 보기 토글 동작
+        function toggleTodayFilter() {
+          const isChecked = document.getElementById('toggleTodayInput').checked;
+          isTodayFilterActive = isChecked;
+
+          const label = document.getElementById('toggleLabel');
+          if (isChecked) {
+            label.innerText = '오늘만 보기';
+            label.style.color = 'var(--primary-mint)';
+            label.style.fontWeight = '700';
+          } else {
+            label.innerText = '전체 보기';
+            label.style.color = '#666';
+            label.style.fontWeight = '600';
+          }
+
+          applyFilters();
+        }
+
+        // [완벽 통합] 필터링 함수 (검색 + 반 + 만료 제외 + 오늘만 보기)
+        function applyFilters() {
+          const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+          const todayStrNum = getTodayString().replace(/[^0-9]/g, '');
+
+          const rawData = cachedData[currentActiveTab];
+          if (!rawData) return;
+
+          // 1. 만료 제외 토글 상태 확인 (정기조퇴용)
+          let hideExpired = false;
+          const toggleInput = document.getElementById('toggleExpiredInput');
+          if (toggleInput) {
+            hideExpired = toggleInput.checked;
+            const expLabel = document.getElementById('toggleExpiredLabel');
+            if (hideExpired) {
+              expLabel.innerText = '만료 제외';
+              expLabel.style.color = 'var(--primary-mint)';
+              expLabel.style.fontWeight = '700';
+            } else {
+              expLabel.innerText = '만료 포함';
+              expLabel.style.color = '#666';
+              expLabel.style.fontWeight = '600';
+            }
+          }
+
+          // 2. 데이터 필터링 시작 (여기서 row가 정의됩니다)
+          const filtered = rawData.filter(row => {
+            // 2-1. 검색어 필터
+            const matchKeyword = keyword === '' ||
+              String(row[0]).toLowerCase().includes(keyword) ||
+              String(row[1]).includes(keyword) ||
+              String(row[2]).toLowerCase().includes(keyword);
+
+            let matchToday = true;
+            let matchClass = true;
+            let matchExpired = true;
+
+            if (currentActiveTab === '정기조퇴') {
+              // 2-2. 반 필터
+              const classFilter = document.getElementById('regClassFilter').value;
+              if (classFilter !== 'all') matchClass = (String(row[0]).trim() === classFilter);
+
+              // 2-3. 만료 날짜(Date 객체) 필터
+              if (hideExpired) {
+                const periodStr = String(row[3] || '');
+                if (periodStr.includes('~')) {
+                  const endDateStr = periodStr.split('~')[1].trim();
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(endDateStr)) {
+                    const endDate = new Date(endDateStr);
+                    endDate.setHours(0, 0, 0, 0);
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // 종료일이 오늘보다 작으면(과거면) 목록에서 숨김(false)
+                    if (endDate < today) {
+                      matchExpired = false;
+                    }
+                  }
+                }
+              }
+            } else {
+              // 2-4. 일일 시트 '오늘만 보기' 필터
+              if (isTodayFilterActive) {
+                const rowDateNum = String(row[3] || '').replace(/[^0-9]/g, '');
+                matchToday = (rowDateNum === todayStrNum);
+              }
+            }
+
+            return matchKeyword && matchToday && matchClass && matchExpired;
+          });
+
+          // 3. 필터링된 데이터 렌더링
+          if (currentActiveTab === '학생증 미소지') renderDailyTable('학생증 미소지', filtered, 'noid-body', 5);
+          else if (currentActiveTab === '조퇴') renderDailyTable('조퇴', filtered, 'early-body', 5);
+          else if (currentActiveTab === '외출') renderDailyTable('외출', filtered, 'out-body', 7);
+          else if (currentActiveTab === '정기조퇴') renderRegularTable(filtered);
+        }
+
+        // [완벽 통합] 정기조퇴 렌더링 함수 (만료 표시 + 관리 버튼)
+        // (※ 기존에 파일 안에 renderRegularTable이 2개 있었다면 둘 다 지우고 이것 하나만 쓰세요!)
+        function renderRegularTable(data) {
+          const tbody = document.getElementById('reg-view-body');
+          document.getElementById('searchResultCount').innerText = `검색 결과: ${data.length}건`;
+
+          if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">일치하는 정기조퇴 데이터가 없습니다.</td></tr>`;
+            return;
+          }
+
+          let html = '';
+          [...data].reverse().forEach(row => {
+            let timeVal = String(row[5] || '').trim();
+            if (timeVal.includes(':')) {
+              const parts = timeVal.split(':');
+              if (parts.length >= 2) timeVal = `${parts[0].trim().padStart(2, '0')}:${parts[1].trim()}`;
+            }
+
+            const rowIndex = row[7];
+
+            let isExpired = false;
+            let badgeHtml = row[3] || '-';
+            let rowClass = '';
+
+            // 만료 여부 날짜(Date) 기반 완벽 체크
+            const periodStr = String(row[3] || '');
+            if (periodStr.includes('~')) {
+              const endDateStr = periodStr.split('~')[1].trim();
+
+              if (/^\d{4}-\d{2}-\d{2}$/.test(endDateStr)) {
+                const endDate = new Date(endDateStr);
+                endDate.setHours(0, 0, 0, 0);
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (endDate < today) {
+                  isExpired = true;
+                  rowClass = 'bg-light text-muted';
+                  badgeHtml = `<span class="badge bg-danger mb-1 shadow-sm">만료됨</span><br><span style="text-decoration: line-through; opacity: 0.6;">${row[3]}</span>`;
+                }
+              }
+            }
+
+            html += `<tr class="${rowClass}">
+        <td class="${isExpired ? '' : 'text-muted'}">${row[0] || '-'}</td>
+        <td class="${isExpired ? '' : 'text-muted'}">${row[1] || '-'}</td>
+        <td class="${isExpired ? '' : 'fw-bold text-dark'}">${row[2] || '-'}</td>
+        <td class="text-nowrap text-center">${badgeHtml}</td>
+        <td class="${isExpired ? '' : 'fw-bold text-primary'}">${row[4] || '-'}</td>
+        <td class="${isExpired ? '' : 'text-muted'}">${timeVal || '-'}</td>
+        <td class="small ${isExpired ? '' : 'text-muted'}">${row[6] || '-'}</td>
+        <td class="text-center" style="vertical-align: middle;">
+          <div class="d-flex justify-content-center gap-1">
+            <button class="btn btn-manage btn-extend" style="border-color: #0d6efd; color: #0d6efd;" onclick="extendRegularLeave('${row[0]}', '${row[1]}', '${row[2]}', '${row[4]}', '${timeVal}', '${row[6]}')">연장</button>
+            <button class="btn btn-manage" onclick="editRegularLeave(${rowIndex}, '${row[0]}', '${row[1]}', '${row[2]}', '${row[3]}', '${row[4]}', '${timeVal}', '${row[6]}')">수정</button>
+            <button class="btn btn-manage btn-delete" onclick="deleteRegularLeaveRow(${rowIndex}, '${row[2]}')">삭제</button>
+          </div>
+        </td>
+      </tr>`;
+          });
+          tbody.innerHTML = html;
+        }
+
+        // 데이터 로드 및 갱신 함수들
+        function loadDailyData(sheetName, tbodyId, colCount) {
+          if (cachedData[sheetName]) applyFilters(); // 캐시가 있으면 필터 적용해서 다시 그림
+          else refreshData(sheetName, tbodyId, colCount, 'all');
+        }
+
+        // [데이터 갱신 함수] 오늘 새로고침 vs 전체 새로고침
+        async function refreshData(sheetName, tbodyId, colCount, mode) {
+          showTableLoading(tbodyId, colCount);
+          try {
+            if (mode === 'all' || !cachedData[sheetName]) {
+              const response = await fetch(`${GAS_URL}?action=getDailyData&sheetName=${encodeURIComponent(sheetName)}`);
+              cachedData[sheetName] = await response.json();
+            } else if (mode === 'today') {
+              const todayStr = getTodayString();
+              const response = await fetch(`${GAS_URL}?action=getDailyData&sheetName=${encodeURIComponent(sheetName)}&targetDate=${todayStr}`);
+              const todayData = await response.json();
+              const targetNum = todayStr.replace(/[^0-9]/g, '');
+              const oldData = cachedData[sheetName].filter(row => String(row[3] || '').replace(/[^0-9]/g, '') !== targetNum);
+              cachedData[sheetName] = [...oldData, ...todayData];
+            }
+            applyFilters(); // 데이터 갱신 후 현재 필터 상태에 맞춰 화면을 그림
+          } catch (error) {
+            document.getElementById(tbodyId).innerHTML = `<tr><td colspan="${colCount}" class="text-center py-5 text-danger">통신 오류가 발생했습니다.</td></tr>`;
+          }
+        }
+
+        // [화면 렌더링 함수] 데이터를 테이블 표에 그림
+        function renderDailyTable(sheetName, data, tbodyId, colCount) {
+          const tbody = document.getElementById(tbodyId);
+          document.getElementById('searchResultCount').innerText = `검색 결과: ${data.length}건`;
+
+          if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-5 text-muted">일치하는 데이터가 없습니다.</td></tr>`;
+            return;
+          }
+
+          // ★ 렌더링용 배열 복사본 생성
+          let renderData = [...data];
+
+          // 외출 시트일 경우: 1순위 '미복귀/외출중'(6번 인덱스), 2순위 '시간 역순(기본)'으로 정렬
+          if (sheetName === '외출') {
+            renderData.reverse(); // 일단 전체를 최신순으로 뒤집음
+            renderData.sort((a, b) => {
+              const statusA = String(a[6] || '').trim();
+              const statusB = String(b[6] || '').trim();
+
+              // '외출중' 또는 '미복귀' 상태인 경우 가중치를 주어 무조건 위로 끌어올림
+              const isOutA = (statusA === '외출중' || statusA === '미복귀') ? -1 : 1;
+              const isOutB = (statusB === '외출중' || statusB === '미복귀') ? -1 : 1;
+
+              return isOutA - isOutB;
+            });
+          } else {
+            // 다른 시트들은 단순히 최신순(역순)으로 렌더링
+            renderData.reverse();
+          }
+
+          let html = '';
+          renderData.forEach(row => {
+            // 행(row) 전체에 배경색을 살짝 주기 위한 변수
+            let trClass = '';
+
+            html += '<tr>';
+            row.forEach((cell, index) => {
+              let displayVal = String(cell || '').trim();
+              let cellClass = index === 2 ? 'fw-bold text-dark' : 'text-muted';
+
+              // 1. 날짜 공백 제거
+              if (index === 3) {
+                displayVal = displayVal.replace(/\s/g, '');
+              }
+
+              // 2. 시간 처리 (콜론이 있으면 시:분 까지만)
+              if (index === 4 || index === 5) {
+                if (displayVal.includes(':')) {
+                  const timeParts = displayVal.split(':');
+                  if (timeParts.length >= 2) {
+                    displayVal = `${timeParts[0].trim().padStart(2, '0')}:${timeParts[1].trim()}`;
+                  }
+                }
+              }
+
+              // 3. 상태 뱃지 및 행 강조 (외출 탭)
+              if (sheetName === '외출' && index === 6) {
+                if (displayVal === '미복귀' || displayVal === '외출중') {
+                  // 붉은색 계열 뱃지
+                  displayVal = `<span class="badge bg-danger px-3 py-2 shadow-sm" style="font-size:0.9rem;">${displayVal}</span>`;
+                  // 행 전체에 아주 연한 붉은 배경 추가 (원치 않으시면 아래 줄 삭제)
+                  trClass = 'table-danger';
+                } else {
+                  // 복귀완료 시 하늘색/파란색 계열 뱃지
+                  displayVal = `<span class="badge bg-info px-3 py-2 shadow-sm text-dark" style="font-size:0.9rem;">${displayVal}</span>`;
+                }
+                cellClass = '';
+              }
+
+              html += `<td class="${cellClass}">${displayVal}</td>`;
+            });
+
+            // 완성된 행을 <tr>에 클래스(trClass)를 넣어 결합
+            // 기존 <tr>를 닫고 다시 여는 방식이 아니라 통째로 치환
+            html = html.replace('<tr>', `<tr class="${trClass}">`);
+            html += '</tr>';
+          });
+          tbody.innerHTML = html;
+        }
+
+        // ----------------------------------------------------
+        // 정기조퇴 데이터 로드 (캐시 적용)
+        async function loadRegularLeave() {
+          if (cachedData['정기조퇴']) {
+            applyFilters();
+            return;
+          }
+          showTableLoading('reg-view-body', 7);
+          try {
+            const response = await fetch(`${GAS_URL}?action=getRegularLeaveData`);
+            cachedData['정기조퇴'] = await response.json();
+            applyFilters();
+          } catch (error) {
+            document.getElementById('reg-view-body').innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">데이터 연동 오류.</td></tr>`;
+          }
+        }
+
+        // ----------------------------------------------------
+        // 정기조퇴 입력 관련 함수 (기존 유지)
+        // 0301 입력 시 올해 연도를 붙여 2026-03-01 로 변환하고 다음 칸으로 이동
+        function formatShortDate(inputElem, nextElemId) {
+          let val = inputElem.value.trim();
+          // 이미 하이픈(-)이 포함되어 포맷팅된 상태면 건너뜀
+          if (val.includes('-')) {
+            if (nextElemId) document.getElementById(nextElemId).focus();
+            return;
+          }
+
+          val = val.replace(/[^0-9]/g, '');
+          if (val.length === 4) {
+            const currentYear = new Date().getFullYear();
+            const month = val.substring(0, 2);
+            const day = val.substring(2, 4);
+            inputElem.value = `${currentYear}-${month}-${day}`;
+
+            if (nextElemId) document.getElementById(nextElemId).focus();
+          } else if (val.length > 0) {
+            // 엔터를 쳤을 때만 알림을 띄움 (마우스 클릭으로 빠져나갈 때는 방해 안 함)
+            if (nextElemId) {
+              alert("MMDD 형식(숫자 4자리)으로 입력해주세요. 예: 0301");
+              inputElem.focus();
+            }
+          }
+        }
+
+        // 1700 입력 시 17:00 로 변환하고 다음 칸으로 이동
+        function formatShortTime(inputElem, nextElemId) {
+          let val = inputElem.value.trim();
+          if (val.includes(':')) {
+            if (nextElemId) document.getElementById(nextElemId).focus();
+            return;
+          }
+
+          val = val.replace(/[^0-9]/g, '');
+          if (val.length === 4) {
+            const hour = val.substring(0, 2);
+            const min = val.substring(2, 4);
+            inputElem.value = `${hour}:${min}`;
+
+            if (nextElemId) document.getElementById(nextElemId).focus();
+          } else if (val.length > 0) {
+            if (nextElemId) {
+              alert("HHMM 형식(숫자 4자리)으로 입력해주세요. 예: 1700");
+              inputElem.focus();
+            }
+          }
+        }
+
+        // [수정] 마스터 검색 함수 (학번 검색)
+        // [수정된 디버깅용 프론트엔드 검색 함수]
+        async function autofillStudent() {
+          const studentId = document.getElementById('reg-id').value.trim();
+          if (!studentId) {
+            console.log("학번 입력값이 비어있습니다.");
+            return;
+          }
+
+          console.log("----------------------------------------");
+          console.log("1. 검색 시작! 입력된 학번:", studentId);
+
+          document.getElementById('reg-ban').value = '검색 중...';
+          document.getElementById('reg-name').value = '검색 중...';
+
+          try {
+            const url = `${GAS_URL}?action=searchMaster&studentId=${encodeURIComponent(studentId)}`;
+            console.log("2. 요청 URL:", url);
+
+            const response = await fetch(url);
+            console.log("3. HTTP 응답 상태:", response.status, response.statusText);
+
+            const student = await response.json();
+            console.log("4. 서버에서 넘어온 최종 데이터(JSON):", student);
+
+            if (student && student.error) {
+              console.error("5. 백엔드 에러 발생:", student.error);
+              alert('백엔드 에러 발생: ' + student.error);
+              document.getElementById('reg-ban').value = '';
+              document.getElementById('reg-name').value = '';
+              return;
+            }
+
+            if (student && student.name) {
+              console.log("5. 매칭 성공! 학생 이름:", student.name);
+              document.getElementById('reg-ban').value = student.ban;
+              document.getElementById('reg-name').value = student.name;
+              document.getElementById('reg-start').focus();
+            } else {
+              console.warn("5. 매칭 실패! 서버 데이터가 비어있음");
+              alert(`학번 [${studentId}]를 마스터 데이터에서 찾을 수 없습니다.`);
+              document.getElementById('reg-ban').value = '';
+              document.getElementById('reg-name').value = '';
+            }
+          } catch (e) {
+            console.error("Fetch 통신 에러 발생:", e);
+            alert(`통신 오류 발생: ${e.message}\n(F12를 눌러 콘솔을 확인하세요)`);
+            document.getElementById('reg-ban').value = '';
+            document.getElementById('reg-name').value = '';
+          }
+        }
+
+        // [수정] 정기조퇴 데이터 등록 (최종 클렌징 추가)
+        async function submitRegularLeave() {
+          // ★ 0. 저장 직전에 모든 입력칸을 강제로 한 번 더 포맷팅 돌리기
+          const startInput = document.getElementById('reg-start');
+          const endInput = document.getElementById('reg-end');
+          const timeInput = document.getElementById('reg-time-input');
+
+          // 강제 포맷팅 (알림창 띄우지 않기 위해 두 번째 인자(nextElemId)를 비워둠)
+          formatShortDate(startInput);
+          formatShortDate(endInput);
+          formatShortTime(timeInput);
+
+          // 1. 요일 체크박스 값 수집
+          const checkboxes = document.querySelectorAll('#day-checkboxes input[type="checkbox"]:checked');
+          const selectedDays = Array.from(checkboxes).map(cb => cb.value).join(', ');
+
+          // 2. 기간 조립
+          const startDate = startInput.value.trim();
+          const endDate = endInput.value.trim();
+          const periodStr = (startDate && endDate) ? `${startDate} ~ ${endDate}` : startDate || endDate;
+
+          // 3. 페이로드 생성
+          const payload = {
+            ban: document.getElementById('reg-ban').value,
+            studentId: document.getElementById('reg-id').value,
+            name: document.getElementById('reg-name').value,
+            period: periodStr,
+            dayOfWeek: selectedDays,
+            time: timeInput.value,
+            reason: document.getElementById('reg-reason').value
+          };
+
+          // 4. 유효성 검사 (포맷팅 실패로 4자리 숫자가 그대로 남았는지도 검사)
+          if (!payload.studentId || !payload.name || payload.name === '검색 중...') return alert("학번을 검색하여 학생 정보를 확인해주세요.");
+
+          // 포맷팅이 안 되고 '0401' 처럼 남아있으면 반려
+          if (!startDate || !startDate.includes('-')) return alert("시작일을 MMDD(4자리) 또는 YYYY-MM-DD 형식으로 정확히 입력해주세요.");
+          if (!endDate || !endDate.includes('-')) return alert("종료일을 MMDD(4자리) 또는 YYYY-MM-DD 형식으로 정확히 입력해주세요.");
+
+          if (!payload.dayOfWeek) return alert("요일을 하나 이상 선택해주세요.");
+
+          if (!payload.time || !payload.time.includes(':')) return alert("조퇴 시간을 HHMM(4자리) 또는 HH:MM 형식으로 정확히 입력해주세요.");
+
+          // 5. 서버 전송 로직
+          const btn = document.querySelector('#regForm button.btn-primary');
+          const originalBtnText = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 처리 중...';
+
+          const editRowIndex = document.getElementById('edit-row-index').value;
+          const actionType = editRowIndex ? 'updateRegularLeave' : 'saveRegularLeave';
+          const requestBody = { action: actionType, payload: payload };
+
+          if (editRowIndex) requestBody.rowIndex = editRowIndex;
+
+          try {
+            const response = await fetch(GAS_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(requestBody)
+            });
+            const result = await response.json();
+
+            alert(result.message);
+
+            if (result.success) {
+              document.getElementById('regForm').reset();
+              document.getElementById('edit-row-index').value = '';
+              document.querySelector('#reg-input h4').innerText = "정기조퇴 등록";
+              document.querySelector('#regForm button.btn-primary').innerHTML = '<i class="bi bi-check2-circle"></i> 정기조퇴 등록하기';
+              cachedData['정기조퇴'] = null;
+            }
+          } catch (e) {
+            alert("처리 중 오류가 발생했습니다.");
+          } finally {
+            btn.disabled = false;
+            if (document.getElementById('edit-row-index').value === '') {
+              btn.innerHTML = '<i class="bi bi-check2-circle"></i> 정기조퇴 등록하기';
+            } else {
+              btn.innerHTML = originalBtnText;
+            }
+          }
+        }
+
+        // [삭제 기능]
+        async function deleteRegularLeaveRow(rowIndex, studentName) {
+          if (!confirm(`${studentName} 학생의 정기조퇴 기록을 삭제하시겠습니까?`)) return;
+
+          // 테이블에 로딩 표시
+          document.getElementById('reg-view-body').innerHTML = `<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-danger spinner-border-sm"></div> 삭제 중...</td></tr>`;
+
+          try {
+            const response = await fetch(GAS_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({ action: 'deleteRegularLeave', rowIndex: rowIndex })
+            });
+            const result = await response.json();
+            alert(result.message);
+
+            // 캐시 초기화 후 재로드
+            cachedData['정기조퇴'] = null;
+            loadRegularLeave();
+          } catch (e) {
+            alert("삭제 중 오류가 발생했습니다.");
+          }
+        }
+
+        // [완벽한 수정 기능] 기존 데이터를 폼에 그대로 복원합니다.
+        function editRegularLeave(rowIndex, ban, studentId, name, period, days, time, reason) {
+          if (!confirm("기존 기록을 수정하시겠습니까?")) return;
+
+          // 1. 등록 탭으로 전환
+          switchTab('reg-input');
+
+          // 2. 폼의 최상단 타이틀과 버튼 이름을 '수정' 모드로 변경 (시각적 피드백)
+          document.querySelector('#reg-input h4').innerText = "정기조퇴 수정";
+          document.querySelector('#regForm button.btn-primary').innerHTML = '<i class="bi bi-pencil-square"></i> 정기조퇴 수정완료';
+
+          // 3. 숨겨둔 rowIndex 필드에 값을 저장
+          document.getElementById('edit-row-index').value = rowIndex;
+
+          // 4. 학번, 반, 이름 채우기
+          document.getElementById('reg-id').value = studentId;
+          document.getElementById('reg-ban').value = ban;
+          document.getElementById('reg-name').value = name;
+
+          // 5. 기간(period) 채우기 (예: "2026-03-01 ~ 2026-03-31" 포맷을 쪼개서 시작/종료일에 배분)
+          if (period && period.includes('~')) {
+            const p = period.split('~');
+            document.getElementById('reg-start').value = p[0].trim();
+            document.getElementById('reg-end').value = p[1].trim();
+          } else {
+            document.getElementById('reg-start').value = period;
+            document.getElementById('reg-end').value = '';
+          }
+
+          // 6. 요일(체크박스) 복원: 기존 체크된 것을 싹 지우고, 가져온 텍스트(예: "월, 수, 금")에 맞춰 체크
+          document.querySelectorAll('#day-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+          if (days) {
+            document.querySelectorAll('#day-checkboxes input[type="checkbox"]').forEach(cb => {
+              if (days.includes(cb.value)) cb.checked = true;
+            });
+          }
+
+          // 7. 시간 및 사유 채우기
+          document.getElementById('reg-time-input').value = time;
+          document.getElementById('reg-reason').value = reason || '';
+        }
+
+        // [신규] 연장(복제 후 신규 등록) 기능
+        function extendRegularLeave(ban, studentId, name, days, time, reason) {
+          if (!confirm(`[${name}] 학생의 조퇴 정보를 바탕으로 다음 달 연장을 진행하시겠습니까?\n(기간만 새로 입력하시면 됩니다)`)) return;
+
+          // 1. 등록 탭으로 전환
+          switchTab('reg-input');
+
+          // 2. 폼을 "신규 등록" 상태로 확실히 초기화 
+          // (이전에 수정 버튼을 눌러서 '수정 모드' 였을 수 있으므로 리셋)
+          document.getElementById('edit-row-index').value = '';
+          document.querySelector('#reg-input h4').innerText = "정기조퇴 등록 (연장)";
+          document.querySelector('#regForm button.btn-primary').innerHTML = '<i class="bi bi-check2-circle"></i> 연장 등록하기';
+
+          // 3. 학생 기본 정보 세팅
+          document.getElementById('reg-id').value = studentId;
+          document.getElementById('reg-ban').value = ban;
+          document.getElementById('reg-name').value = name;
+
+          // 4. 기간은 비워둠 (새로운 한 달을 입력해야 하므로)
+          document.getElementById('reg-start').value = '';
+          document.getElementById('reg-end').value = '';
+
+          // 5. 요일(체크박스) 복원
+          document.querySelectorAll('#day-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+          if (days) {
+            document.querySelectorAll('#day-checkboxes input[type="checkbox"]').forEach(cb => {
+              if (days.includes(cb.value)) cb.checked = true;
+            });
+          }
+
+          // 6. 시간 및 사유 복원
+          document.getElementById('reg-time-input').value = time;
+          document.getElementById('reg-reason').value = reason || '';
+
+          // 7. 커서를 바로 '시작일' 입력칸에 위치시킴 (업무 속도 극대화)
+          setTimeout(() => {
+            document.getElementById('reg-start').focus();
+          }, 100);
+        }
+      </script>
+</body>
+
+</html>
