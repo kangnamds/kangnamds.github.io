@@ -3208,29 +3208,49 @@
                 <button class="search-btn" onclick="searchStatsStudent()">조회</button>
             </div>
 
-            <div id="stats-result" style="display:none; margin-top:20px;">
-                <!-- 상단 요약 카드 -->
-                <div class="stats-header"
-                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <h2 id="stats-student-name" style="margin:0; font-size:1.5rem; color:#1e293b;">홍길동</h2>
+            <!-- ========================================== -->
+            <!-- ★ 여기로 컨트롤 패널을 이동시켰습니다! (stats-result 바깥쪽) -->
+            <!-- ========================================== -->
+            <div id="stats-control-panel"
+                style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; flex-wrap:wrap; gap:10px;">
+                <!-- 왼쪽: 버튼들 -->
+                <div style="display: inline-block;">
+                    <button onclick="saveCurrentReportAsJPG()"
+                        style="padding:6px 12px; background-color:#10b981; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; margin-right:5px;">📸
+                        현재 화면 저장</button>
+                    <button onclick="saveAllStudentsReportAsJPG()"
+                        style="padding:6px 12px; background-color:#8b5cf6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">📑
+                        모든 학생 저장</button>
+                    <button onclick="refreshStatsData()"
+                        style="padding:6px 12px; background-color:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; margin-left:10px;">🔄
+                        최신 동기화</button>
+                </div>
+
+                <!-- 오른쪽: 옵션들 -->
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <select id="stats-period-select" onchange="handleStatsPeriodChange()" class="period-combo"
+                        style="padding:6px; border-radius:8px; border:1px solid #cbd5e1;"></select>
+
+                    <div class="toggle-wrapper" style="display:flex; align-items:center; gap:8px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-upto-today" onchange="updateStatsView(false)" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span style="font-size:0.9rem; color:#64748b; font-weight:700;">오늘까지 포함</span>
                     </div>
+                </div>
+            </div>
 
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <!-- 기간 선택 콤보박스 -->
-                        <select id="stats-period-select" onchange="handleStatsPeriodChange()" class="period-combo"
-                            style="padding:6px; border-radius:8px; border:1px solid #cbd5e1;"></select>
 
-                        <!-- [수정] 메인 토글과 동일한 디자인 적용 -->
-                        <div class="toggle-wrapper" style="display:flex; align-items:center; gap:8px;">
-                            <label class="switch">
-                                <input type="checkbox" id="toggle-upto-today" onchange="updateStatsView(false)">
-                                <span class="slider"></span>
-                            </label>
-                            <span style="font-size:0.9rem; color:#64748b; font-weight:700;">오늘까지 포함</span>
-                        </div>
+            <!-- ========================================== -->
+            <!-- ★ html2canvas가 캡처할 진짜 타겟 (stats-result) -->
+            <!-- ========================================== -->
+            <div id="stats-result"
+                style="display:none; margin-top:20px; background:white; padding:20px; border-radius:12px;">
 
-                    </div>
+                <!-- 상단 요약 카드 부분 -->
+                <div class="stats-header" style="display:flex; align-items:center; margin-bottom:15px;">
+                    <h2 id="stats-student-name" style="margin:0; font-size:1.5rem; color:#1e293b;">홍길동</h2>
                 </div>
 
                 <div class="summary-cards"
@@ -3407,7 +3427,7 @@
 
         <script>
             // ▼ API URL (본인의 배포 URL 확인!) ▼
-            const API_URL = "https://script.google.com/macros/s/AKfycbyb_qxRU6yznSIK3v_hI9OTW3Rn1QkAmNRm8yMRQ4zD_4aznHj5680jOMGIj8Q2IaLCoA/exec";
+            const API_URL = "https://script.google.com/macros/s/AKfycbyy5VBhYLsLz0l7xph2q-Q-hUjk5OKCP93c1ScOMbsqxoSMmSjjvpF73XHq-fWhmT9P4g/exec";
 
             let globalData = { master: [], plan: [] };
             let isAttendanceMode = false;
@@ -4217,107 +4237,114 @@
                 updateStatsView();
             }
 
-            // 1. 데이터 로드 함수 (처음 성공했던 정규화 로직 + 원래 있던 캐시 저장 방식 롤백)
-            async function loadStatsData(yearMonth) {
+            // [최종 수정 버전] 통계 데이터 로드 (localStorage 캐싱 + 전역 캐시)
+            // [최종 수정 버전] 통계 데이터 로드 (이번 달 무조건 캐시 + 강제 동기화 기능 추가)
+            async function loadStatsData(yearMonth, forceRefresh = false) {
                 const calendarEl = document.getElementById('stats-calendar');
                 const weeklyTableEl = document.getElementById('stats-weekly-table');
+                const cacheKey = `stats_${yearMonth}`;
 
-                // 캘린더(Grid) 영역에 들어갈 로딩
-                const calendarLoadingHTML = `
-  <div style="padding: 40px; text-align: center; grid-column: 1 / -1;">
-    <div class="loading-spinner"></div>
-    <p style="color: #64748b; font-weight: bold;">${yearMonth} 데이터 불러오는 중...</p>
-  </div>
-`;
+                // 1. 강제 새로고침(forceRefresh)이 아닐 때만 캐시를 뒤져봄
+                if (!forceRefresh) {
+                    const savedCache = localStorage.getItem(cacheKey);
+                    if (savedCache) {
+                        try {
+                            statsDataCache = JSON.parse(savedCache);
+                            updateStatsView(true); // 화면 갱신
+                            return; // ★ 스피너 없이 0.01초 만에 즉시 렌더링 후 여기서 함수 종료!
+                        } catch (e) {
+                            console.log("캐시 파싱 오류, 새로고침합니다.");
+                            localStorage.removeItem(cacheKey);
+                        }
+                    }
+                }
 
-                // 주간 통계(Table) 영역에 들어갈 로딩 (반드시 tr, td로 감싸야 안 깨짐)
-                const tableLoadingHTML = `
-  <tr>
-    <td colspan="10" style="padding: 40px; text-align: center; border: none;">
-      <div class="loading-spinner"></div>
-      <p style="color: #64748b; font-weight: bold;">${yearMonth} 데이터 불러오는 중...</p>
-    </td>
-  </tr>
-`;
+                // 2. 캐시가 없거나 새로고침 버튼을 눌렀을 때만 로딩 스피너 작동
+                calendarEl.innerHTML = `<div style="padding:40px; text-align:center;">
+                    <div class="loading-spinner"></div>
+                    <p style="color:#64748b; font-weight:bold; margin-top:10px;">${yearMonth} 최신 데이터 동기화 중...</p>
+                </div>`;
 
-                calendarEl.innerHTML = calendarLoadingHTML;
-                weeklyTableEl.innerHTML = tableLoadingHTML;
-                if (weeklyTableEl) weeklyTableEl.innerHTML = calendarEl.innerHTML;
+                if (weeklyTableEl) {
+                    weeklyTableEl.innerHTML = `<tr><td colspan="10" style="padding:40px; text-align:center; border:none;">
+                        <div class="loading-spinner"></div>
+                        <p style="color:#64748b; font-weight:bold; margin-top:10px;">${yearMonth} 최신 데이터 동기화 중...</p>
+                    </td></tr>`;
+                }
 
                 try {
-                    const [currentY, currentM] = yearMonth.split('-').map(Number);
+                    // 3. 서버 통신
+                    const response = await fetch(`${API_URL}?mode=stats_batch&month=${yearMonth}`);
+                    const result = await response.json();
 
-                    let prevY = currentY, prevM = currentM - 1;
-                    if (prevM < 1) { prevY--; prevM = 12; }
-                    const prevMonthStr = `${prevY}-${String(prevM).padStart(2, '0')}`;
+                    if (!result || result.status !== "success") throw new Error("데이터 로드 실패");
 
-                    let nextY = currentY, nextM = currentM + 1;
-                    if (nextM > 12) { nextY++; nextM = 1; }
-                    const nextMonthStr = `${nextY}-${String(nextM).padStart(2, '0')}`;
-
-                    // 3달치 동시 요청
-                    const pPrev = fetch(`${API_URL}?mode=stats&month=${prevMonthStr}`).then(res => res.json()).catch(() => ({ status: 'fail' }));
-                    const pCurr = fetch(`${API_URL}?mode=stats&month=${yearMonth}`).then(res => res.json()).catch(() => ({ status: 'fail' }));
-                    const pNext = fetch(`${API_URL}?mode=stats&month=${nextMonthStr}`).then(res => res.json()).catch(() => ({ status: 'fail' }));
-
-                    const [resPrev, resCurr, resNext] = await Promise.all([pPrev, pCurr, pNext]);
-
-                    if (!resCurr || resCurr.status !== "success") throw new Error("데이터 로드 실패");
-
-                    let allLogs = [];
-                    let allSnaps = [];
-                    let basePlan = resCurr.mergedPlans?.base || [];
-
-                    const mergeData = (res) => {
-                        if (res.status === 'success') {
-                            if (res.data) {
-                                // [최초 성공 로직] 어떤 키로 들어오든 강제로 id, date, period, status 매핑
-                                const normalizedLogs = res.data.map(l => ({
-                                    date: l.date || l['Date'] || l['날짜'] || l[0] || '',
-                                    id: String(l.id || l['Student ID'] || l['학번'] || l[3] || '').trim(),
-                                    period: String(l.period || l['Period'] || l['교시'] || l[2] || '').trim(),
-                                    status: String(l.status || l['Status'] || l['상태'] || l[5] || '').trim()
-                                }));
-                                allLogs = allLogs.concat(normalizedLogs);
-                            }
-                            if (res.mergedPlans?.snaps) allSnaps = allSnaps.concat(res.mergedPlans.snaps);
-                        }
-                    };
-
-                    mergeData(resPrev);
-                    mergeData(resCurr);
-                    mergeData(resNext);
-
-                    // 원래 쓰던 전역 변수 캐시 (localStorage 복잡한 로직 제외, 메모리 캐시만 유지)
                     statsDataCache = {
-                        data: allLogs,
+                        data: result.data || [],
                         mergedPlans: {
-                            base: basePlan,
-                            snaps: allSnaps
+                            base: result.mergedPlans.base || [],
+                            snaps: result.mergedPlans.snaps || []
                         }
                     };
+
+                    // 4. ★ 이번 달이든 과거 달이든 무조건 로컬 스토리지에 캐시 저장!
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify(statsDataCache));
+                    } catch (e) {
+                        console.log("로컬 스토리지 용량 초과로 캐싱 생략");
+                    }
 
                     updateStatsView(true);
 
                 } catch (err) {
-                    console.error(err);
+                    console.error("데이터 로딩 에러:", err);
                     calendarEl.innerHTML = `<div style="padding:20px; color:#ef4444; text-align:center;">로드 실패: ${err.message}</div>`;
+                    if (weeklyTableEl) weeklyTableEl.innerHTML = `<tr><td style="color:#ef4444;">로드 실패</td></tr>`;
                 }
             }
-
 
             // [수정] 통계 화면 갱신 (탭별 '오늘까지' 합계 분기 처리)
             function updateStatsView(resetWeek = true) {
                 if (!currentStatsMonth) return;
-                if (resetWeek) currentWeekOffset = 0;
 
                 const mergedPlans = (statsDataCache && statsDataCache.mergedPlans) ? statsDataCache.mergedPlans : { base: [], snaps: [] };
 
                 // 1. 전체 데이터 계산
                 const stats = calculateMonthlyStats(currentStatsId, currentStatsMonth, mergedPlans);
 
-                const isWeekly = document.getElementById('view-weekly').classList.contains('active'); // 현재 탭 확인
-                const isUpToToday = document.getElementById('toggle-upto-today').checked; // 토글 확인
+                // ★ [핵심 추가] 주간 달력 구조를 먼저 파악해서 '이번 주'를 찾습니다.
+                const targetMonth = currentStatsMonth.getMonth();
+                const targetYear = currentStatsMonth.getFullYear();
+                const firstDate = stats.dailyData[0].date;
+                let firstDayIdx = firstDate.getDay() - 1; if (firstDayIdx === -1) firstDayIdx = 6;
+
+                let fullCalendar = Array(firstDayIdx).fill(null).concat(stats.dailyData);
+                let allWeeks = [];
+                for (let i = 0; i < fullCalendar.length; i += 7) allWeeks.push(fullCalendar.slice(i, i + 7));
+                const validWeeks = allWeeks.filter(w => w.some(d => d && d.date.getMonth() === targetMonth));
+
+                // 리셋될 때 무조건 0(첫째 주)이 아니라, "오늘"이 포함된 주를 찾아 꽂아줍니다!
+                if (resetWeek) {
+                    let foundIndex = 0; // 기본은 첫째 주
+                    const today = new Date();
+
+                    // 현재 보고 있는 달력이 '오늘이 포함된 달'일 경우에만 이번 주를 탐색
+                    if (targetYear === today.getFullYear() && targetMonth === today.getMonth()) {
+                        for (let w = 0; w < validWeeks.length; w++) {
+                            let hasToday = validWeeks[w].some(d =>
+                                d && d.date.getDate() === today.getDate() && d.date.getMonth() === today.getMonth()
+                            );
+                            if (hasToday) {
+                                foundIndex = w;
+                                break;
+                            }
+                        }
+                    }
+                    currentWeekOffset = foundIndex;
+                }
+
+                const isWeekly = document.getElementById('view-weekly').classList.contains('active');
+                const isUpToToday = document.getElementById('toggle-upto-today').checked;
 
                 let sumPlan = 0;
                 let sumReal = 0;
@@ -4454,23 +4481,22 @@
                         }
                     }
 
+                    // 과거 날짜라도 스냅샷이 없으면 무조건 기본 DB_Plan을 보여주도록 수정!
                     if (!foundSnapshot) {
-                        const today = new Date();
-                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                        if (dateStr >= todayStr) {
-                            if (basePlan && basePlan.weekPlans) currentDayPlanStr = String(basePlan.weekPlans[dayIdx] || "");
+                        if (basePlan && basePlan.weekPlans) {
+                            currentDayPlanStr = String(basePlan.weekPlans[dayIdx] || "");
                         }
                     }
 
                     const dayPlans = currentDayPlanStr ? currentDayPlanStr.split(',').map(s => s.trim()).filter(s => s) : [];
 
+                    // [수정된 코드] 날짜 형식 그대로 비교 (Timezone 버그 방지)
                     const todayLogs = monthlyLogs.filter(l => {
                         if (!l || !l.id || !l.date) return false;
                         if (String(l.id).trim() !== String(studentId).trim()) return false;
 
-                        const lDate = new Date(l.date);
-                        if (isNaN(lDate.getTime())) return false;
-                        const lDateStr = `${lDate.getFullYear()}-${String(lDate.getMonth() + 1).padStart(2, '0')}-${String(lDate.getDate()).padStart(2, '0')}`;
+                        // l.date는 이미 "2026-03-24" 같은 문자열 형태이므로 날짜 변환 없이 앞 10자리만 잘라서 직접 비교!
+                        const lDateStr = String(l.date).substring(0, 10);
                         return lDateStr === dateStr;
                     });
 
@@ -5072,11 +5098,163 @@
                 }
             }
 
+            function refreshStatsData() {
+                if (!currentStatsMonth) return;
 
+                // 현재 보고 있는 달력을 기준으로 YYYY-MM 문자열 생성
+                const yearStr = currentStatsMonth.getFullYear();
+                const monthStr = String(currentStatsMonth.getMonth() + 1).padStart(2, '0');
+                const yearMonth = `${yearStr}-${monthStr}`;
 
+                // true를 넘겨서 강제로 로컬스토리지를 갱신하고 스피너를 돌립니다!
+                loadStatsData(yearMonth, true);
+            }
+
+            // ==========================================
+            // 📸 주간 리포트 이미지 저장 기능 (html2canvas)
+            // ==========================================
+
+            // 1. 현재 화면 저장 (단일 학생)
+            async function saveCurrentReportAsJPG() {
+                const targetElement = document.getElementById('stats-result');
+                if (!targetElement || targetElement.style.display === 'none') {
+                    alert("저장할 화면을 찾을 수 없습니다. 학생을 먼저 조회해주세요.");
+                    return;
+                }
+
+                // 1. 화면에서 학생 이름과 학번을 안전하게 가져오기 (전역변수 에러 방지)
+                let sName = "학생";
+                const nameEl = document.getElementById('stats-student-name');
+                if (nameEl) sName = nameEl.innerText.replace(/[\/\:\*\?"\<\>\|]/g, '').trim();
+
+                const searchInput = document.getElementById('stats-search');
+                let sId = searchInput && searchInput.value ? searchInput.value.trim() : "0000";
+
+                // 2. 화면에서 파일명(날짜) 안전하게 만들기
+                let reportLabel = "리포트";
+                try {
+                    const isMonthly = document.getElementById('view-monthly') && document.getElementById('view-monthly').classList.contains('active');
+                    if (isMonthly) {
+                        const selectEl = document.getElementById('stats-period-select');
+                        if (selectEl && selectEl.selectedIndex >= 0) {
+                            reportLabel = selectEl.options[selectEl.selectedIndex].text + "_월간";
+                        }
+                    } else {
+                        const weekLabelEl = document.getElementById('current-week-label');
+                        if (weekLabelEl) {
+                            reportLabel = weekLabelEl.innerText.trim(); // 공백 완벽 제거
+                        }
+                    }
+                } catch (e) {
+                    console.error("라벨 생성 오류:", e);
+                }
+
+                const safeLabel = reportLabel.replace(/[\/\:\*\?"\<\>\|]/g, '-');
+                const filename = `${sId}_${sName}_${safeLabel}.jpg`.replace(/\s+/g, '_'); // 띄어쓰기를 밑줄로 깔끔하게 변경
+
+                // 3. 탭 버튼 숨기고 캡처
+                const tabsEl = targetElement.querySelector('.stats-tabs');
+                const originalTabStyle = tabsEl ? tabsEl.style.display : '';
+                if (tabsEl) tabsEl.style.display = 'none';
+
+                try {
+                    const canvas = await html2canvas(targetElement, {
+                        scale: 3, // 화질을 3으로 조정 (4는 일부 PC에서 메모리 부족으로 다운될 수 있음)
+                        backgroundColor: "#ffffff",
+                        useCORS: true,
+                        logging: false
+                    });
+
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = imgData;
+                    link.click();
+                } catch (error) {
+                    console.error("이미지 캡처 오류:", error);
+                } finally {
+                    if (tabsEl) tabsEl.style.display = originalTabStyle;
+                }
+            }
+
+            // 2. 모든 학생 저장 (보고 있던 주차/월간 그대로 고정 캡처!)
+            async function saveAllStudentsReportAsJPG() {
+                const isMonthly = document.getElementById('view-monthly') && document.getElementById('view-monthly').classList.contains('active');
+                const reportType = isMonthly ? "월간리포트" : "주간리포트";
+
+                // 버튼 누르기 직전의 주차 텍스트를 양쪽 공백 잘라내고(trim) 정확히 기억
+                let targetWeekLabel = "";
+                const labelEl = document.getElementById('current-week-label');
+                if (!isMonthly && labelEl) {
+                    targetWeekLabel = labelEl.innerText.trim();
+                }
+
+                const isConfirm = confirm(`[${reportType}] 현재 화면 기준으로 120명을 초고속 캡처합니다.\n진행하시겠습니까?`);
+                if (!isConfirm) return;
+
+                if (typeof globalData === 'undefined' || !globalData.master || globalData.master.length === 0) {
+                    alert("학생 데이터가 없습니다.");
+                    return;
+                }
+
+                let targetStudents = [...globalData.master];
+                targetStudents.sort((a, b) => Number(a['학번'] || 0) - Number(b['학번'] || 0));
+
+                const searchInput = document.getElementById('stats-search');
+
+                for (let i = 0; i < targetStudents.length; i++) {
+                    const student = targetStudents[i];
+
+                    // 1) 학생 강제 검색
+                    if (searchInput) searchInput.value = student['학번'];
+                    if (typeof searchStatsStudent === 'function') {
+                        searchStatsStudent();
+                    } else if (typeof openPersonalStats === 'function') {
+                        openPersonalStats(student['학번'], student['이름']);
+                    }
+
+                    // DOM 렌더링 물리 대기
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                    // 2) 내가 보던 주차로 강제 복구 로직
+                    if (isMonthly) {
+                        if (typeof switchStatsTab === 'function') switchStatsTab('monthly');
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    } else {
+                        if (typeof switchStatsTab === 'function') switchStatsTab('weekly');
+
+                        // 최신 주차로 리셋된 화면을 과거 주차로 되돌리기 (공백 없는 텍스트로 정확히 비교)
+                        let safeCount = 0;
+                        while (safeCount < 15) {
+                            const currentEl = document.getElementById('current-week-label');
+                            if (!currentEl) break;
+
+                            const currentText = currentEl.innerText.trim();
+                            if (currentText === targetWeekLabel) break; // 글자가 완벽히 일치하면 멈춤!
+
+                            // 다르면 ◀ 버튼 클릭
+                            const leftArrowBtn = document.querySelector('.week-selector button:first-child');
+                            if (leftArrowBtn) leftArrowBtn.click();
+
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                            safeCount++;
+                        }
+                    }
+
+                    // 화면 안정화
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    // 3) 캡처 실행
+                    await saveCurrentReportAsJPG();
+
+                    // 브라우저 멈춤 방지
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                alert(`[${reportType}] 전체 다운로드 완료!`);
+            }
 
         </script>
-
 
 </body>
 
