@@ -1655,6 +1655,7 @@
             const studentStatus = {};
 
             HISTORY_DB.forEach(r => {
+                if (!STUDENT_DB[r.id]) return;
                 // 1. 아직 저장된 기록이 없으면 저장
                 if (!studentStatus[r.id]) {
                     studentStatus[r.id] = r;
