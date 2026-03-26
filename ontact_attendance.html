@@ -4183,41 +4183,68 @@
 
             function initStatsPeriodCombo() {
                 const select = document.getElementById('stats-period-select');
-                select.innerHTML = "";
 
-                // 콤보박스는 'DB_Plan'의 전체 기간을 기준으로 생성 (가장 넓은 범위)
+                // 1. 기존에 선택되어 있던 월을 저장 (모든학생 캡쳐 시 월이 튀는 현상 방지)
+                const previousMonth = select.value;
+
+                select.innerHTML = '';
+
                 const plans = globalData.plan.filter(row => String(row[3]) === currentStatsId);
-
                 let periods = [];
                 plans.forEach(p => {
                     const d = new Date(p[2]);
                     if (!isNaN(d.getTime())) periods.push(d);
                 });
 
-                if (periods.length === 0) periods.push(new Date());
+                // 2. 현재 월(이번 달)을 항상 배열에 추가 (기본값 설정용)
+                const now = new Date();
+                periods.push(now);
+
+                // 3. 직전에 선택했던 월이 있다면, 해당 학생의 데이터 유무와 상관없이 강제로 추가 (연속 캡쳐 유지용)
+                if (previousMonth) {
+                    const [py, pm] = previousMonth.split('-');
+                    periods.push(new Date(Number(py), Number(pm) - 1, 1));
+                }
+
+                // 최신 날짜순 정렬
                 periods.sort((a, b) => b - a);
 
                 const uniquePeriods = [];
                 const seen = new Set();
+
                 periods.forEach(d => {
-                    const key = `${d.getFullYear()}-${d.getMonth()}`;
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const key = `${y}-${m}`;
                     if (!seen.has(key)) {
                         seen.add(key);
-                        uniquePeriods.push(d);
+                        uniquePeriods.push({ y, m, key });
                     }
                 });
 
-                uniquePeriods.forEach(d => {
+                uniquePeriods.forEach(obj => {
                     const opt = document.createElement('option');
-                    const y = d.getFullYear();
-                    const m = String(d.getMonth() + 1).padStart(2, '0');
-                    opt.value = `${y}-${m}`;
-                    opt.text = `${y}년 ${m}월`;
+                    opt.value = obj.key;
+                    opt.text = `${obj.y}년 ${obj.m}월`;
                     select.appendChild(opt);
                 });
 
                 if (select.options.length > 0) {
-                    select.selectedIndex = 0;
+                    // 4. 어떤 월을 기본으로 보여줄지 결정
+                    // 1순위: 직전에 보고 있던 월 (캡쳐 중이거나 다른 학생 연속 검색 시 유지)
+                    // 2순위: 이번 달 (처음 페이지를 열고 검색할 때)
+                    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    const targetValue = previousMonth || currentMonthKey;
+
+                    let targetIndex = 0;
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].value === targetValue) {
+                            targetIndex = i;
+                            break;
+                        }
+                    }
+
+                    select.selectedIndex = targetIndex;
                     handleStatsPeriodChange();
                 }
             }
@@ -4287,11 +4314,27 @@
                         }
                     };
 
-                    // 4. ★ 이번 달이든 과거 달이든 무조건 로컬 스토리지에 캐시 저장!
+                    // 4. ★ 로컬 스토리지에 캐시 저장!
                     try {
                         localStorage.setItem(cacheKey, JSON.stringify(statsDataCache));
                     } catch (e) {
-                        console.log("로컬 스토리지 용량 초과로 캐싱 생략");
+                        console.log("용량 초과 발생! 오래된 통계 캐시를 정리하고 재시도합니다.");
+
+                        // stats_ 로 시작하는 다른 캐시들을 찾아서 삭제 (공간 확보)
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if (key && key.startsWith('stats_') && key !== cacheKey) {
+                                localStorage.removeItem(key);
+                            }
+                        }
+
+                        // 공간 확보 후 다시 저장 시도
+                        try {
+                            localStorage.setItem(cacheKey, JSON.stringify(statsDataCache));
+                            console.log(cacheKey + " 캐시 저장 완료 (기존 캐시 삭제됨)");
+                        } catch (err2) {
+                            console.log("그래도 용량 부족, 캐싱 생략:", err2);
+                        }
                     }
 
                     updateStatsView(true);
