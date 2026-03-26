@@ -4264,44 +4264,50 @@
                 updateStatsView();
             }
 
-            // [최종 수정 버전] 통계 데이터 로드 (localStorage 캐싱 + 전역 캐시)
-            // [최종 수정 버전] 통계 데이터 로드 (이번 달 무조건 캐시 + 강제 동기화 기능 추가)
             async function loadStatsData(yearMonth, forceRefresh = false) {
                 const calendarEl = document.getElementById('stats-calendar');
                 const weeklyTableEl = document.getElementById('stats-weekly-table');
-                const cacheKey = `stats_${yearMonth}`;
+
+                // trim()을 추가하여 "2026-04 " 같은 공백 오류 완벽 차단!
+                const safeYearMonth = yearMonth.trim();
+                const cacheKey = `stats_${safeYearMonth}`;
+
+                console.log(`[디버그] loadStatsData 호출됨: yearMonth='${safeYearMonth}', forceRefresh=${forceRefresh}`);
 
                 // 1. 강제 새로고침(forceRefresh)이 아닐 때만 캐시를 뒤져봄
                 if (!forceRefresh) {
-                    const savedCache = localStorage.getItem(cacheKey);
+                    const savedCache = sessionStorage.getItem(cacheKey); // localStorage 대신 sessionStorage 사용
+                    console.log(`[디버그] 캐시 확인: ${cacheKey} -> ${savedCache ? "있음(길이:" + savedCache.length + ")" : "없음!"}`);
+
                     if (savedCache) {
                         try {
                             statsDataCache = JSON.parse(savedCache);
-                            updateStatsView(true); // 화면 갱신
-                            return; // ★ 스피너 없이 0.01초 만에 즉시 렌더링 후 여기서 함수 종료!
+                            updateStatsView(true);
+                            return; // ★ 스피너 없이 0.01초 만에 종료!
                         } catch (e) {
                             console.log("캐시 파싱 오류, 새로고침합니다.");
-                            localStorage.removeItem(cacheKey);
+                            sessionStorage.removeItem(cacheKey);
                         }
                     }
                 }
 
                 // 2. 캐시가 없거나 새로고침 버튼을 눌렀을 때만 로딩 스피너 작동
+                // 주의: 여기서 safeYearMonth를 사용해야 정상적으로 화면에 4월이 찍힙니다!
                 calendarEl.innerHTML = `<div style="padding:40px; text-align:center;">
-                    <div class="loading-spinner"></div>
-                    <p style="color:#64748b; font-weight:bold; margin-top:10px;">${yearMonth} 최신 데이터 동기화 중...</p>
-                </div>`;
+        <div class="loading-spinner"></div>
+        <p style="color:#64748b; font-weight:bold; margin-top:10px;">${safeYearMonth} 최신 데이터 동기화 중...</p>
+    </div>`;
 
                 if (weeklyTableEl) {
                     weeklyTableEl.innerHTML = `<tr><td colspan="10" style="padding:40px; text-align:center; border:none;">
-                        <div class="loading-spinner"></div>
-                        <p style="color:#64748b; font-weight:bold; margin-top:10px;">${yearMonth} 최신 데이터 동기화 중...</p>
-                    </td></tr>`;
+            <div class="loading-spinner"></div>
+            <p style="color:#64748b; font-weight:bold; margin-top:10px;">${safeYearMonth} 최신 데이터 동기화 중...</p>
+        </td></tr>`;
                 }
 
                 try {
-                    // 3. 서버 통신
-                    const response = await fetch(`${API_URL}?mode=stats_batch&month=${yearMonth}`);
+                    // 3. 서버 통신 (여기서도 safeYearMonth 사용)
+                    const response = await fetch(`${API_URL}?mode=stats_batch&month=${safeYearMonth}`);
                     const result = await response.json();
 
                     if (!result || result.status !== "success") throw new Error("데이터 로드 실패");
@@ -4314,27 +4320,19 @@
                         }
                     };
 
-                    // 4. ★ 로컬 스토리지에 캐시 저장!
+                    // 4. ★ 세션 스토리지에 캐시 저장 (창 닫으면 날아감, 용량 문제 해결)
                     try {
-                        localStorage.setItem(cacheKey, JSON.stringify(statsDataCache));
-                    } catch (e) {
-                        console.log("용량 초과 발생! 오래된 통계 캐시를 정리하고 재시도합니다.");
-
-                        // stats_ 로 시작하는 다른 캐시들을 찾아서 삭제 (공간 확보)
-                        for (let i = 0; i < localStorage.length; i++) {
-                            const key = localStorage.key(i);
+                        // 저장 전, 용량 확보를 위해 다른 달 통계는 미리 지웁니다
+                        for (let i = 0; i < sessionStorage.length; i++) {
+                            const key = sessionStorage.key(i);
                             if (key && key.startsWith('stats_') && key !== cacheKey) {
-                                localStorage.removeItem(key);
+                                sessionStorage.removeItem(key);
                             }
                         }
-
-                        // 공간 확보 후 다시 저장 시도
-                        try {
-                            localStorage.setItem(cacheKey, JSON.stringify(statsDataCache));
-                            console.log(cacheKey + " 캐시 저장 완료 (기존 캐시 삭제됨)");
-                        } catch (err2) {
-                            console.log("그래도 용량 부족, 캐싱 생략:", err2);
-                        }
+                        sessionStorage.setItem(cacheKey, JSON.stringify(statsDataCache));
+                        console.log(cacheKey + " 세션 캐시 저장 완료");
+                    } catch (e) {
+                        console.log("세션 스토리지 용량 초과로 캐싱 생략:", e);
                     }
 
                     updateStatsView(true);
