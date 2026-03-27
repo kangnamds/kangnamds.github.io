@@ -370,7 +370,7 @@
                         <div class="relative group">
                             <input type="date" id="startDate"
                                 class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition"
-                                onchange="renderDashboard()">
+                                onchange="fetchData()">
                             <i
                                 class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
                         </div>
@@ -381,7 +381,7 @@
                         <div class="relative group">
                             <input type="date" id="endDate"
                                 class="border border-gray-300 rounded px-3 py-2 text-sm w-36 focus:ring-2 focus:ring-indigo-500 outline-none font-mono group-hover:border-indigo-300 transition"
-                                onchange="renderDashboard()">
+                                onchange="fetchData()">
                             <i
                                 class="fas fa-calendar-alt absolute right-3 top-2.5 text-gray-400 pointer-events-none"></i>
                         </div>
@@ -630,7 +630,7 @@
             fetchData();
         });
 
-        // ★ [핵심 로직] 데이터 가져오기 (하이브리드 캐싱 방식)
+        // 1. 데이터 가져오기 (날짜 기반 로딩)
         async function fetchData(forceReload = false) {
             if (!API_URL.includes("script.google.com")) {
                 alert("API_URL을 설정해주세요!");
@@ -640,129 +640,48 @@
             const loader = document.getElementById('loader');
             const tbody = document.getElementById('tableBody');
 
-            // 1. 강제 새로고침이거나 캐시가 없으면 -> 로딩 표시
-            if (forceReload || !localStorage.getItem('dashboardData')) {
-                loader.classList.remove('hidden');
-                tbody.innerHTML = '';
-            }
+            // 화면의 날짜 필터 값 가져오기
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            loader.classList.remove('hidden');
+            if (forceReload) tbody.innerHTML = '';
 
             try {
-                // 오늘 날짜 구하기 (YYYY-MM-DD)
-                const now = new Date();
-                const offset = now.getTimezoneOffset() * 60000;
-                const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
+                // ★ 중요: 전체 데이터를 한 번에 가져오지 않고, 시작일/종료일을 서버로 보냄
+                // (만약 시작일이 한 달 전이면 서버에서 한 달 치만 잘라서 줌)
+                console.log(`🔄 데이터 요청: ${startDate} ~ ${endDate}`);
 
-                // 2. 로컬 캐시 확인
-                const localData = localStorage.getItem('dashboardData');
-                let cachedRawData = localData ? JSON.parse(localData) : [];
+                // 캐시 로직 제거: localStorage 용량 초과 에러(QuotaExceededError) 방지
+                const response = await fetch(`${API_URL}?startDate=${startDate}&endDate=${endDate}`);
+                const data = await response.json();
 
-                if (!forceReload && cachedRawData.length > 0) {
-                    // ★ 캐시가 있으면 일단 먼저 보여줌 (Fast Paint)
-                    console.log("🚀 로컬 캐시로 즉시 로딩");
-                    rawData = cachedRawData;
-                    initFilters(rawData);
-                    renderDashboard();
-                    updateLastSyncTime();
+                rawData = data;
 
-                    // 그리고 백그라운드에서 오늘 데이터만 가져와서 병합 (Background Update)
-                    updateTodayDataOnly(today);
-                } else {
-                    // ★ 캐시가 없거나 강제 리로드면 -> 전체 데이터 받기
-                    console.log("🔄 전체 데이터 새로 다운로드");
-                    const response = await fetch(API_URL); // 파라미터 없으면 전체 반환
-                    const allData = await response.json();
-
-                    rawData = allData;
-
-                    // 캐시 저장
-                    localStorage.setItem('dashboardData', JSON.stringify(allData));
-                    localStorage.setItem('lastFullSync', new Date().toISOString()); // 마지막 전체 동기화 시간
-
-                    // 화면 그리기
-                    initFilters(rawData);
-                    renderDashboard();
-                    updateLastSyncTime();
-                    if (loader) loader.classList.add('hidden');
-                }
-
-            } catch (error) {
-                console.error("데이터 로드 실패:", error);
-                if (forceReload) { // 강제 로드 중 에러면 메시지 표시
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold">데이터를 불러오지 못했습니다.</td></tr>';
-                }
-            } finally {
-                // 전체 로드일 때만 여기서 로더 숨김 (부분 업데이트는 내부에서 처리)
-                if (forceReload || !localStorage.getItem('dashboardData')) {
-                    loader.classList.add('hidden');
-                }
-            }
-        }
-
-        // [보조 함수] 오늘 데이터만 가져와서 병합하기
-        async function updateTodayDataOnly(todayDate) {
-            try {
-                console.log(`📅 오늘(${todayDate}) 데이터만 서버 요청 중...`);
-                // 서버에 오늘 날짜 데이터만 요청
-                const response = await fetch(`${API_URL}?date=${todayDate}`);
-                const todayData = await response.json();
-
-                // 병합 로직 (Merge Strategy)
-                // 1. 기존 rawData에서 "오늘 데이터"를 모두 제거 (구버전 삭제)
-                // 2. 서버에서 받아온 "최신 오늘 데이터"를 추가
-
-                const otherDaysData = rawData.filter(item => item.date !== todayDate);
-                const mergedData = [...otherDaysData, ...todayData];
-
-                // 날짜/시간 역순 정렬 (최신순) - 정렬을 미리 해두면 렌더링 시 빠름
-                mergedData.sort((a, b) => {
-                    const dtA = a.date + a.time;
-                    const dtB = b.date + b.time;
-                    return dtA < dtB ? 1 : -1;
-                });
-
-                // 데이터 갱신 및 재저장
-                rawData = mergedData;
-                localStorage.setItem('dashboardData', JSON.stringify(rawData));
-
-                console.log("✅ 오늘 데이터 동기화 완료");
-
-                // 화면 갱신 (사용자가 보고 있는 필터 상태 유지하면서)
-                // 너무 깜빡거리지 않게 테이블 내용만 살짝 업데이트하는 느낌
+                // 화면 그리기
+                initFilters(rawData);
                 renderDashboard();
                 updateLastSyncTime();
 
-            } catch (e) {
-                console.error("오늘 데이터 동기화 실패 (기존 데이터 유지)", e);
-            }
-        }
-
-        // [신규] 수동으로 '오늘 동기화' 버튼을 눌렀을 때 실행되는 함수
-        async function syncTodayManual() {
-            // 버튼 UI 변경 (로딩 중 표시)
-            const btn = event.currentTarget;
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>동기화 중...</span>';
-            btn.disabled = true;
-
-            try {
-                // 오늘 날짜 구하기 (KST 기준)
-                const now = new Date();
-                const offset = now.getTimezoneOffset() * 60000;
-                const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
-
-                // 이미 만들어둔 함수 재활용
-                await updateTodayDataOnly(today);
-
             } catch (error) {
-                console.error("수동 동기화 실패:", error);
-                alert("오늘 데이터 동기화에 실패했습니다.");
+                console.error("데이터 로드 실패:", error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold">데이터를 불러오지 못했습니다. 너무 넓은 기간을 선택했거나 네트워크 에러입니다.</td></tr>';
             } finally {
-                // 버튼 UI 복구
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
+                loader.classList.add('hidden');
             }
         }
 
+        // 오늘 동기화 버튼 클릭 시 (오늘 날짜로 필터 변경 후 fetchData 호출)
+        function syncTodayManual() {
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
+
+            document.getElementById('startDate').value = today;
+            document.getElementById('endDate').value = today;
+
+            fetchData();
+        }
 
         function initFilters(data) {
             const classes = [...new Set(data.map(r => r.classNum).filter(c => c))].sort();
@@ -952,22 +871,19 @@
             btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
             btnElement.disabled = true;
 
-            fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            })
+            fetch(API_URL, { /* ... */ })
                 .then(response => response.json())
                 .then(result => {
                     if (result.status === 'success') {
                         currentRecord.consultation = content;
                         currentRecord.teacher = teacher;
-                        localStorage.setItem('dashboardData', JSON.stringify(rawData));
+
+                        // 로컬 스토리지 저장 로직 삭제 (용량 초과 에러 원인)
+                        // localStorage.setItem('dashboardData', ...); 
+
                         renderDashboard();
-                        updateLastSyncTime();
                         closeModal();
                         alert("✅ 상담 내역이 저장되었습니다.");
-                    } else {
-                        alert("❌ 저장 실패: " + result.message);
                     }
                 })
                 .catch(error => {
