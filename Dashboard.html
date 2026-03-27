@@ -631,6 +631,7 @@
         });
 
         // 1. 데이터 가져오기 (날짜 기반 로딩)
+        // 1. 데이터 가져오기 (날짜 기반 로딩 - 수정됨)
         async function fetchData(forceReload = false) {
             if (!API_URL.includes("script.google.com")) {
                 alert("API_URL을 설정해주세요!");
@@ -648,12 +649,21 @@
             if (forceReload) tbody.innerHTML = '';
 
             try {
-                // ★ 중요: 전체 데이터를 한 번에 가져오지 않고, 시작일/종료일을 서버로 보냄
-                // (만약 시작일이 한 달 전이면 서버에서 한 달 치만 잘라서 줌)
                 console.log(`🔄 데이터 요청: ${startDate} ~ ${endDate}`);
 
-                // 캐시 로직 제거: localStorage 용량 초과 에러(QuotaExceededError) 방지
-                const response = await fetch(`${API_URL}?startDate=${startDate}&endDate=${endDate}`);
+                // ★ 안전한 URL 파라미터 조립 방식
+                const targetUrl = new URL(API_URL);
+                targetUrl.searchParams.append('startDate', startDate);
+                targetUrl.searchParams.append('endDate', endDate);
+
+                // fetch 요청 
+                const response = await fetch(targetUrl.toString());
+
+                // HTTP 상태 코드 확인 (200 OK인지)
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
 
                 rawData = data;
