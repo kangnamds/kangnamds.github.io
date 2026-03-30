@@ -748,11 +748,25 @@
                 return isDateInRange && isClassMatch && isTypeMatch && isSearchMatch && isAlertMatch && isNightMatch;
             });
 
-            // ... 정렬 및 업데이트 로직 그대로 유지 ...
+            // 최신순 정렬 (내림차순) - 불규칙한 시간 포맷 완벽 대응
             filtered.sort((a, b) => {
-                const dtA = a.date + a.time;
-                const dtB = b.date + b.time;
-                return dtA < dtB ? 1 : -1;
+                // 1. 시간 문자열에서 숫자와 콜론만 추출 (예: "9:02: " -> "9:02")
+                let cleanTimeA = (a.time || "").replace(/[^0-9:]/g, '').replace(/:$/, '');
+                let cleanTimeB = (b.time || "").replace(/[^0-9:]/g, '').replace(/:$/, '');
+
+                // 2. "9:02" 형태를 "09:02" 포맷으로 맞춤
+                const partsA = cleanTimeA.split(':');
+                const partsB = cleanTimeB.split(':');
+
+                const formatTimeA = (partsA[0]?.padStart(2, '0') || '00') + ':' + (partsA[1]?.padStart(2, '0') || '00');
+                const formatTimeB = (partsB[0]?.padStart(2, '0') || '00') + ':' + (partsB[1]?.padStart(2, '0') || '00');
+
+                // 3. Date 객체 생성
+                const dateA = new Date(`${a.date}T${formatTimeA}:00`);
+                const dateB = new Date(`${b.date}T${formatTimeB}:00`);
+
+                // 4. 최신 시간이 위로 오도록 내림차순 정렬
+                return dateB.getTime() - dateA.getTime();
             });
 
             updateStats(filtered);
@@ -881,24 +895,29 @@
             btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
             btnElement.disabled = true;
 
-            fetch(API_URL, { /* ... */ })
+            fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                redirect: 'follow', // GAS 필수 옵션 (리다이렉트 허용)
+                body: JSON.stringify(payload)
+            })
                 .then(response => response.json())
                 .then(result => {
                     if (result.status === 'success') {
                         currentRecord.consultation = content;
                         currentRecord.teacher = teacher;
-
-                        // 로컬 스토리지 저장 로직 삭제 (용량 초과 에러 원인)
-                        // localStorage.setItem('dashboardData', ...); 
-
                         renderDashboard();
                         closeModal();
                         alert("✅ 상담 내역이 저장되었습니다.");
+                    } else {
+                        alert("⚠️ 에러: " + result.message);
                     }
                 })
                 .catch(error => {
-                    console.error(error);
-                    alert("⚠️ 저장 중 오류가 발생했습니다.");
+                    console.error("Fetch 에러:", error);
+                    alert("⚠️ 저장 중 오류가 발생했습니다. 브라우저 콘솔(F12)을 확인해주세요.");
                 })
                 .finally(() => {
                     btnElement.innerHTML = originalText;
