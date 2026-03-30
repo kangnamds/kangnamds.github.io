@@ -8,6 +8,7 @@
   <!-- 폰트: Pretendard 느낌 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&display=swap"
     rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
     /* [공통 변수] */
@@ -453,6 +454,16 @@
         transform: rotate(360deg);
       }
     }
+
+    /* ★ 캡처 전용 스타일 (애니메이션, 투명도 강제 무효화) */
+    .capture-mode,
+    .capture-mode * {
+      animation: none !important;
+      transition: none !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: none !important;
+    }
   </style>
 </head>
 
@@ -519,6 +530,11 @@
       </div>
       <button class="btn-reset" onclick="clearList()">
         <span>↻</span> 초기화
+      </button>
+      <!-- ★ 캡처 버튼 추가 -->
+      <button class="btn-reset" onclick="saveAsJPG()"
+        style="background-color: #5DC6C2; color: white; border: none; margin-left: 10px;">
+        <span>📷 JPG 저장</span>
       </button>
     </div>
 
@@ -665,7 +681,7 @@
                  value="${timeValue}"
                  onfocus="this.select()"
                  onblur="handleTimeInput(this, ${index})"
-                 onkeypress="if(event.key==='Enter') this.blur()">
+                 onkeypress="if(event.key==='Enter') moveToNextInput(this, ${index})">
         </div>
 
         <div style="text-align:center;">
@@ -736,6 +752,73 @@
 
       // 정렬된 데이터로 다시 그리기
       renderHistory();
+    }
+
+    // ★ 엔터 치면 다음 칸으로 이동하는 함수
+    function moveToNextInput(currentInput, index) {
+      // 1. 현재 칸 블러 처리 (이때 handleTimeInput이 작동해서 1111 -> 11:11로 변환됨)
+      currentInput.blur();
+
+      // 2. 화면에 있는 모든 시간 입력칸 찾기
+      const allTimeInputs = document.querySelectorAll('.time-input');
+
+      // 3. 다음 칸이 존재하면 포커스 이동
+      if (index + 1 < allTimeInputs.length) {
+        setTimeout(() => {
+          allTimeInputs[index + 1].focus(); // 다음 칸 선택
+        }, 10); // 포맷팅이 끝날 시간을 벌어주기 위해 약간의 딜레이
+      }
+    }
+
+    // ★ 화면 리스트 캡처해서 JPG로 저장하는 함수 (최종 해결)
+    function saveAsJPG() {
+      const captureArea = document.querySelector('.list-container');
+
+      if (!captureArea || searchHistory.length === 0) {
+        alert("저장할 데이터가 없습니다.");
+        return;
+      }
+
+      const saveBtn = event.currentTarget;
+      const originalText = saveBtn.innerHTML;
+      saveBtn.innerHTML = "<span>⏳ 저장 중...</span>";
+
+      // 1. 포커스 해제
+      document.querySelectorAll('input').forEach(input => input.blur());
+
+      // 2. ★ 캡처 영역 전체에 캡처 전용(애니메이션 정지, 투명도 100%) 클래스 강제 부착
+      captureArea.classList.add('capture-mode');
+
+      // 3. 약간의 딜레이 후 캡처 진행
+      setTimeout(() => {
+        html2canvas(captureArea, {
+          scale: 3, // 고해상도 (3배수)
+          backgroundColor: "#ffffff",
+          useCORS: true,
+          logging: false
+        }).then(canvas => {
+          const image = canvas.toDataURL("image/jpeg", 1.0);
+          const link = document.createElement('a');
+          link.href = image;
+
+          const now = new Date();
+          const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+          const timeStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+          link.download = `학생검색_${dateStr}_${timeStr}.jpg`;
+          link.click();
+
+          // 4. 복구
+          captureArea.classList.remove('capture-mode');
+          saveBtn.innerHTML = originalText;
+        }).catch(err => {
+          console.error("캡처 오류:", err);
+          alert("이미지 저장 중 오류가 발생했습니다.");
+
+          captureArea.classList.remove('capture-mode');
+          saveBtn.innerHTML = originalText;
+        });
+      }, 150); // 0.15초 대기 후 확실하게 정지된 상태 캡처
     }
 
   </script>
