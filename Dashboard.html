@@ -885,6 +885,7 @@
             }
             const payload = {
                 action: 'update',
+                rowIndex: currentRecord.rowIndex, // 💡 백엔드로 보낼 행 번호 추가
                 date: currentRecord.date,
                 time: currentRecord.time,
                 studentId: currentRecord.studentId,
