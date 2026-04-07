@@ -503,6 +503,13 @@
         </div>
 
         <!-- 데이터 테이블 -->
+        <!-- 💡 일괄 확인 버튼 (테이블 바로 위에 배치) -->
+        <div id="bulkActionArea" class="hidden mb-2 flex justify-end">
+            <button onclick="bulkVerify(this)"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow transition flex items-center gap-2">
+                <i class="fas fa-check-double"></i> 선택 일괄 확인
+            </button>
+        </div>
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                 <h2 class="font-bold text-gray-700 flex items-center gap-2"><i
@@ -519,6 +526,13 @@
                 <table class="w-full text-sm text-left">
                     <thead class="bg-gray-100 text-gray-600 border-b border-gray-200 whitespace-nowrap">
                         <tr>
+                            <!-- 💡 추가: 일괄 처리용 전체 선택 체크박스 칸 -->
+                            <th class="px-4 py-3 font-semibold w-10 text-center" id="th-checkbox"
+                                style="display: none;">
+                                <input type="checkbox" id="selectAllCheckbox"
+                                    class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                                    onclick="toggleAllCheckboxes(this)">
+                            </th>
                             <th class="px-6 py-3 font-semibold w-24">날짜/시간</th>
                             <th class="px-6 py-3 font-semibold w-32">위치/좌석</th>
                             <th class="px-6 py-3 font-semibold w-40">학생 정보</th>
@@ -771,6 +785,11 @@
 
             updateStats(filtered);
             updateTable(filtered);
+            // 💡 여기에 추가! (야간자습 필터 켜면 버튼 보이고, 끄면 숨김)
+            const bulkArea = document.getElementById('bulkActionArea');
+            if (bulkArea) {
+                bulkArea.style.display = document.getElementById('nightFilter').checked ? 'flex' : 'none';
+            }
         }
 
 
@@ -785,17 +804,38 @@
 
         function updateTable(data) {
             const tbody = document.getElementById('tableBody');
+
+            // 💡 야간자습 필터가 켜져 있는지 확인
+            const isNightFilterOn = document.getElementById('nightFilter').checked;
+
+            // 테이블 헤더 체크박스 칸 표시/숨김
+            const thCheckbox = document.getElementById('th-checkbox');
+            if (thCheckbox) thCheckbox.style.display = isNightFilterOn ? 'table-cell' : 'none';
             tbody.innerHTML = '';
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center text-gray-400 bg-gray-50 italic">해당 조건의 기록이 없습니다.</td></tr>';
+                // 헤더 열 개수가 7개에서 체크박스 포함 시 8개로 변하므로 colspan 유동적 조절
+                const colSpanCount = isNightFilterOn ? "8" : "7";
+                tbody.innerHTML = `<tr><td colspan="${colSpanCount}" class="px-6 py-12 text-center text-gray-400 bg-gray-50 italic">해당 조건의 기록이 없습니다.</td></tr>`;
                 return;
             }
 
             data.forEach(row => {
                 const tr = document.createElement('tr');
+
+                // 💡 야간자습 모드일 때는 행 클릭 시 모달 띄우는 대신 체크박스 선택 처리
                 tr.onclick = (e) => {
                     if (window.getSelection().toString().length > 0) return;
+                    // 체크박스를 직접 클릭한 경우는 중복 작동 방지
+                    if (e.target.type === 'checkbox') return;
+
+                    // 야간 모드일 때는 행 자체 클릭으로 체크박스 토글
+                    if (isNightFilterOn) {
+                        const cb = tr.querySelector('.row-checkbox');
+                        if (cb) cb.checked = !cb.checked;
+                        return;
+                    }
+                    // 일반 모드일 때는 기존처럼 모달 띄우기
                     openModal(row);
                 };
 
@@ -811,7 +851,18 @@
                          <i class="fas fa-pen"></i> 미입력
                        </span>`;
 
+                // 💡 체크박스 열 생성 (야간 모드일 때만)
+                let checkboxTd = '';
+                if (isNightFilterOn) {
+                    checkboxTd = `
+                        <td class="px-4 py-4 text-center border-r border-gray-50 w-10">
+                            <input type="checkbox" value="${row.rowIndex}" data-studentid="${row.studentId}" class="row-checkbox w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer">
+                        </td>
+                    `;
+                }
+
                 tr.innerHTML = `
+                    ${checkboxTd}
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="font-bold text-gray-700 text-xs">${row.date}</div>
                         <div class="font-mono text-gray-400 text-[11px] mt-0.5">${row.time.substring(0, 5)}</div>
@@ -952,6 +1003,69 @@
             // 시:분:초 형식으로 표시
             const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             span.innerText = `최근 동기화: ${timeStr}`;
+        }
+
+        // 전체 선택/해제 토글
+        function toggleAllCheckboxes(source) {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        // 💡 일괄 확인 버튼 보이기/숨기기 (renderDashboard() 함수 맨 밑에 이 한 줄 추가!)
+        // document.getElementById('bulkActionArea').style.display = document.getElementById('nightFilter').checked ? 'flex' : 'none';
+
+        // 일괄 확인 처리 로직
+        function bulkVerify(btnElement) {
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert("선택된 항목이 없습니다.");
+                return;
+            }
+
+            if (!confirm(`선택한 ${checkedBoxes.length}건을 일괄 확인 처리하시겠습니까?\n(상담내용에 '확인완료'가 기록됩니다)`)) return;
+
+            // 체크된 항목들의 rowIndex와 studentId 수집
+            const targets = Array.from(checkedBoxes).map(cb => ({
+                rowIndex: cb.value,
+                studentId: cb.getAttribute('data-studentid')
+            }));
+
+            const payload = {
+                action: 'bulkVerify', // 💡 백엔드 분기용 핵심 액션
+                targets: targets,
+                consultation: '확인완료', // 적힐 내용
+                teacher: '일괄처리'      // 선생님 이름 칸에 적힐 내용 (원하시면 비워두셔도 됨)
+            };
+
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 처리 중...';
+            btnElement.disabled = true;
+
+            // 백엔드로 전송
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                redirect: 'follow',
+                body: JSON.stringify(payload)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        alert(`✅ ${checkedBoxes.length}건이 성공적으로 확인 처리되었습니다.`);
+                        fetchData(true); // 데이터 갱신
+                    } else {
+                        alert("⚠️ " + result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert("⚠️ 일괄 처리 중 오류가 발생했습니다.");
+                })
+                .finally(() => {
+                    btnElement.innerHTML = originalText;
+                    btnElement.disabled = false;
+                    document.getElementById('selectAllCheckbox').checked = false;
+                });
         }
 
         document.getElementById('nav-quantum').classList.add('active');
