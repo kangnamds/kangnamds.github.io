@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>학생 검색</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- 폰트: Pretendard 느낌 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&display=swap"
     rel="stylesheet">
@@ -462,45 +463,79 @@
   </div>
 
   <script>
-    // ★★★ [필수] 배포된 웹 앱 URL 입력 ★★★
-    const API_URL = "https://script.google.com/macros/s/AKfycbyx_OuYBolCxTldCopxJv4FmU1BRKqB-DLGFOxY7eTc_W5AUHytLvxcARvLK7FwMwyogw/exec";
+    // ==========================================
+    // 1. Supabase 설정 (본인 정보로 변경 필수!)
+    // ==========================================
+    const SUPABASE_URL = 'https://cdugpffigeboqqlxkvzr.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_GBx1jlZEa1FVFChIR9PuNg_d47hi3mv';
 
+    // const 를 지우고, window.supabase 를 사용하도록 변경합니다.
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ==========================================
+    // 2. 기존 전역 변수 유지
+    // ==========================================
     let allData = [];
     let searchHistory = [];
+    let lastSortIdx = -1;
+    let sortAsc = true;
 
-    window.onload = function () {
-      fetchData();
+    // ==========================================
+    // 3. Supabase에서 학생 데이터 불러오기 (기존 fetchData 대체)
+    // ==========================================
+    window.onload = async function () {
+      const listBody = document.getElementById('listBody');
+      const input = document.getElementById('searchInput');
+
+      try {
+        // 로딩 표시
+        listBody.innerHTML = `
+                  <div class="empty-msg" id="loadingArea" style="padding: 60px 0;">
+                      <div class="spinner" style="margin: 0 auto 15px auto;"></div>
+                      <div style="font-weight:700; color:#5DC6C2;">DB 연결 중...</div>
+                  </div>
+              `;
+
+        // Supabase students 테이블에서 전체 데이터 조회
+        const { data, error } = await supabaseClient   // <-- 여기를 수정!
+          .from('students')
+          .select('*')
+          .limit(5000); // <--- 이 줄을 추가하세요!
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          listBody.innerHTML = `<div class="empty-msg">데이터가 없습니다.</div>`;
+          return;
+        }
+
+        // Supabase JSON 데이터를 기존 배열(Array) 형태로 변환
+        // 기존 구조: [반, 학번, 이름, 성별, 독서실명, 좌석]
+        allData = data.map(row => [
+          row.class_name || '',
+          row.student_id || '',
+          row.name || '',
+          row.gender || '',
+          row.study_room || '',
+          row.seat_number || ''
+        ]);
+
+        // 검색창 활성화
+        input.disabled = false;
+        input.focus();
+
+        // 로딩 메시지 제거하고 빈 화면 세팅
+        listBody.innerHTML = `<div class="empty-msg">검색어를 입력하세요.</div>`;
+
+      } catch (err) {
+        console.error('Supabase 연동 에러:', err);
+        listBody.innerHTML = `
+                  <div class="empty-msg">
+                      데이터를 불러오는데 실패했습니다.<br>
+                      <small>${err.message}</small>
+                  </div>
+              `;
+      }
     };
-
-    // 1. 데이터 가져오기 (최초 1회)
-    function fetchData() {
-      fetch(API_URL)
-        .then(res => res.json())
-        .then(data => {
-          // 1) 에러 처리
-          if (data.error) {
-            // 로딩바가 있던 자리에 에러 메시지 표시
-            document.getElementById('listBody').innerHTML = `<div class="empty-msg">오류: ${data.error}</div>`;
-          }
-          // 2) 정상 데이터 수신
-          else {
-            allData = data;
-
-            // 검색창 활성화
-            const input = document.getElementById('searchInput');
-            input.disabled = false;
-            input.focus();
-
-            // ★ 핵심: 로딩바를 없애고 안내 메시지로 덮어쓰기
-            // (별도의 removeChild나 display:none 필요 없음)
-            document.getElementById('listBody').innerHTML = '<div class="empty-msg">검색어를 입력하세요.</div>';
-          }
-        })
-        .catch(err => {
-          // 통신 실패 시 메시지로 교체
-          document.getElementById('listBody').innerHTML = `<div class="empty-msg">통신 실패.<br><small>${err}</small></div>`;
-        });
-    }
 
 
     function handleEnter(e) {
