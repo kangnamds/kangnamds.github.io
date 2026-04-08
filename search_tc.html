@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>학생 검색</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- 폰트: Pretendard 느낌 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&display=swap"
     rel="stylesheet">
@@ -567,46 +568,83 @@
   </div>
 
   <script>
-    // ★★★ [필수] 배포된 웹 앱 URL 입력 ★★★
-    const API_URL = "https://script.google.com/macros/s/AKfycbyx_OuYBolCxTldCopxJv4FmU1BRKqB-DLGFOxY7eTc_W5AUHytLvxcARvLK7FwMwyogw/exec";
+    // ==========================================
+    // 1. Supabase 설정 (본인 정보로 변경 필수!)
+    // ==========================================
+    const SUPABASE_URL = 'https://cdugpffigeboqqlxkvzr.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_GBx1jlZEa1FVFChIR9PuNg_d47hi3mv';
 
+    // const 를 지우고, window.supabase 를 사용하도록 변경합니다.
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ==========================================
+    // 2. 기존 전역 변수 유지
+    // ==========================================
     let allData = [];
     let searchHistory = [];
+    let lastSortIdx = -1;
+    let sortAsc = true;
 
-    window.onload = function () {
-      fetchData();
+    // ==========================================
+    // 3. Supabase에서 학생 데이터 불러오기 (기존 fetchData 대체)
+    // ==========================================
+    window.onload = async function () {
+      const listBody = document.getElementById('listBody');
+      const input = document.getElementById('searchInput');
+
+      try {
+        // 로딩 표시
+        listBody.innerHTML = `
+                  <div class="empty-msg" id="loadingArea" style="padding: 60px 0;">
+                      <div class="spinner" style="margin: 0 auto 15px auto;"></div>
+                      <div style="font-weight:700; color:#5DC6C2;">DB 연결 중...</div>
+                  </div>
+              `;
+
+        // Supabase students 테이블에서 전체 데이터 조회
+        const { data, error } = await supabaseClient   // <-- 여기를 수정!
+          .from('students')
+          .select('*')
+          .limit(5000); // <--- 이 줄을 추가하세요!
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          listBody.innerHTML = `<div class="empty-msg">데이터가 없습니다.</div>`;
+          return;
+        }
+
+        // Supabase JSON 데이터를 기존 배열(Array) 형태로 변환
+        // 기존 구조: [반, 학번, 이름, 성별, 독서실명, 좌석]
+        allData = data.map(row => [
+          row.class_name || '',
+          row.student_id || '',
+          row.name || '',
+          row.gender || '',
+          row.study_room || '',
+          row.seat_number || ''
+        ]);
+
+        // 검색창 활성화
+        input.disabled = false;
+        input.focus();
+
+        // 로딩 메시지 제거하고 빈 화면 세팅
+        listBody.innerHTML = `<div class="empty-msg">검색어를 입력하세요.</div>`;
+
+      } catch (err) {
+        console.error('Supabase 연동 에러:', err);
+        listBody.innerHTML = `
+                  <div class="empty-msg">
+                      데이터를 불러오는데 실패했습니다.<br>
+                      <small>${err.message}</small>
+                  </div>
+              `;
+      }
     };
 
-    // 1. 데이터 가져오기 (최초 1회)
-    function fetchData() {
-      fetch(API_URL)
-        .then(res => res.json())
-        .then(data => {
-          // 1) 에러 처리
-          if (data.error) {
-            // 로딩바가 있던 자리에 에러 메시지 표시
-            document.getElementById('listBody').innerHTML = `<div class="empty-msg">오류: ${data.error}</div>`;
-          }
-          // 2) 정상 데이터 수신
-          else {
-            allData = data;
-
-            // 검색창 활성화
-            const input = document.getElementById('searchInput');
-            input.disabled = false;
-            input.focus();
-
-            // ★ 핵심: 로딩바를 없애고 안내 메시지로 덮어쓰기
-            // (별도의 removeChild나 display:none 필요 없음)
-            document.getElementById('listBody').innerHTML = '<div class="empty-msg">검색어를 입력하세요.</div>';
-          }
-        })
-        .catch(err => {
-          // 통신 실패 시 메시지로 교체
-          document.getElementById('listBody').innerHTML = `<div class="empty-msg">통신 실패.<br><small>${err}</small></div>`;
-        });
-    }
-
+    // ==========================================
+    // 4. 아래부터는 기존 검색, 렌더링 로직 그대로 유지
+    // ==========================================
 
     function handleEnter(e) {
       if (e.key === 'Enter') {
@@ -615,7 +653,6 @@
 
         if (!query) return;
 
-        // ★ find를 filter로 변경하여 동명이인 모두 찾기
         const results = allData.filter(row => {
           const id = String(row[1]).toLowerCase();
           const name = String(row[2]).toLowerCase();
@@ -623,7 +660,6 @@
         });
 
         if (results.length > 0) {
-          // ★ 찾은 모든 학생을 리스트에 추가 (중복 방지 포함)
           results.forEach(result => {
             const isDuplicate = searchHistory.some(s => String(s[1]) === String(result[1]));
             if (!isDuplicate) {
@@ -633,7 +669,7 @@
           renderHistory();
           input.value = '';
         } else {
-          alert('일치하는 학생이 없습니다.');
+          alert('검색 결과가 없습니다.');
         }
       }
     }
@@ -652,175 +688,133 @@
     function renderHistory() {
       const listBody = document.getElementById('listBody');
       const countInfo = document.getElementById('countInfo');
-      countInfo.innerText = `기록 ${searchHistory.length}건`;
+
+      countInfo.innerText = `총 ${searchHistory.length}명`;
 
       if (searchHistory.length === 0) {
-        listBody.innerHTML = '<div class="empty-msg">검색어를 입력하세요.</div>';
+        listBody.innerHTML = '<div class="empty-msg">목록이 비어있습니다.</div>';
         return;
       }
 
       let html = '';
       searchHistory.forEach((student, index) => {
-        // student 객체에 상담시간(time) 속성이 없으면 빈 문자열
         const timeValue = student.consultTime || '';
         const inputClass = timeValue ? 'time-input filled' : 'time-input';
 
         html += `
-      <div class="list-item">
-        <div>${student[0]}</div>
-        <div style="color:var(--primary-bg); font-weight:700;">${student[1]}</div>
-        <div style="font-weight:700; font-size:1.05rem;">${student[2]}</div>
-        <div>${student[3]}</div>
-        <div>${student[4]}</div>
-        <div style="font-weight:700;">${student[5]}</div>
-        
-        <!-- ★ 상담시간 입력칸 -->
-        <div style="padding:0 5px;">
-          <input type="text" class="${inputClass}" 
-                 placeholder="시간 입력" maxlength="5"
-                 value="${timeValue}"
-                 onfocus="this.select()"
-                 onblur="handleTimeInput(this, ${index})"
-                 onkeypress="if(event.key==='Enter') moveToNextInput(this, ${index})">
-        </div>
-
-        <div style="text-align:center;">
-          <button class="btn-del" onclick="removeItem(${index})">✕</button>
-        </div>
-      </div>
-    `;
+              <div class="list-item">
+                  <div>${student[0]}</div>
+                  <div style="color:var(--primary-bg); font-weight:700;">${student[1]}</div>
+                  <div style="font-weight:700; font-size:1.05rem;">${student[2]}</div>
+                  <div>${student[3]}</div>
+                  <div>${student[4]}</div>
+                  <div style="font-weight:700;">${student[5]}</div>
+                  <div style="padding:0 5px;">
+                      <input type="text" class="${inputClass}" placeholder="시간 입력" maxlength="5" value="${timeValue}"
+                             onfocus="this.select()" 
+                             onblur="handleTimeInput(this, ${index})"
+                             onkeypress="if(event.key==='Enter') moveToNextInput(this, ${index})">
+                  </div>
+                  <div style="text-align:center;">
+                      <button class="btn-del" onclick="removeItem(${index})"><i class="fas fa-trash"></i>✕</button>
+                  </div>
+              </div>`;
       });
       listBody.innerHTML = html;
     }
 
-    /* ★ 시간 포맷팅 함수 (1111 -> 11:11) */
     function handleTimeInput(input, index) {
-      let val = input.value.replace(/[^0-9]/g, ''); // 숫자만 남김
-
+      let val = input.value.replace(/[^0-9]/g, '');
       if (val.length === 4) {
-        // 1111 -> 11:11 변환
         const hours = val.substring(0, 2);
         const minutes = val.substring(2, 4);
-
-        // 유효성 체크 (00~23시, 00~59분)
-        if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+        if (hours >= '00' && hours <= '23' && minutes >= '00' && minutes <= '59') {
           input.value = `${hours}:${minutes}`;
-          input.classList.add('filled'); // 스타일 변경
-
-          // 데이터에 저장 (화면 다시 그려도 유지되게)
+          input.classList.add('filled');
           searchHistory[index].consultTime = input.value;
         } else {
-          alert('올바른 시간이 아닙니다.');
+          alert('올바른 시간을 입력하세요.');
           input.value = '';
           input.classList.remove('filled');
           searchHistory[index].consultTime = '';
         }
       } else if (val === '') {
-        // 지웠을 때
         input.classList.remove('filled');
         searchHistory[index].consultTime = '';
-      } else {
-        // 4자리가 아닐 때 (그냥 둠 or 경고)
-        // 여기선 그냥 둡니다 (사용자가 수정 중일 수 있으니)
       }
     }
 
-    // 현재 정렬 상태 저장 (true: 오름차순, false: 내림차순)
-    let sortAsc = true;
-    let lastSortIdx = -1; // 마지막으로 정렬한 항목 인덱스
-
     function sortList(idx) {
-      // 같은 항목을 또 누르면 정렬 순서 반전 (오름 <-> 내림)
       if (lastSortIdx === idx) {
         sortAsc = !sortAsc;
       } else {
-        sortAsc = true; // 새로운 항목 누르면 오름차순부터 시작
+        sortAsc = true;
         lastSortIdx = idx;
       }
 
-      // 현재 화면에 표시된 리스트(searchHistory)를 정렬
       searchHistory.sort((a, b) => {
-        let valA = String(a[idx] || '').toLowerCase(); // 비교값 A
-        let valB = String(b[idx] || '').toLowerCase(); // 비교값 B
+        let valA = String(a[idx]).toLowerCase();
+        let valB = String(b[idx]).toLowerCase();
 
-        // 숫자 형태의 문자열(학번 등)도 제대로 정렬되도록 localeCompare 사용
-        // numeric: true 옵션은 "10"이 "2"보다 뒤에 오게 해줌
         if (valA < valB) return sortAsc ? -1 : 1;
         if (valA > valB) return sortAsc ? 1 : -1;
         return 0;
       });
 
-      // 정렬된 데이터로 다시 그리기
       renderHistory();
     }
 
-    // ★ 엔터 치면 다음 칸으로 이동하는 함수
     function moveToNextInput(currentInput, index) {
-      // 1. 현재 칸 블러 처리 (이때 handleTimeInput이 작동해서 1111 -> 11:11로 변환됨)
       currentInput.blur();
-
-      // 2. 화면에 있는 모든 시간 입력칸 찾기
       const allTimeInputs = document.querySelectorAll('.time-input');
-
-      // 3. 다음 칸이 존재하면 포커스 이동
       if (index + 1 < allTimeInputs.length) {
-        setTimeout(() => {
-          allTimeInputs[index + 1].focus(); // 다음 칸 선택
-        }, 10); // 포맷팅이 끝날 시간을 벌어주기 위해 약간의 딜레이
+        setTimeout(() => allTimeInputs[index + 1].focus(), 10);
       }
     }
 
-    // ★ 화면 리스트 캡처해서 JPG로 저장하는 함수 (최종 해결)
-    function saveAsJPG() {
+    function saveAsJPG(event) {
       const captureArea = document.querySelector('.list-container');
-
       if (!captureArea || searchHistory.length === 0) {
-        alert("저장할 데이터가 없습니다.");
+        alert('저장할 목록이 없습니다.');
         return;
       }
 
       const saveBtn = event.currentTarget;
       const originalText = saveBtn.innerHTML;
-      saveBtn.innerHTML = "<span>⏳ 저장 중...</span>";
+      saveBtn.innerHTML = '<span>저장 중...</span>';
 
-      // 1. 포커스 해제
       document.querySelectorAll('input').forEach(input => input.blur());
 
-      // 2. ★ 캡처 영역 전체에 캡처 전용(애니메이션 정지, 투명도 100%) 클래스 강제 부착
-      captureArea.classList.add('capture-mode');
-
-      // 3. 약간의 딜레이 후 캡처 진행
       setTimeout(() => {
+        captureArea.classList.add('capture-mode');
+
         html2canvas(captureArea, {
-          scale: 3, // 고해상도 (3배수)
-          backgroundColor: "#ffffff",
+          scale: 3,
+          backgroundColor: '#ffffff',
           useCORS: true,
           logging: false
         }).then(canvas => {
-          const image = canvas.toDataURL("image/jpeg", 1.0);
+          const image = canvas.toDataURL('image/jpeg', 1.0);
           const link = document.createElement('a');
           link.href = image;
 
           const now = new Date();
-          const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-          const timeStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+          const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+          const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
 
-          link.download = `학생검색_${dateStr}_${timeStr}.jpg`;
+          link.download = `시간표_${dateStr}_${timeStr}.jpg`;
           link.click();
 
-          // 4. 복구
           captureArea.classList.remove('capture-mode');
           saveBtn.innerHTML = originalText;
         }).catch(err => {
-          console.error("캡처 오류:", err);
-          alert("이미지 저장 중 오류가 발생했습니다.");
-
+          console.error('캡처 실패:', err);
+          alert('이미지 저장에 실패했습니다.');
           captureArea.classList.remove('capture-mode');
           saveBtn.innerHTML = originalText;
         });
-      }, 150); // 0.15초 대기 후 확실하게 정지된 상태 캡처
+      }, 150);
     }
-
   </script>
 </body>
 
