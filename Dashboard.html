@@ -823,19 +823,23 @@
             data.forEach(row => {
                 const tr = document.createElement('tr');
 
-                // 💡 야간자습 모드일 때는 행 클릭 시 모달 띄우는 대신 체크박스 선택 처리
+                // 💡 행 클릭 시 행동 분리 (체크박스 칸 vs 모달 칸)
                 tr.onclick = (e) => {
                     if (window.getSelection().toString().length > 0) return;
-                    // 체크박스를 직접 클릭한 경우는 중복 작동 방지
-                    if (e.target.type === 'checkbox') return;
+                    if (e.target.type === 'checkbox') return; // 이미 체크박스를 직접 누른 경우 무시
 
-                    // 야간 모드일 때는 행 자체 클릭으로 체크박스 토글
-                    if (isNightFilterOn) {
+                    // 클릭한 곳이 가장 왼쪽의 '체크박스 칸(td)'인지 확인
+                    const clickedCell = e.target.closest('td');
+                    const isCheckboxCell = clickedCell && clickedCell.classList.contains('checkbox-cell');
+
+                    if (isNightFilterOn && isCheckboxCell) {
+                        // 체크박스 주변 빈 공간을 누르면 체크박스 토글
                         const cb = tr.querySelector('.row-checkbox');
                         if (cb) cb.checked = !cb.checked;
                         return;
                     }
-                    // 일반 모드일 때는 기존처럼 모달 띄우기
+
+                    // 그 외의 데이터 영역을 누르면 무조건 상담 입력창(모달) 띄우기
                     openModal(row);
                 };
 
@@ -855,7 +859,8 @@
                 let checkboxTd = '';
                 if (isNightFilterOn) {
                     checkboxTd = `
-                        <td class="px-4 py-4 text-center border-r border-gray-50 w-10">
+                        <!-- 💡 여기에 checkbox-cell 추가 -->
+                        <td class="checkbox-cell px-4 py-4 text-center border-r border-gray-50 w-10 cursor-pointer">
                             <input type="checkbox" value="${row.rowIndex}" data-studentid="${row.studentId}" class="row-checkbox w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer">
                         </td>
                     `;
