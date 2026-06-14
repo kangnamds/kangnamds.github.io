@@ -1,0 +1,4087 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Dashboard - Home</title>
+
+  <style>
+    /* =========================================================
+       Base
+    ========================================================= */
+    :root {
+      --bg-body: #f6f7fb;
+      --bg-panel: #ffffff;
+      --border: #e5e7eb;
+      --text-main: #1f2937;
+      --text-sub: #6b7280;
+      --primary: #0f766e;
+      --primary-hover: #0d655e;
+      --primary-light: #e8f1f2;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      padding: 24px;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 32px;
+      color: var(--primary);
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-link {
+      padding: 12px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text-sub);
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-link:hover {
+      background: #f3f4f6;
+    }
+
+    .nav-link.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .main-content {
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 1400px;
+    }
+
+    .page-header h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+    }
+
+    .page-header p {
+      margin: 0;
+      color: var(--text-sub);
+    }
+
+    /* =========================================================
+       Common UI
+    ========================================================= */
+    .filter-section {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) auto;
+      gap: 16px;
+      background: var(--bg-panel);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      align-items: end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+
+    .filter-control {
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      width: 100%;
+      outline: none;
+      background: #fff;
+      color: var(--text-main);
+    }
+
+    .filter-control:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      height: 40px;
+      padding: 0 20px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .kpi-section {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: var(--bg-panel);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .kpi-title {
+      font-size: 13px;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 12px 0 8px 0;
+    }
+
+    .kpi-desc {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .panel-section {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 20px;
+    }
+
+    .data-panel,
+    .card {
+      background: var(--bg-panel);
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .panel-header {
+      margin-bottom: 20px;
+    }
+
+    .panel-header h2 {
+      margin: 0 0 4px 0;
+      font-size: 18px;
+    }
+
+    .panel-header p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .data-table th {
+      color: var(--text-sub);
+      font-weight: 600;
+      background: #f9fafb;
+    }
+
+    .table-scroll {
+      max-height: 420px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .table-scroll .data-table {
+      margin: 0;
+    }
+
+    .table-scroll .data-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    .top-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 16px 0 18px;
+    }
+
+    .top-tab {
+      height: 38px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #374151;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .top-tab.active {
+      background: #0f766e;
+      color: #fff;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .placeholder-box {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 28px;
+      text-align: center;
+      font-weight: 700;
+      color: #6b7280;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .muted {
+      color: var(--text-sub);
+      font-size: 13px;
+    }
+
+    .empty {
+      padding: 20px 0;
+      text-align: center;
+      color: var(--text-sub);
+    }
+
+    .list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .list-item {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f9fafb;
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .item-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .item-subtitle {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .badge-danger,
+    .badge-success,
+    .badge-warning,
+    .badge-neutral {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 62px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .badge-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .badge-success {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .badge-warning {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .badge-neutral {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+    }
+
+    .debug-panel {
+      background: #1e293b;
+      color: #34d399;
+      padding: 16px;
+      border-radius: 12px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      height: 200px;
+      overflow-y: auto;
+    }
+
+    /* =========================================================
+       Plans Tab
+    ========================================================= */
+    .plans-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .plans-left,
+    .plans-right {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    #planSummaryCard,
+    #planSlotCard,
+    #planAdminCard {
+      min-height: 140px;
+    }
+
+    #planStudentList tr[data-student-id] {
+      cursor: pointer;
+      transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+    }
+
+    #planStudentList tr[data-student-id]:hover {
+      background: #f8fafc;
+    }
+
+    #planStudentList tr.selected {
+      background: #dff7f2;
+    }
+
+    #planStudentList tr.selected td {
+      background: #dff7f2;
+      font-weight: 700;
+      color: #0f172a;
+      border-top: 1px solid #86d3c3;
+      border-bottom: 1px solid #86d3c3;
+      box-shadow: inset 0 0 0 9999px rgba(15, 118, 110, 0.10);
+    }
+
+    #planStudentList tr.selected td:first-child {
+      border-left: 4px solid #0f766e;
+    }
+
+    #planStudentList tr.selected td:last-child {
+      border-right: 1px solid #86d3c3;
+    }
+
+    #plansTab th[data-plan-sort],
+    #attendanceTab th[data-attendance-sort] {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 22px;
+    }
+
+    #plansTab th[data-plan-sort]::after,
+    #attendanceTab th[data-attendance-sort]::after {
+      content: '';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: #94a3b8;
+    }
+
+    #plansTab th.sort-asc::after,
+    #attendanceTab th.sort-asc::after {
+      content: '▲';
+      color: #0f766e;
+    }
+
+    #plansTab th.sort-desc::after,
+    #attendanceTab th.sort-desc::after {
+      content: '▼';
+      color: #0f766e;
+    }
+
+    #plansTab .table-scroll {
+      max-height: 520px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    #plansTab .data-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: #f9fafb;
+      box-shadow: inset 0 -1px 0 var(--border);
+    }
+
+    .plan-filter-switches {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .filter-switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .filter-switch-ui {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      background: #d1d5db;
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .filter-switch-ui::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+      transition: transform 0.2s ease;
+    }
+
+    .filter-switch input:checked+.filter-switch-ui {
+      background: #0f766e;
+    }
+
+    .filter-switch input:checked+.filter-switch-ui::after {
+      transform: translateX(18px);
+    }
+
+    .filter-switch-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .filter-switch input:checked~.filter-switch-label {
+      color: #0f766e;
+    }
+
+    .filter-switch input:focus-visible+.filter-switch-ui {
+      outline: 2px solid rgba(15, 118, 110, 0.25);
+      outline-offset: 2px;
+    }
+
+    /* =========================================================
+       Shared Slot UI
+    ========================================================= */
+    .slot-card,
+    .exception-slot-card {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+      padding: 18px;
+    }
+
+    .slot-legend {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-sub);
+      flex-wrap: wrap;
+    }
+
+    .slot-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .dot.on {
+      background: var(--primary);
+    }
+
+    .dot.off {
+      background: #d1d5db;
+    }
+
+    .slot-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .slot-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .slot-date-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-start;
+    }
+
+    .slot-date {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    .slot-reason {
+      font-size: 13px;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+
+    .slot-times {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(40px, 1fr));
+      gap: 8px;
+    }
+
+    .slot-times span {
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      user-select: none;
+      transition: all 0.15s ease;
+      background: #f9fafb;
+      color: var(--text-sub);
+    }
+
+    .slot-times span.on {
+      background: rgba(15, 118, 110, 0.12);
+      border-color: rgba(15, 118, 110, 0.32);
+      color: var(--primary);
+    }
+
+    .slot-times span.off {
+      background: #fff;
+      color: var(--text-sub);
+    }
+
+    .slot-times span:hover {
+      transform: translateY(-1px);
+    }
+
+    .slot-reason-line {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #f2c48d;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .slot-edit-area {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .slot-edit-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slot-edit-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .slot-edit-textarea {
+      width: 100%;
+      min-height: 84px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .slot-edit-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .slot-edit-hint {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .slot-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    /* =========================================================
+       Exceptions Tab
+    ========================================================= */
+    .exceptions-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .exceptions-left,
+    .exceptions-right {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .exception-table-scroll {
+      max-height: 520px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    #exceptionsTab .data-table tbody tr[data-exception-id] {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    #exceptionsTab .data-table tbody tr[data-exception-id]:hover td {
+      background: #f8fafc;
+    }
+
+    #exceptionsTab .data-table tbody tr.selected td {
+      background: #dff7f2;
+      font-weight: 700;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 10px 12px;
+      align-items: start;
+    }
+
+    .detail-grid .label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sub);
+      line-height: 1.5;
+    }
+
+    .detail-grid .value {
+      min-width: 0;
+      font-size: 14px;
+      color: var(--text-main);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .detail-grid .value a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .detail-grid .value a:hover {
+      text-decoration: underline;
+    }
+
+    .exception-action-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .exception-edit-input {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .exception-slot-section {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .exception-slot-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .exception-candidate-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .exception-candidate-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px 16px;
+    }
+
+    .exception-candidate-box.name-tone {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .exception-candidate-box.id-tone {
+      background: #ecfeff;
+      border-color: #99f6e4;
+    }
+
+    .exception-candidate-box.empty-tone {
+      background: #f9fafb;
+      border-style: dashed;
+    }
+
+    .exception-candidate-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+    }
+
+    .exception-candidate-main {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .candidate-class,
+    .candidate-studentid,
+    .candidate-name {
+      display: inline-flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .candidate-class {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .candidate-studentid {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .candidate-name {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .exception-candidate-empty {
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    /* =========================================================
+   Attendance Tab
+========================================================= */
+    .attendance-table-scroll {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 560px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .attendance-table {
+      min-width: 920px;
+      width: max-content;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .attendance-table th,
+    .attendance-table td {
+      vertical-align: middle;
+      white-space: nowrap;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .attendance-table thead,
+    .attendance-table thead tr {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: #f9fafb;
+    }
+
+    .attendance-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 21;
+      background: #f9fafb !important;
+      background-clip: padding-box;
+      box-shadow: inset 0 -1px 0 var(--border);
+    }
+
+    .attendance-table thead th:nth-child(-n+6) {
+      z-index: 22;
+      background: #f9fafb !important;
+    }
+
+    .attendance-table th:nth-child(1),
+    .attendance-table td:nth-child(1) {
+      min-width: 52px;
+    }
+
+    .attendance-table th:nth-child(2),
+    .attendance-table td:nth-child(2) {
+      min-width: 76px;
+    }
+
+    .attendance-table th:nth-child(3),
+    .attendance-table td:nth-child(3) {
+      min-width: 96px;
+    }
+
+    .attendance-table th:nth-child(4),
+    .attendance-table td:nth-child(4),
+    .attendance-table th:nth-child(5),
+    .attendance-table td:nth-child(5),
+    .attendance-table th:nth-child(6),
+    .attendance-table td:nth-child(6) {
+      min-width: 58px;
+      text-align: center;
+    }
+
+    .attendance-day-col {
+      min-width: 196px;
+      text-align: center;
+    }
+
+    .attendance-day-cell {
+      min-width: 196px;
+      padding: 8px 6px;
+    }
+
+    .attendance-day-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .attendance-day-label-mobile {
+      display: none;
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 700;
+    }
+
+    .attendance-inline-slots,
+    .attendance-inline-slots--mixed {
+      display: grid;
+      grid-template-columns: repeat(7, max-content);
+      gap: 4px;
+      justify-content: start;
+      align-items: start;
+    }
+
+    .attendance-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+
+    .attendance-slot--dual {
+      display: grid;
+      grid-template-columns: 16px 16px;
+      grid-template-rows: 28px 12px;
+      justify-items: center;
+      align-items: center;
+      column-gap: 0;
+    }
+
+    .attendance-slot--single {
+      display: grid;
+      grid-template-columns: 28px;
+      grid-template-rows: 28px 12px;
+      justify-items: center;
+      align-items: center;
+    }
+
+    .attendance-chip-core {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 28px;
+      border: 1.25px solid #c8d2dc;
+      background: #ffffff;
+      color: #8f9baa;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1;
+      box-sizing: border-box;
+    }
+
+    .attendance-slot--dual .mini-half:first-child {
+      border-radius: 7px 0 0 7px;
+      border-right: 0;
+    }
+
+    .attendance-slot--dual .mini-half:nth-child(2) {
+      border-radius: 0 7px 7px 0;
+      border-left: 1px solid #c8d2dc;
+    }
+
+    .attendance-single-chip {
+      width: 28px;
+      border-radius: 7px;
+    }
+
+    .attendance-slot-no {
+      grid-column: 1 / -1;
+      align-self: center;
+      justify-self: center;
+      font-size: 11px;
+      font-weight: 700;
+      font-style: normal;
+      line-height: 1;
+      color: #5f6f83;
+      margin-top: 0;
+    }
+
+    /* 계획 여부 = 테두리 스타일 */
+    .attendance-chip-core.is-planned {
+      border-style: solid;
+    }
+
+    .attendance-chip-core.is-unplanned {
+      border-style: dashed;
+      background: #fbfcfd;
+    }
+
+    /* 출결 상태 = 내부 색 (채도 개선) */
+    .attendance-chip-core.status-present {
+      background: #d7f5df;
+      border-color: #26a249;
+      color: #0f5a28;
+    }
+
+    .attendance-chip-core.status-late {
+      background: #ffe8a3;
+      border-color: #d69100;
+      color: #7a4900;
+    }
+
+    .attendance-chip-core.status-unknown {
+      background: #d6deea;
+      border-color: #7f90a6;
+      color: #334155;
+    }
+
+    .attendance-chip-core.status-none {
+      background: #ffffff;
+      color: #7f8b99;
+    }
+
+    /* 미체크일 때만 계획 여부 색 유지 */
+    .attendance-chip-core.status-none.is-planned {
+      border-color: #0f8b81;
+      color: #0e746c;
+    }
+
+    .attendance-chip-core.status-none.is-unplanned {
+      border-color: #b9c5d3;
+      color: #a4b0be;
+    }
+
+    /* 추가자습(mismatch)은 별도 보라색 강조 제거, 보조 효과만 */
+    .attendance-chip-core.is-mismatch {
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+    }
+
+    .attendance-row-name {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .attendance-row-name .sub {
+      color: #6b7280;
+      font-size: 12px;
+      max-width: 180px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .attendance-legend-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .attendance-legend-inline span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .attendance-legend-inline .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+      border: 1.25px solid transparent;
+      box-sizing: border-box;
+    }
+
+    /* 범례도 동일 톤으로 맞춤 */
+    .attendance-legend-inline .dot.planned {
+      background: #ffffff;
+      border-color: #0f8b81;
+    }
+
+    .attendance-legend-inline .dot.present {
+      background: #d7f5df;
+      border-color: #26a249;
+    }
+
+    .attendance-legend-inline .dot.late {
+      background: #ffe8a3;
+      border-color: #d69100;
+    }
+
+    .attendance-legend-inline .dot.unknown {
+      background: #d6deea;
+      border-color: #7f90a6;
+    }
+
+    .attendance-legend-inline .dot.mismatch {
+      background: #f5f7fa;
+      border-color: #b9c5d3;
+      border-style: dashed;
+    }
+
+    /* =========================================================
+       Responsive
+    ========================================================= */
+    @media (max-width: 1200px) {
+      .kpi-section {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .panel-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1100px) {
+
+      .plans-layout,
+      .exceptions-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .attendance-day-col {
+        min-width: 190px;
+      }
+
+      .attendance-day-cell {
+        min-width: 190px;
+      }
+
+      .attendance-inline-slots {
+        grid-template-columns: repeat(7, 22px);
+        gap: 5px;
+      }
+
+      .attendance-mini-chip {
+        width: 22px;
+        height: 26px;
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .filter-section {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .slot-row {
+        grid-template-columns: 1fr;
+      }
+
+      .slot-times {
+        grid-template-columns: repeat(7, minmax(32px, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .main-content {
+        padding: 20px;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .exception-table-scroll {
+        max-height: 420px;
+      }
+
+      .filter-section {
+        grid-template-columns: 1fr;
+      }
+
+      .kpi-section {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ========================================== -->
+  <!-- 2. HTML BLOCK -->
+  <!-- ========================================== -->
+  <div class="app-container">
+    <main class="main-content">
+
+      <header class="page-header">
+        <div class="top-tabs">
+          <button class="top-tab active" data-panel="dashboardTab">대시보드 (홈)</button>
+          <button class="top-tab" data-panel="plansTab">계획 관리</button>
+          <button class="top-tab" data-panel="attendanceTab">출결 관리</button>
+          <button class="top-tab" data-panel="studentsTab">학생 관리</button>
+          <button class="top-tab" data-panel="exceptionsTab">예외 처리함</button>
+        </div>
+        <h1>홈 대시보드</h1>
+        <p>배치와 반 기준으로 오늘 처리해야 할 핵심 현황을 파악합니다.</p>
+      </header>
+
+      <section class="filter-section">
+        <div class="filter-group">
+          <label>배치</label>
+          <select id="batchSelect" class="filter-control">
+            <option value="">로딩중...</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>반</label>
+          <select id="classSelect" class="filter-control">
+            <option value="">로딩중...</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>학생 검색</label>
+          <input type="text" id="studentSearch" class="filter-control" placeholder="이름 또는 학번" />
+        </div>
+
+        <div class="filter-group">
+          <label>&nbsp;</label>
+          <button id="queryBtn" class="btn">현황 조회</button>
+        </div>
+      </section>
+
+      <section class="tab-panel active" id="dashboardTab">
+        <section class="kpi-section">
+          <div class="kpi-card">
+            <div class="kpi-title">총 학생 수</div>
+            <div class="kpi-value" id="kpi-total">0</div>
+            <div class="kpi-desc">선택한 반 기준</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">계획 제출 수</div>
+            <div class="kpi-value" id="kpi-submitted">0</div>
+            <div class="kpi-desc">배치별 응답 완료</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">미제출 학생 수</div>
+            <div class="kpi-value" id="kpi-unsubmitted" style="color: var(--danger)">0</div>
+            <div class="kpi-desc">응답 필요 인원</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">계획 대비 참여 타임</div>
+            <div class="kpi-value" id="kpi-participation">0 / 0</div>
+            <div class="kpi-desc">전체 참여 / 계획 타임</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">출결 완료율</div>
+            <div class="kpi-value" id="kpi-completion">0%</div>
+            <div class="kpi-desc">계획 이행 비율</div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="data-panel">
+            <div class="panel-header">
+              <h2>미제출 학생 리스트</h2>
+              <p>응답이 없는 학생 목록입니다. 수동 입력을 진행하세요.</p>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>반</th>
+                    <th>학번</th>
+                    <th>이름</th>
+                    <th>상태</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody id="unsubmittedList">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-sub);">조회 버튼을 눌러주세요.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="data-panel">
+            <div class="panel-header">
+              <h2>미참여 타임 상위</h2>
+              <p>계획 대비 결석/미확인 타임이 많은 학생입니다.</p>
+            </div>
+            <div class="table-scroll" style="max-height: 420px;">
+              <div class="list-container" id="participationList">
+                <div style="text-align: center; color: var(--text-sub); padding: 20px 0;">조회 버튼을 눌러주세요.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="data-panel" style="padding: 0; overflow: hidden;">
+          <div class="panel-header" style="padding: 16px 20px 0 20px;">
+            <h2 style="font-size: 14px;">디버그 콘솔</h2>
+          </div>
+          <div id="debugLog" class="debug-panel"></div>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="plansTab">
+        <div class="plans-layout">
+          <div class="plans-left">
+            <div class="card">
+              <h2>학생 목록</h2>
+              <div class="plan-filter-switches">
+                <label class="filter-switch">
+                  <input type="checkbox" id="toggleUnsubmittedOnly">
+                  <span class="filter-switch-ui"></span>
+                  <span class="filter-switch-label">미제출만</span>
+                </label>
+
+                <label class="filter-switch">
+                  <input type="checkbox" id="toggleRequiredMissingOnly">
+                  <span class="filter-switch-ui"></span>
+                  <span class="filter-switch-label">의무타임 미신청만</span>
+                </label>
+
+                <button type="button" class="btn btn-secondary" id="exportPlansExcelBtn" style="height:36px;">
+                  엑셀 저장
+                </button>
+              </div>
+
+              <div class="muted" style="margin-bottom:12px;">
+                학생을 선택하면 계획 요약과 슬롯이 표시됩니다.
+              </div>
+
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th data-plan-sort="class_name">반</th>
+                      <th data-plan-sort="student_id">학번</th>
+                      <th data-plan-sort="name">이름</th>
+                      <th data-plan-sort="study_room">퀀텀</th>
+                      <th data-plan-sort="seat_number">좌석</th>
+                      <th data-plan-sort="plan_count">신청타임</th>
+                      <th data-plan-sort="submissionstatus">제출</th>
+                    </tr>
+                  </thead>
+                  <tbody id="planStudentList">
+                    <tr>
+                      <td colspan="7" class="empty">조회 버튼을 눌러주세요.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="plans-right">
+            <div class="card" id="planSummaryCard">
+              <h2>학생 계획 요약</h2>
+              <div class="empty">학생을 선택하세요.</div>
+            </div>
+
+            <div class="card" id="planSlotCard">
+              <h2>슬롯 확인</h2>
+              <div class="empty">학생을 선택하세요.</div>
+            </div>
+
+            <div class="card slot-edit-area" id="planEditCard" style="display:none;">
+              <div class="slot-edit-section">
+                <label class="slot-edit-label">5T 미만 사유</label>
+                <textarea id="editedPlanReasonText" class="slot-edit-textarea" placeholder="사유를 입력하세요."
+                  rows="3"></textarea>
+              </div>
+
+              <div class="slot-edit-hint">
+                칸을 클릭하면 신청/미신청을 전환할 수 있습니다.
+              </div>
+
+              <div class="slot-actions">
+                <button type="button" class="btn btn-secondary" id="cancelEditPlanBtn">취소</button>
+                <button type="button" class="btn" id="saveEditPlanBtn">저장하기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="attendanceTab">
+        <div class="card">
+          <div class="card-header-row">
+            <div>
+              <h2>출결 관리</h2>
+              <div class="muted">학생별 신청 슬롯과 실제 출석 상태를 날짜별로 확인합니다.</div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
+              <div class="muted" id="attendanceSummaryText">조회 결과가 없습니다.</div>
+              <button type="button" class="btn btn-secondary" id="exportAttendanceExcelBtn">
+                엑셀 저장
+              </button>
+            </div>
+          </div>
+
+          <div class="table-scroll attendance-table-scroll">
+            <table class="data-table attendance-table">
+              <thead id="attendanceTableHead">
+                <tr>
+                  <th>반</th>
+                  <th>학번</th>
+                  <th>이름</th>
+                  <th>신청</th>
+                  <th>참여</th>
+                  <th>미참여</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceStudentList">
+                <tr>
+                  <td colspan="6" class="empty">조회 버튼을 눌러주세요.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="studentsTab">
+        <div class="placeholder-box">준비중 기능</div>
+      </section>
+
+      <section class="tab-panel" id="exceptionsTab">
+        <div class="exceptions-layout">
+          <div class="exceptions-left">
+            <div class="card">
+              <div class="card-header-row">
+                <div>
+                  <h2>예외 처리함</h2>
+                  <div class="muted">실패 응답 목록과 정상 반영 여부를 확인합니다.</div>
+                </div>
+              </div>
+
+              <div class="table-scroll exception-table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>반</th>
+                      <th>학번</th>
+                      <th>이름</th>
+                      <th>실패 사유</th>
+                      <th>반영 여부</th>
+                    </tr>
+                  </thead>
+                  <tbody id="exceptionList">
+                    <tr>
+                      <td colspan="5" class="empty">조회 버튼을 눌러주세요.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="exceptions-right">
+            <div class="card" id="exceptionDetailCard">
+              <h2>실패 응답 상세</h2>
+              <div class="empty">왼쪽 목록에서 실패 응답을 선택하세요.</div>
+            </div>
+
+            <div class="card" id="exceptionActionCard">
+              <h2>처리 액션</h2>
+              <div class="empty">선택된 실패 응답의 처리 상태가 여기에 표시됩니다.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://cdugpffigeboqqlxkvzr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkdWdwZmZpZ2Vib3FxbHhrdnpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjI2NjIsImV4cCI6MjA5MTE5ODY2Mn0.tTHORlm0EwXTD8u_PAULRZ-lLFMVzNR5QodXY_dmPTM';
+
+    const els = {
+      batchSelect: document.getElementById('batchSelect'),
+      classSelect: document.getElementById('classSelect'),
+      search: document.getElementById('studentSearch'),
+      btnQuery: document.getElementById('queryBtn'),
+      kpiTotal: document.getElementById('kpi-total'),
+      kpiSubmitted: document.getElementById('kpi-submitted'),
+      kpiUnsub: document.getElementById('kpi-unsubmitted'),
+      kpiPart: document.getElementById('kpi-participation'),
+      kpiComp: document.getElementById('kpi-completion'),
+      unsubList: document.getElementById('unsubmittedList'),
+      partList: document.getElementById('participationList'),
+      debug: document.getElementById('debugLog')
+    };
+
+    // =========================
+    // State
+    // =========================
+    let client = null;
+    let currentAllDays = [];
+
+    let planRows = [];
+    let onlyUnsubmitted = false;
+    let onlyRequiredMissing = false;
+    let planSortKey = 'class_name';
+    let planSortDir = 'asc';
+    let selectedPlanStudent = null;
+    let editPlanMode = false;
+    let editedPlanSlots = new Map();
+    let editedPlanReasonText = '';
+    let currentPlanReasonText = '';
+
+    let attendanceRows = [];
+    let currentAttendancePlanRows = [];
+    let currentAttendanceCheckRows = [];
+    let attendanceSortKey = 'missed_count';
+    let attendanceSortDir = 'desc';
+    let selectedAttendanceStudent = null;
+
+    let exceptionRows = [];
+    let selectedExceptionRow = null;
+    let editExceptionMode = false;
+    let editedExceptionSlots = new Map();
+    let currentExceptionReasonText = '';
+
+    // =========================
+    // Common utils
+    // =========================
+    function log(msg) {
+      if (!els.debug) return;
+      const time = new Date().toLocaleTimeString('ko-KR');
+      els.debug.innerHTML += `[${time}] ${msg}<br>`;
+      els.debug.scrollTop = els.debug.scrollHeight;
+      console.log(`[Dashboard] ${msg}`);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[m]);
+    }
+
+    function safeJsonParse(value) {
+      if (!value) return null;
+      if (typeof value === 'object') return value;
+
+      try {
+        return JSON.parse(value);
+      } catch (err) {
+        console.warn('[safeJsonParse] JSON parse 실패', err);
+        return null;
+      }
+    }
+
+    function normalizeText(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function normalizeDayLabel(value) {
+      return String(value || '')
+        .trim()
+        .replace(/\s+/g, '')
+        .replace(/\(.*?\)/g, '')
+        .replace(/요일/g, '')
+        .replace(/[()]/g, '');
+    }
+
+    function circledToSlotNo(value) {
+      const text = String(value || '').trim();
+      const map = {
+        '①': 1,
+        '②': 2,
+        '③': 3,
+        '④': 4,
+        '⑤': 5,
+        '⑥': 6,
+        '⑦': 7
+      };
+
+      if (map[text]) return map[text];
+
+      const num = Number(text.match(/\d+/)?.[0] || 0);
+      return num || 0;
+    }
+
+    function getRequiredPlanCount(dayCount) {
+      if (dayCount <= 0) return 0;
+      if (dayCount === 1) return 2;
+      if (dayCount === 2) return 5;
+      if (dayCount === 3) return 7;
+      return 7;
+    }
+
+    function getAttendanceCheckRound(slotId) {
+      return Number(slotId) === 5 ? 1 : 2;
+    }
+
+    function getAttendanceStatusLabel(status) {
+      const normalized = String(status || '').trim().toLowerCase();
+
+      if (normalized === 'present') return '출석';
+      if (normalized === 'late') return '지각';
+      if (normalized === 'unknown') return '미확인';
+      return '미체크';
+    }
+
+    function sortPlanRows(rows) {
+      const sorted = [...rows];
+
+      sorted.sort((a, b) => {
+        let av;
+        let bv;
+
+        switch (planSortKey) {
+          case 'student_id':
+            av = String(a.student_id || '');
+            bv = String(b.student_id || '');
+            return planSortDir === 'asc'
+              ? av.localeCompare(bv, 'ko', { numeric: true })
+              : bv.localeCompare(av, 'ko', { numeric: true });
+
+          case 'name':
+            av = String(a.name || '');
+            bv = String(b.name || '');
+            return planSortDir === 'asc'
+              ? av.localeCompare(bv, 'ko', { numeric: true })
+              : bv.localeCompare(av, 'ko', { numeric: true });
+
+          case 'study_room':
+            av = String(a.study_room || '');
+            bv = String(b.study_room || '');
+            return planSortDir === 'asc'
+              ? av.localeCompare(bv, 'ko', { numeric: true })
+              : bv.localeCompare(av, 'ko', { numeric: true });
+
+          case 'seat_number':
+            av = String(a.seat_number || '');
+            bv = String(b.seat_number || '');
+            return planSortDir === 'asc'
+              ? av.localeCompare(bv, 'ko', { numeric: true })
+              : bv.localeCompare(av, 'ko', { numeric: true });
+
+          case 'plan_count':
+            av = Number(a.plan_count || 0);
+            bv = Number(b.plan_count || 0);
+            return planSortDir === 'asc' ? av - bv : bv - av;
+
+          case 'submissionstatus':
+            av = a.submissionstatus === 'submitted' ? 1 : 0;
+            bv = b.submissionstatus === 'submitted' ? 1 : 0;
+            return planSortDir === 'asc' ? av - bv : bv - av;
+
+          case 'class_name':
+          default:
+            av = String(a.class_name || '');
+            bv = String(b.class_name || '');
+            return planSortDir === 'asc'
+              ? av.localeCompare(bv, 'ko', { numeric: true })
+              : bv.localeCompare(av, 'ko', { numeric: true });
+        }
+      });
+
+      return sorted;
+    }
+
+    function sortAttendanceRows(rows) {
+      const sorted = [...rows];
+
+      sorted.sort((a, b) => {
+        let av;
+        let bv;
+
+        switch (attendanceSortKey) {
+          case 'class_name':
+            av = String(a.class_name || '');
+            bv = String(b.class_name || '');
+            return attendanceSortDir === 'asc'
+              ? av.localeCompare(bv, 'ko', { numeric: true })
+              : bv.localeCompare(av, 'ko', { numeric: true });
+
+          case 'student_id':
+            av = String(a.student_id || '');
+            bv = String(b.student_id || '');
+            return attendanceSortDir === 'asc'
+              ? av.localeCompare(bv, 'ko', { numeric: true })
+              : bv.localeCompare(av, 'ko', { numeric: true });
+
+          case 'name':
+            av = String(a.name || '');
+            bv = String(b.name || '');
+            return attendanceSortDir === 'asc'
+              ? av.localeCompare(bv, 'ko', { numeric: true })
+              : bv.localeCompare(av, 'ko', { numeric: true });
+
+          case 'plan_count':
+            av = Number(a.plan_count || 0);
+            bv = Number(b.plan_count || 0);
+            return attendanceSortDir === 'asc' ? av - bv : bv - av;
+
+          case 'attendance_count':
+            av = Number(a.attendance_count || 0);
+            bv = Number(b.attendance_count || 0);
+            return attendanceSortDir === 'asc' ? av - bv : bv - av;
+
+          case 'missed_count':
+          default:
+            av = Number(a.plan_count || 0) - Number(a.attendance_count || 0);
+            bv = Number(b.plan_count || 0) - Number(b.attendance_count || 0);
+
+            if (av !== bv) {
+              return attendanceSortDir === 'asc' ? av - bv : bv - av;
+            }
+
+            return String(a.student_id || '').localeCompare(
+              String(b.student_id || ''),
+              'ko',
+              { numeric: true }
+            );
+        }
+      });
+
+      return sorted;
+    }
+
+    function updateAttendanceSortIndicators() {
+      const table = document.querySelector('#attendanceTab table');
+      if (!table) return;
+
+      table.querySelectorAll('th[data-attendance-sort]').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (th.dataset.attendanceSort === attendanceSortKey) {
+          th.classList.add(attendanceSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+      });
+    }
+
+    // =========================
+    // State helpers
+    // =========================
+    function resetPlanEditState() {
+      editPlanMode = false;
+      editedPlanSlots = new Map();
+      editedPlanReasonText = '';
+    }
+
+    function resetExceptionEditState() {
+      editExceptionMode = false;
+      editedExceptionSlots = new Map();
+      currentExceptionReasonText = '';
+    }
+
+    function getPlanSyncContext() {
+      return {
+        rows: planRows,
+        submittedSet: new Set(
+          planRows
+            .filter(row => row.submissionstatus === 'submitted')
+            .map(row => row.student_id)
+        ),
+        allDays: currentAllDays,
+        planCountByStudent: new Map(
+          planRows.map(row => [row.student_id, row.plan_count])
+        )
+      };
+    }
+
+    function updatePlanSortIndicators() {
+      const table = document.querySelector('#plansTab table');
+      if (!table) return;
+
+      table.querySelectorAll('th[data-plan-sort]').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (th.dataset.planSort === planSortKey) {
+          th.classList.add(planSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+      });
+    }
+
+    function slotNoToCircled(slotNo) {
+      const map = {
+        1: '①',
+        2: '②',
+        3: '③',
+        4: '④',
+        5: '⑤',
+        6: '⑥',
+        7: '⑦'
+      };
+      return map[Number(slotNo)] || '';
+    }
+
+    function getPlannedSlotTextByDay(studentId, dayId) {
+      const slotNos = (currentAttendancePlanRows || [])
+        .filter(row =>
+          String(row.student_id) === String(studentId) &&
+          String(row.study_plan_day_id) === String(dayId)
+        )
+        .map(row => Number(row.slot_id))
+        .filter(Boolean)
+        .sort((a, b) => a - b);
+
+      if (!slotNos.length) return '-';
+
+      return slotNos.map(slotNoToCircled).join('');
+    }
+
+    // =========================
+    // Common data
+    // =========================
+    function getClient() {
+      if (client) return client;
+      if (!window.supabase) {
+        log('Error: Supabase JS 라이브러리를 로드하지 못했습니다.');
+        return null;
+      }
+      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      return client;
+    }
+
+    async function loadBatches() {
+      const supabase = getClient();
+      if (!supabase) return;
+
+      log('1. 배치 목록 조회 시작...');
+      const { data, error } = await supabase
+        .from('study_plan_batches')
+        .select('id, title')
+        .order('id', { ascending: false });
+
+      if (error) {
+        log(`배치 에러: ${error.message}`);
+        return;
+      }
+
+      els.batchSelect.innerHTML =
+        '<option value="">배치를 선택하세요</option>' +
+        (data || [])
+          .map(b => `<option value="${b.id}">${escapeHtml(b.title || `배치 ${b.id}`)}</option>`)
+          .join('');
+
+      log(`→ 배치 ${data?.length || 0}개 로드 완료`);
+    }
+
+    async function loadClasses() {
+      const supabase = getClient();
+      if (!supabase) return;
+
+      log('2. 반 목록 조회 시작...');
+      const { data, error } = await supabase
+        .from('students')
+        .select('class_name')
+        .not('class_name', 'is', null);
+
+      if (error) {
+        log(`반 목록 에러: ${error.message}`);
+        return;
+      }
+
+      const uniqueClasses = [...new Set((data || []).map(d => d.class_name).filter(Boolean))].sort();
+
+      els.classSelect.innerHTML =
+        '<option value="">전체 (모든 반)</option>' +
+        uniqueClasses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+      log(`→ 반 ${uniqueClasses.length}개 로드 완료`);
+    }
+
+    function renderEmpty() {
+      els.kpiTotal.textContent = '0';
+      els.kpiSubmitted.textContent = '0';
+      els.kpiUnsub.textContent = '0';
+      els.kpiPart.textContent = '0 / 0';
+      els.kpiComp.textContent = '0%';
+      els.unsubList.innerHTML =
+        `<tr><td colspan="5" style="text-align:center;color:#6b7280;">조건에 맞는 학생이 없습니다.</td></tr>`;
+      els.partList.innerHTML =
+        `<div style="text-align:center;color:#6b7280;padding:20px 0;">조건에 맞는 학생이 없습니다.</div>`;
+
+      attendanceRows = [];
+      currentAttendancePlanRows = [];
+      currentAttendanceCheckRows = [];
+      renderAttendanceTab();
+    }
+
+    async function executeQuery() {
+      const supabase = getClient();
+      if (!supabase) return;
+
+      const batchId = els.batchSelect.value;
+      const className = els.classSelect.value;
+      const term = els.search.value.trim().toLowerCase();
+
+      if (!batchId) {
+        alert('먼저 배치를 선택해주세요.');
+        return;
+      }
+
+      log(`현황 조회 시작 [배치:${batchId}, 반:${className || '전체'}]`);
+
+      try {
+        let studentQuery = supabase
+          .from('students')
+          .select('student_id, name, class_name, study_room, seat_number');
+
+        if (className) {
+          studentQuery = studentQuery.eq('class_name', className);
+        }
+
+        const { data: students, error: err1 } = await studentQuery;
+        if (err1) throw err1;
+
+        const filteredStudents = (students || []).filter(s => {
+          if (!term) return true;
+          const target = `${s.student_id} ${s.name} ${s.class_name}`.toLowerCase();
+          return target.includes(term);
+        });
+
+        const studentIds = filteredStudents.map(s => s.student_id);
+        log(`→ 대상 학생: ${filteredStudents.length}명`);
+
+        if (studentIds.length === 0) {
+          attendanceRows = [];
+          currentAttendancePlanRows = [];
+          currentAttendanceCheckRows = [];
+          currentAllDays = [];
+
+          renderEmpty();
+          syncPlanTabFromDashboard({
+            rows: [],
+            submittedSet: new Set(),
+            allDays: [],
+            planCountByStudent: new Map()
+          });
+          return;
+        }
+
+        const { data: responses, error: err2 } = await supabase
+          .from('study_plan_responses')
+          .select('student_id')
+          .eq('batch_id', batchId)
+          .in('student_id', studentIds);
+
+        if (err2) throw err2;
+
+        const submittedSet = new Set((responses || []).map(r => r.student_id));
+        const unsubmitted = filteredStudents.filter(s => !submittedSet.has(s.student_id));
+
+        const { data: plans, error: err3 } = await supabase
+          .from('vw_study_plan_overview')
+          .select('student_id, study_plan_day_id, slot_id')
+          .eq('batch_id', batchId)
+          .eq('selected', true)
+          .in('student_id', studentIds);
+
+        if (err3) throw err3;
+
+        const { data: allDaysData, error: errDays } = await supabase
+          .from('study_plan_days')
+          .select('id, day_label')
+          .eq('batch_id', batchId)
+          .order('id', { ascending: true });
+
+        if (errDays) throw errDays;
+
+        const allDays = allDaysData || [];
+        currentAllDays = allDays;
+
+        const dayIds = [...new Set(allDays.map(d => d.id))];
+
+        let attendance = [];
+        if (dayIds.length > 0) {
+          const { data: attData, error: err4 } = await supabase
+            .from('study_attendance_checks')
+            .select('student_id, study_plan_day_id, slot_id, check_round, status')
+            .in('student_id', studentIds)
+            .in('study_plan_day_id', dayIds);
+
+          if (err4) throw err4;
+          attendance = attData || [];
+        }
+
+        currentAttendancePlanRows = plans || [];
+        currentAttendanceCheckRows = attendance || [];
+
+        let responseReasonMap = new Map();
+
+        if (studentIds.length > 0) {
+          const { data: responseDetailRows, error: responseDetailErr } = await supabase
+            .from('study_plan_responses')
+            .select('student_id, reason_text')
+            .eq('batch_id', batchId)
+            .in('student_id', studentIds);
+
+          if (responseDetailErr) throw responseDetailErr;
+
+          responseReasonMap = new Map(
+            (responseDetailRows || []).map(row => [
+              String(row.student_id),
+              String(row.reason_text || '').trim()
+            ])
+          );
+        }
+
+        const planMap = new Set(
+          (plans || []).map(p => `${p.student_id}_${p.study_plan_day_id}_${p.slot_id}`)
+        );
+
+        const partMap = new Set();
+
+        attendance.forEach(a => {
+          if (['present', 'late'].includes(String(a.status || '').toLowerCase())) {
+            const key = `${a.student_id}_${a.study_plan_day_id}_${a.slot_id}`;
+            if (planMap.has(key)) {
+              partMap.add(key);
+            }
+          }
+        });
+
+        const planCountByStudent = new Map();
+        const partCountByStudent = new Map();
+        const rawAttendanceCountByStudent = new Map();
+
+        (plans || []).forEach(p => {
+          const sid = String(p.student_id || '');
+          planCountByStudent.set(sid, (planCountByStudent.get(sid) || 0) + 1);
+        });
+
+        partMap.forEach(key => {
+          const sid = String(key).split('_')[0];
+          partCountByStudent.set(sid, (partCountByStudent.get(sid) || 0) + 1);
+        });
+
+        (attendance || []).forEach(a => {
+          const status = String(a.status || '').toLowerCase();
+          if (!['present', 'late', 'unknown'].includes(status)) return;
+
+          const sid = String(a.student_id || '');
+          const key = `${a.study_plan_day_id}_${a.slot_id}_${a.check_round}`;
+
+          if (!rawAttendanceCountByStudent.has(sid)) {
+            rawAttendanceCountByStudent.set(sid, new Set());
+          }
+          rawAttendanceCountByStudent.get(sid).add(key);
+        });
+
+        attendanceRows = filteredStudents
+          .map(student => {
+            const studentId = String(student.student_id || '');
+            const planCount = planCountByStudent.get(studentId) || 0;
+            const attendanceCount = partCountByStudent.get(studentId) || 0;
+            const rawAttendanceCount = rawAttendanceCountByStudent.get(studentId)?.size || 0;
+            const reasonText = responseReasonMap.get(studentId) || '';
+
+            return {
+              student_id: student.student_id || '',
+              class_name: student.class_name || '',
+              name: student.name || '',
+              study_room: student.study_room || '',
+              seat_number: student.seat_number || '',
+              plan_count: planCount,
+              attendance_count: attendanceCount,
+              raw_attendance_count: rawAttendanceCount,
+              reason_text: reasonText
+            };
+          })
+          .filter(row => row.plan_count > 0 || row.raw_attendance_count > 0)
+          .sort((a, b) => {
+            const aMissed = Math.max(0, Number(a.plan_count || 0) - Number(a.attendance_count || 0));
+            const bMissed = Math.max(0, Number(b.plan_count || 0) - Number(b.attendance_count || 0));
+
+            if (bMissed !== aMissed) return bMissed - aMissed;
+
+            return String(a.student_id || '').localeCompare(
+              String(b.student_id || ''),
+              'ko',
+              { numeric: true }
+            );
+          });
+
+        renderAttendanceTab();
+
+        els.kpiTotal.textContent = filteredStudents.length;
+        els.kpiSubmitted.textContent = submittedSet.size;
+        els.kpiUnsub.textContent = unsubmitted.length;
+        els.kpiPart.textContent = `${partMap.size} / ${(plans || []).length}`;
+        els.kpiComp.textContent =
+          (plans || []).length
+            ? Math.round((partMap.size / (plans || []).length) * 100) + '%'
+            : '0%';
+
+        const sortedUnsubmitted = [...unsubmitted].sort((a, b) =>
+          String(a.student_id || '').localeCompare(
+            String(b.student_id || ''),
+            'ko',
+            { numeric: true }
+          )
+        );
+
+        if (sortedUnsubmitted.length === 0) {
+          els.unsubList.innerHTML =
+            `<tr><td colspan="5" style="text-align:center;color:#6b7280;">미제출 학생이 없습니다.</td></tr>`;
+        } else {
+          els.unsubList.innerHTML = sortedUnsubmitted.map(s => `
+        <tr>
+          <td>${escapeHtml(s.class_name || '-')}</td>
+          <td>${escapeHtml(s.student_id)}</td>
+          <td>${escapeHtml(s.name)}</td>
+          <td><span class="badge-danger">미제출</span></td>
+          <td>
+            <button
+              class="btn"
+              style="height:32px;padding:0 12px;font-size:12px;"
+              data-plan-manual="${escapeHtml(s.student_id)}"
+            >
+              수동입력
+            </button>
+          </td>
+        </tr>
+      `).join('');
+        }
+
+        const partData = filteredStudents
+          .map(s => ({
+            ...s,
+            plan_cnt: planCountByStudent.get(String(s.student_id || '')) || 0,
+            part_cnt: partCountByStudent.get(String(s.student_id || '')) || 0
+          }))
+          .filter(s => s.plan_cnt > 0)
+          .sort((a, b) => (b.plan_cnt - b.part_cnt) - (a.plan_cnt - a.part_cnt));
+
+        if (partData.length === 0) {
+          els.partList.innerHTML =
+            `<div style="text-align:center;color:#6b7280;padding:20px 0;">조회된 계획 데이터가 없습니다.</div>`;
+        } else {
+          els.partList.innerHTML = partData.map(s => {
+            const missed = s.plan_cnt - s.part_cnt;
+            const pct = Math.round((s.part_cnt / s.plan_cnt) * 100);
+
+            return `
+          <div class="list-item" data-plan-student="${escapeHtml(s.student_id)}" style="cursor:pointer;">
+            <div class="item-header">
+              <div>
+                <div class="item-title">
+                  ${escapeHtml(s.name)}
+                  <span style="font-weight:normal;color:#6b7280;font-size:13px;">
+                    ${escapeHtml(s.student_id)}
+                  </span>
+                </div>
+                <div class="item-subtitle">
+                  ${escapeHtml(s.class_name || '-')} · 계획 ${s.plan_cnt} / 참여 ${s.part_cnt}
+                </div>
+              </div>
+              <div
+                class="badge-danger"
+                style="background:${missed > 0 ? '#fee2e2' : '#dcfce7'}; color:${missed > 0 ? 'var(--danger)' : 'var(--success)'}"
+              >
+                ${missed > 0 ? `미참여 ${missed}타임` : '완벽참여'}
+              </div>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>
+        `;
+          }).join('');
+        }
+
+        log('→ 렌더링 완료');
+
+        syncPlanTabFromDashboard({
+          rows: filteredStudents,
+          submittedSet,
+          allDays,
+          planCountByStudent
+        });
+      } catch (err) {
+        log(`조회 중 에러 발생: ${err.message}`);
+      }
+    }
+
+    // =========================
+    // Plans tab
+    // =========================
+    function syncPlanTabFromDashboard(ctx) {
+      const planCountByStudent = ctx.planCountByStudent || new Map();
+
+      currentAllDays = ctx.allDays || [];
+      const requiredCount = getRequiredPlanCount(currentAllDays.length);
+
+      planRows = (ctx.rows || []).map(s => {
+        const planCount = planCountByStudent.get(s.student_id) || 0;
+        const submissionstatus = ctx.submittedSet.has(s.student_id) ? 'submitted' : 'missing';
+
+        return {
+          ...s,
+          submissionstatus,
+          plan_count: planCount,
+          required_count: requiredCount,
+          is_required_missing: planCount < requiredCount
+        };
+      });
+
+      const tbody = document.getElementById('planStudentList');
+      const summaryCard = document.getElementById('planSummaryCard');
+      const slotCard = document.getElementById('planSlotCard');
+      if (!tbody) return;
+
+      updatePlanSortIndicators();
+
+      const filteredRows = planRows.filter(row => {
+        if (onlyUnsubmitted && row.submissionstatus !== 'missing') return false;
+        if (onlyRequiredMissing && !row.is_required_missing) return false;
+        return true;
+      });
+
+      const visibleRows = sortPlanRows(filteredRows);
+
+      if (!visibleRows.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">조건에 맞는 학생이 없습니다.</td></tr>';
+        if (summaryCard) summaryCard.innerHTML = '<h2>학생 계획 요약</h2><div class="empty">학생을 선택하세요.</div>';
+        if (slotCard) slotCard.innerHTML = '<h2>슬롯 확인</h2><div class="empty">학생을 선택하세요.</div>';
+        return;
+      }
+
+      const selectedStudentId = selectedPlanStudent?.student_id || null;
+      selectedPlanStudent = selectedStudentId
+        ? visibleRows.find(r => String(r.student_id) === String(selectedStudentId)) || null
+        : null;
+
+      tbody.innerHTML = visibleRows.map(row => {
+        const isSelected =
+          selectedPlanStudent &&
+          String(selectedPlanStudent.student_id) === String(row.student_id);
+
+        return `
+          <tr
+            data-student-id="${escapeHtml(row.student_id)}"
+            class="${isSelected ? 'selected' : ''}"
+          >
+            <td>${escapeHtml(row.class_name || '')}</td>
+            <td>${escapeHtml(row.student_id || '')}</td>
+            <td>${escapeHtml(row.name || '')}</td>
+            <td>${escapeHtml(row.study_room || '-')}</td>
+            <td>${escapeHtml(row.seat_number || '-')}</td>
+            <td>${row.plan_count}타임</td>
+            <td>
+              ${row.submissionstatus === 'submitted'
+            ? '<span class="badge-success">제출</span>'
+            : '<span class="badge-danger">미제출</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      bindPlanStudentRowEvents(planRows);
+
+      if (!selectedPlanStudent) {
+        if (summaryCard) summaryCard.innerHTML = '<h2>학생 계획 요약</h2><div class="empty">학생을 선택하세요.</div>';
+        if (slotCard) slotCard.innerHTML = '<h2>슬롯 확인</h2><div class="empty">학생을 선택하세요.</div>';
+        return;
+      }
+
+      renderPlanStudentSummary(selectedPlanStudent, currentAllDays);
+    }
+
+    function bindPlanStudentRowEvents(rows) {
+      const tbody = document.getElementById('planStudentList');
+      if (!tbody) return;
+
+      tbody.querySelectorAll('tr[data-student-id]').forEach(tr => {
+        tr.addEventListener('click', async () => {
+          const studentId = tr.dataset.studentId;
+          const student = rows.find(r => String(r.student_id) === String(studentId));
+          if (!student) return;
+
+          selectedPlanStudent = student;
+          resetPlanEditState();
+
+          tbody.querySelectorAll('tr[data-student-id]').forEach(row => {
+            row.classList.remove('selected');
+          });
+          tr.classList.add('selected');
+
+          await renderPlanStudentSummary(student, currentAllDays);
+        });
+      });
+    }
+
+    async function renderPlanStudentSummary(student, allDays = []) {
+      const supabase = getClient();
+      if (!supabase) return;
+
+      selectedPlanStudent = student;
+      currentAllDays = allDays || [];
+      resetPlanEditState();
+      currentPlanReasonText = '';
+
+      const batchId = els.batchSelect.value;
+      const summaryCard = document.getElementById('planSummaryCard');
+      const slotCard = document.getElementById('planSlotCard');
+
+      if (summaryCard) {
+        summaryCard.innerHTML = `
+          <h2>학생 계획 요약</h2>
+          <div><strong>${escapeHtml(student.name || '')}</strong></div>
+          <div class="muted">${escapeHtml(student.student_id || '')} / ${escapeHtml(student.class_name || '')}</div>
+          <div class="muted" style="margin-top:8px;">제출 상태: ${student.submissionstatus === 'submitted' ? '제출' : '미제출'}</div>
+        `;
+      }
+
+      try {
+        const { data: responseRows, error: respErr } = await supabase
+          .from('study_plan_responses')
+          .select('id, reason_text')
+          .eq('batch_id', batchId)
+          .eq('student_id', student.student_id)
+          .limit(1);
+
+        if (respErr) log(`study_plan_responses 조회 실패: ${respErr.message}`);
+
+        const response = responseRows && responseRows.length ? responseRows[0] : null;
+
+        let slotRows = [];
+        let reasonText = '';
+
+        if (response) {
+          reasonText = (response.reason_text || '').trim();
+          currentPlanReasonText = reasonText;
+          editedPlanReasonText = reasonText;
+
+          const { data: fetchedSlotRows, error: slotErr } = await supabase
+            .from('study_plan_response_slots')
+            .select('study_plan_day_id, slot_id, selected')
+            .eq('response_id', response.id)
+            .eq('selected', true);
+
+          if (slotErr) {
+            log(`study_plan_response_slots 조회 실패: ${slotErr.message}`);
+          } else {
+            slotRows = fetchedSlotRows || [];
+          }
+        } else {
+          currentPlanReasonText = '';
+          editedPlanReasonText = '';
+        }
+
+        if (slotCard) {
+          slotCard.innerHTML = `
+            <h2>슬롯 확인</h2>
+            ${renderSlotGrid(allDays, slotRows, reasonText)}
+            <div style="display:flex; justify-content:center; margin-top:16px;">
+              <button id="openManualEditBtn" class="btn">수동 입력 열기</button>
+            </div>
+          `;
+          bindPlanEditSlotClicks();
+          setEditPlanMode(false);
+        }
+      } catch (err) {
+        log(`상세 조회 에러: ${err.message}`);
+        currentPlanReasonText = '';
+        editedPlanReasonText = '';
+
+        if (slotCard) {
+          slotCard.innerHTML = `
+            <h2>슬롯 확인</h2>
+            <div class="empty">슬롯 조회 실패</div>
+            <div style="display:flex; justify-content:center; margin-top:16px;">
+              <button id="openManualEditBtn" class="btn">수동 입력 열기</button>
+            </div>
+          `;
+        }
+      }
+    }
+
+    function renderSlotGrid(allDays, rows, reasonText = '') {
+      const selectedMap = new Map();
+
+      (rows || []).forEach(r => {
+        const dayId = String(r.study_plan_day_id || '');
+        const slot = Number(r.slot_id);
+        if (!dayId || !slot) return;
+        if (!selectedMap.has(dayId)) selectedMap.set(dayId, new Set());
+        selectedMap.get(dayId).add(slot);
+      });
+
+      const safeReasonText = reasonText || '';
+
+      return `
+        <div class="slot-card">
+          <div class="slot-legend">
+            <span><i class="dot on"></i> 신청</span>
+            <span><i class="dot off"></i> 미신청</span>
+          </div>
+  
+          <div class="slot-grid" id="planSlotGridArea">
+            ${(allDays || []).map(day => {
+        const dayId = String(day.id);
+        const set = selectedMap.get(dayId) || new Set();
+
+        return `
+                <div class="slot-row">
+                  <div class="slot-date-wrap">
+                    <div class="slot-date">${escapeHtml(day.day_label || dayId)}</div>
+                  </div>
+                  <div class="slot-times">
+                    ${[1, 2, 3, 4, 5, 6, 7].map(n => {
+          const on = set.has(n);
+          const key = `${dayId}_${n}`;
+          return `
+                        <span
+                          class="${on ? 'on' : 'off'}"
+                          data-plan-key="${key}"
+                          data-original-on="${on ? '1' : '0'}"
+                        >${n}</span>
+                      `;
+        }).join('')}
+                  </div>
+                </div>
+              `;
+      }).join('')}
+          </div>
+  
+          ${safeReasonText ? `
+            <div class="slot-reason-line" id="slotReasonDisplay">
+              ⚠ 5T 미만 사유: ${escapeHtml(safeReasonText)}
+            </div>
+          ` : ''}
+  
+          <div class="slot-edit-area" style="display:none;">
+            <div class="slot-edit-section">
+              <label class="slot-edit-label">5T 미만 사유</label>
+              <textarea
+                id="editedPlanReasonText"
+                class="slot-edit-textarea"
+                placeholder="사유를 입력하세요."
+                rows="3"
+              >${escapeHtml(safeReasonText)}</textarea>
+            </div>
+  
+            <div class="slot-edit-hint">
+              칸을 클릭하면 신청/미신청을 전환할 수 있습니다.
+            </div>
+  
+            <div class="slot-actions">
+              <button type="button" class="btn btn-secondary" id="cancelEditPlanBtn">취소</button>
+              <button type="button" class="btn" id="saveEditPlanBtn">저장하기</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function initEditedPlanSlotsFromCurrent() {
+      editedPlanSlots = new Map();
+      document.querySelectorAll('#planSlotGridArea .slot-times span').forEach(span => {
+        const key = span.dataset.planKey;
+        if (!key) return;
+        editedPlanSlots.set(key, span.dataset.originalOn === '1');
+      });
+    }
+
+    function setEditPlanMode(on) {
+      editPlanMode = !!on;
+
+      const slotEditArea = document.querySelector('.slot-edit-area');
+      const openBtn = document.getElementById('openManualEditBtn');
+      const reasonInput = document.getElementById('editedPlanReasonText');
+      const reasonDisplay = document.getElementById('slotReasonDisplay');
+
+      if (editPlanMode) {
+        initEditedPlanSlotsFromCurrent();
+        if (!editedPlanReasonText) {
+          editedPlanReasonText = currentPlanReasonText || '';
+        }
+      }
+
+      if (slotEditArea) {
+        slotEditArea.style.display = editPlanMode ? 'block' : 'none';
+      }
+
+      if (openBtn) {
+        openBtn.textContent = editPlanMode ? '편집 종료' : '수동 입력 열기';
+      }
+
+      if (reasonDisplay) {
+        reasonDisplay.style.display = editPlanMode ? 'none' : 'block';
+      }
+
+      if (reasonInput) {
+        reasonInput.value = editPlanMode
+          ? (editedPlanReasonText || currentPlanReasonText || '')
+          : (currentPlanReasonText || '');
+      }
+
+      updatePlanSlotVisuals();
+    }
+
+    function updatePlanSlotVisuals() {
+      document.querySelectorAll('#planSlotGridArea .slot-times span').forEach(span => {
+        const key = span.dataset.planKey;
+        if (!key) return;
+
+        const selected = editedPlanSlots.has(key)
+          ? editedPlanSlots.get(key)
+          : span.dataset.originalOn === '1';
+
+        span.classList.toggle('on', !!selected);
+        span.classList.toggle('off', !selected);
+      });
+    }
+
+    function bindPlanEditSlotClicks() {
+      const gridArea = document.getElementById('planSlotGridArea');
+      if (!gridArea) return;
+
+      gridArea.querySelectorAll('.slot-times span').forEach(span => {
+        span.style.cursor = 'pointer';
+        span.addEventListener('click', () => {
+          if (!editPlanMode) return;
+
+          const key = span.dataset.planKey;
+          if (!key) return;
+
+          const originalOn = span.dataset.originalOn === '1';
+          const next = editedPlanSlots.has(key) ? !editedPlanSlots.get(key) : !originalOn;
+          editedPlanSlots.set(key, next);
+          updatePlanSlotVisuals();
+        });
+      });
+    }
+
+    async function saveEditPlan() {
+      const supabase = getClient();
+      if (!supabase || !selectedPlanStudent) return;
+
+      const batchId = els.batchSelect.value;
+      const studentId = selectedPlanStudent.student_id;
+      const reasonText = (document.getElementById('editedPlanReasonText')?.value || '').trim();
+
+      try {
+        const { data: responseUpsert, error: respErr } = await supabase
+          .from('study_plan_responses')
+          .upsert({
+            batch_id: batchId,
+            student_id: studentId,
+            class_name: selectedPlanStudent.class_name || '',
+            name: selectedPlanStudent.name || '',
+            email: '',
+            form_response_key: `manual_${batchId}_${studentId}`,
+            submitted_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            reason_text: reasonText,
+            raw_payload: { source: 'manual' }
+          }, { onConflict: 'batch_id,student_id' })
+          .select('id')
+          .single();
+
+        if (respErr) throw respErr;
+
+        const responseId = responseUpsert.id;
+
+        const daySlotPairs = [];
+        editedPlanSlots.forEach((selected, key) => {
+          if (!selected) return;
+
+          const [dayId, slotId] = key.split('_');
+          if (!dayId || !slotId) return;
+
+          daySlotPairs.push({
+            response_id: responseId,
+            study_plan_day_id: Number(dayId),
+            slot_id: Number(slotId),
+            selected: true
+          });
+        });
+
+        const { error: delErr } = await supabase
+          .from('study_plan_response_slots')
+          .delete()
+          .eq('response_id', responseId);
+
+        if (delErr) throw delErr;
+
+        if (daySlotPairs.length > 0) {
+          const { error: insErr } = await supabase
+            .from('study_plan_response_slots')
+            .insert(daySlotPairs);
+
+          if (insErr) throw insErr;
+        }
+
+        currentPlanReasonText = reasonText;
+        resetPlanEditState();
+
+        await executeQuery();
+      } catch (err) {
+        log(`수동 저장 실패: ${err.message}`);
+        alert(`저장 실패: ${err.message}`);
+      }
+    }
+
+    function exportPlansTableToExcel() {
+      if (!window.XLSX) {
+        alert('엑셀 라이브러리를 불러오지 못했습니다.');
+        return;
+      }
+
+      const filteredRows = planRows.filter(row => {
+        if (onlyUnsubmitted && row.submissionstatus !== 'missing') return false;
+        if (onlyRequiredMissing && !row.is_required_missing) return false;
+        return true;
+      });
+
+      const visibleRows = sortPlanRows(filteredRows);
+
+      if (!visibleRows.length) {
+        alert('저장할 데이터가 없습니다.');
+        return;
+      }
+
+      const exportRows = visibleRows.map((row, index) => ({
+        'No': index + 1,
+        '반': row.class_name || '',
+        '학번': row.student_id || '',
+        '이름': row.name || '',
+        '퀀텀': row.study_room || '',
+        '좌석': row.seat_number || '',
+        '신청수': Number(row.plan_count || 0),
+        '제출상태': row.submissionstatus === 'submitted' ? '제출' : '미제출',
+        '기준신청수': Number(row.required_count || 0),
+        '기준미달': row.is_required_missing ? 'Y' : ''
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+
+      const widths = [
+        { wch: 6 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 12 },
+        { wch: 10 }
+      ];
+      worksheet['!cols'] = widths;
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, '계획관리');
+
+      const batchText =
+        els.batchSelect?.selectedOptions?.[0]?.textContent?.trim() || 'batch';
+      const classText =
+        els.classSelect?.selectedOptions?.[0]?.textContent?.trim() || '전체';
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const d = String(today.getDate()).padStart(2, '0');
+
+      const safeBatch = batchText.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+      const safeClass = classText.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+
+      XLSX.writeFile(
+        workbook,
+        `계획관리_${safeBatch}_${safeClass}_${y}${m}${d}.xlsx`
+      );
+    }
+
+    // =========================
+    // Attendance tab
+    // =========================
+    function buildAttendancePlanSetForStudent(studentId) {
+      return new Set(
+        (currentAttendancePlanRows || [])
+          .filter(row => String(row.student_id) === String(studentId))
+          .map(row => `${row.study_plan_day_id}_${row.slot_id}`)
+      );
+    }
+
+    function buildAttendanceCheckMapForStudent(studentId) {
+      const map = new Map();
+
+      (currentAttendanceCheckRows || [])
+        .filter(row => String(row.student_id) === String(studentId))
+        .forEach(row => {
+          const key = `${row.study_plan_day_id}_${row.slot_id}_${row.check_round}`;
+          map.set(key, row);
+        });
+
+      return map;
+    }
+
+    function renderAttendanceDaySlotsCell(day, studentId) {
+      const planSet = buildAttendancePlanSetForStudent(studentId);
+      const checkMap = buildAttendanceCheckMapForStudent(studentId);
+      const dayId = String(day.id || '');
+      const circledMap = {
+        1: '①',
+        2: '②',
+        3: '③',
+        4: '④',
+        5: '⑤',
+        6: '⑥',
+        7: '⑦'
+      };
+
+      return `
+    <div class="attendance-day-wrap">
+      <div class="attendance-day-label-mobile">${escapeHtml(day.day_label || '')}</div>
+      <div class="attendance-inline-slots attendance-inline-slots--mixed">
+        ${[1, 2, 3, 4, 5, 6, 7].map(slotNo => {
+        const planned = planSet.has(`${dayId}_${slotNo}`);
+
+        if (slotNo === 5) {
+          const att = checkMap.get(`${dayId}_5_1`) || null;
+          const status = String(att?.status || '').trim().toLowerCase();
+          const mismatch = !planned && !!att;
+
+          const classes = [
+            'attendance-single-chip',
+            'attendance-chip-core',
+            planned ? 'is-planned' : 'is-unplanned',
+            status ? `status-${status}` : 'status-none',
+            mismatch ? 'is-mismatch' : ''
+          ].filter(Boolean).join(' ');
+
+          const title = [
+            `${day.day_label || ''}`,
+            '5T',
+            '1차',
+            getAttendanceStatusLabel(status),
+            mismatch ? '추가자습' : ''
+          ].filter(Boolean).join(' / ');
+
+          return `
+              <div class="attendance-slot attendance-slot--single">
+                <span class="${classes}" title="${escapeHtml(title)}">1</span>
+                <em class="attendance-slot-no">${circledMap[5]}</em>
+              </div>
+            `;
+        }
+
+        const leftAtt = checkMap.get(`${dayId}_${slotNo}_1`) || null;
+        const rightAtt = checkMap.get(`${dayId}_${slotNo}_2`) || null;
+
+        const leftStatus = String(leftAtt?.status || '').trim().toLowerCase();
+        const rightStatus = String(rightAtt?.status || '').trim().toLowerCase();
+
+        const leftMismatch = !planned && !!leftAtt;
+        const rightMismatch = !planned && !!rightAtt;
+
+        const leftClasses = [
+          'attendance-chip-core',
+          'mini-half',
+          planned ? 'is-planned' : 'is-unplanned',
+          leftStatus ? `status-${leftStatus}` : 'status-none',
+          leftMismatch ? 'is-mismatch' : ''
+        ].filter(Boolean).join(' ');
+
+        const rightClasses = [
+          'attendance-chip-core',
+          'mini-half',
+          planned ? 'is-planned' : 'is-unplanned',
+          rightStatus ? `status-${rightStatus}` : 'status-none',
+          rightMismatch ? 'is-mismatch' : ''
+        ].filter(Boolean).join(' ');
+
+        const title = [
+          `${day.day_label || ''}`,
+          `${slotNo}T`,
+          `1차:${getAttendanceStatusLabel(leftStatus)}`,
+          `2차:${getAttendanceStatusLabel(rightStatus)}`,
+          (leftMismatch || rightMismatch) ? '추가자습' : ''
+        ].filter(Boolean).join(' / ');
+
+        return `
+            <div class="attendance-slot attendance-slot--dual" title="${escapeHtml(title)}">
+              <span class="${leftClasses}">1</span>
+              <span class="${rightClasses}">2</span>
+              <em class="attendance-slot-no">${circledMap[slotNo]}</em>
+            </div>
+          `;
+      }).join('')}
+      </div>
+    </div>
+  `;
+    }
+
+    function renderAttendanceTab() {
+      const thead = document.getElementById('attendanceTableHead');
+      const tbody = document.getElementById('attendanceStudentList');
+      const summary = document.getElementById('attendanceSummaryText');
+
+      if (!thead || !tbody) return;
+
+      const dayHeaders = (currentAllDays || []).map(day =>
+        `<th class="attendance-day-col">${escapeHtml(day.day_label || '')}</th>`
+      ).join('');
+
+      thead.innerHTML = `
+    <tr>
+      <th data-attendance-sort="class_name">반</th>
+      <th data-attendance-sort="student_id">학번</th>
+      <th data-attendance-sort="name">이름</th>
+      <th data-attendance-sort="plan_count">신청</th>
+      <th data-attendance-sort="attendance_count">참여</th>
+      <th data-attendance-sort="missed_count">미참여</th>
+      ${dayHeaders}
+      <th>사유</th>
+    </tr>
+  `;
+
+      updateAttendanceSortIndicators();
+
+      if (!attendanceRows.length) {
+        tbody.innerHTML = `
+      <tr>
+        <td colspan="${7 + (currentAllDays || []).length}" class="empty">
+          조회된 출결 데이터가 없습니다.
+        </td>
+      </tr>
+    `;
+
+        if (summary) {
+          summary.innerHTML = '조회 결과가 없습니다.';
+        }
+        return;
+      }
+
+      const visibleRows = sortAttendanceRows(attendanceRows);
+
+      const totalPlan = attendanceRows.reduce((sum, row) => sum + Number(row.plan_count || 0), 0);
+      const totalAttend = attendanceRows.reduce((sum, row) => sum + Number(row.attendance_count || 0), 0);
+
+      if (summary) {
+        summary.innerHTML = `
+      학생 ${attendanceRows.length}명 · 참여 ${totalAttend}/${totalPlan}
+      <div class="attendance-legend-inline">
+        <span><i class="dot planned"></i>신청</span>
+        <span><i class="dot present"></i>출석</span>
+        <span><i class="dot late"></i>지각</span>
+        <span><i class="dot unknown"></i>미확인</span>
+        <span><i class="dot mismatch"></i>추가자습</span>
+      </div>
+    `;
+      }
+
+      tbody.innerHTML = visibleRows.map(row => {
+        const missed = Number(row.plan_count || 0) - Number(row.attendance_count || 0);
+        const isSelected =
+          selectedAttendanceStudent &&
+          String(selectedAttendanceStudent.student_id) === String(row.student_id);
+
+        return `
+      <tr
+        data-attendance-student-id="${escapeHtml(row.student_id)}"
+        class="${isSelected ? 'selected' : ''}"
+      >
+        <td>${escapeHtml(row.class_name || '')}</td>
+        <td>${escapeHtml(row.student_id || '')}</td>
+        <td>
+          <div class="attendance-row-name">
+            <strong>${escapeHtml(row.name || '')}</strong>
+          </div>
+        </td>
+        <td>${row.plan_count}</td>
+        <td>${row.attendance_count}</td>
+        <td>${missed}</td>
+        ${(currentAllDays || []).map(day => `
+          <td class="attendance-day-cell">
+            ${renderAttendanceDaySlotsCell(day, row.student_id)}
+          </td>
+        `).join('')}
+        <td class="muted">${escapeHtml(row.reason_text || '-')}</td>
+      </tr>
+    `;
+      }).join('');
+
+      bindAttendanceStudentRowEvents();
+    }
+
+    function bindAttendanceStudentRowEvents() {
+      const tbody = document.getElementById('attendanceStudentList');
+      if (!tbody) return;
+
+      tbody.querySelectorAll('tr[data-attendance-student-id]').forEach(tr => {
+        tr.addEventListener('click', () => {
+          const studentId = tr.dataset.attendanceStudentId;
+
+          selectedAttendanceStudent =
+            attendanceRows.find(r => String(r.student_id) === String(studentId)) || null;
+
+          tbody.querySelectorAll('tr[data-attendance-student-id]').forEach(row => {
+            row.classList.remove('selected');
+          });
+
+          tr.classList.add('selected');
+        });
+      });
+    }
+
+    function exportAttendanceTableToExcel() {
+      if (!window.XLSX) {
+        alert('엑셀 라이브러리를 불러오지 못했습니다.');
+        return;
+      }
+
+      const visibleRows = sortAttendanceRows(attendanceRows || []);
+
+      if (!visibleRows.length) {
+        alert('저장할 출결 데이터가 없습니다.');
+        return;
+      }
+
+      const exportRows = visibleRows.map(row => {
+        const exportRow = {
+          '반': row.class_name || '',
+          '학번': row.student_id || '',
+          '이름': row.name || ''
+        };
+
+        (currentAllDays || []).forEach(day => {
+          exportRow[day.day_label || '날짜'] = getPlannedSlotTextByDay(row.student_id, day.id);
+        });
+
+        exportRow['5T미만 사유'] = row.reason_text || '-';
+
+        return exportRow;
+      });
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+
+      const cols = [
+        { wch: 8 },
+        { wch: 10 },
+        { wch: 12 },
+        ...(currentAllDays || []).map(() => ({ wch: 14 })),
+        { wch: 28 }
+      ];
+      worksheet['!cols'] = cols;
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, '출결관리');
+
+      const batchText =
+        els.batchSelect?.selectedOptions?.[0]?.textContent?.trim() || 'batch';
+      const classText =
+        els.classSelect?.selectedOptions?.[0]?.textContent?.trim() || '전체';
+
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+
+      const safeBatch = batchText.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+      const safeClass = classText.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+
+      XLSX.writeFile(
+        workbook,
+        `출결관리_${safeBatch}_${safeClass}_${y}${m}${d}.xlsx`
+      );
+    }
+
+    // =========================
+    // Exceptions tab
+    // =========================
+    function parseExceptionPayload(rawPayload) {
+      const payload = safeJsonParse(rawPayload);
+
+      if (!payload || !payload.answers || typeof payload.answers !== 'object') {
+        return {
+          parsedslots: [],
+          editresponseurl: '',
+          payloadreasontext: '',
+          payloadclassname: '',
+          payloadname: '',
+          payloadstudentid: '',
+          payloadsubmittedat: ''
+        };
+      }
+
+      const answers = payload.answers;
+      const parsedslots = [];
+      let payloadreasontext = '';
+
+      Object.entries(answers).forEach(([question, answerValue]) => {
+        const questionText = String(question || '').trim();
+        const values = Array.isArray(answerValue) ? answerValue : [answerValue];
+
+        if (!questionText) return;
+
+        if (questionText.includes('미실시 사유') || questionText.includes('5타임 미만')) {
+          payloadreasontext = values
+            .map(v => String(v || '').trim())
+            .filter(Boolean)
+            .join(', ');
+          return;
+        }
+
+        const dayMatch = questionText.match(/\d{1,2}\/\d{1,2}/);
+        if (!dayMatch) return;
+
+        const dayLabel = dayMatch[0];
+        const slotNos = values.map(v => circledToSlotNo(v)).filter(Boolean);
+
+        if (slotNos.length) {
+          parsedslots.push({ dayLabel, slotNos });
+        }
+      });
+
+      return {
+        parsedslots,
+        editresponseurl: payload.editUrl || '',
+        payloadreasontext,
+        payloadclassname: String(answers['반'] || '').trim(),
+        payloadname: String(answers['이름'] || '').trim(),
+        payloadstudentid: String(
+          answers['학번(4자리)-학번을 잘 확인 후 적어주세요.'] ||
+          answers['학번'] ||
+          ''
+        ).trim(),
+        payloadsubmittedat: payload.submittedAt || ''
+      };
+    }
+
+    function openExceptionEditMode(row) {
+      if (!row) return;
+
+      editExceptionMode = true;
+      currentExceptionReasonText = String(row.reasontext || '');
+
+      renderExceptionDetail(row);
+      initEditedExceptionSlotsFromCurrent();
+      updateExceptionSlotVisuals();
+    }
+
+    function closeExceptionEditMode() {
+      resetExceptionEditState();
+      renderExceptionDetail(selectedExceptionRow);
+    }
+
+    function renderExceptionCandidateBox(title, student, tone = 'neutral') {
+      if (!student) {
+        return `
+          <div class="exception-candidate-box empty-tone">
+            <div class="exception-candidate-title">${escapeHtml(title)}</div>
+            <div class="exception-candidate-empty">후보 없음</div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="exception-candidate-box ${tone}">
+          <div class="exception-candidate-title">${escapeHtml(title)}</div>
+          <div class="exception-candidate-main">
+            <span class="candidate-class">${escapeHtml(student.classname || '-')}</span>
+            <span class="candidate-studentid">${escapeHtml(student.studentid || '-')}</span>
+            <span class="candidate-name">${escapeHtml(student.name || '-')}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderExceptionSlotGrid(allDays, parsedslots, reasonText = '') {
+      const selectedMap = new Map();
+
+      (parsedslots || []).forEach(item => {
+        const matchedDay = (allDays || []).find(day => {
+          const dayLabel = day?.day_label || '';
+          return normalizeDayLabel(dayLabel) === normalizeDayLabel(item.dayLabel);
+        });
+
+        if (!matchedDay) return;
+
+        const dayId = String(matchedDay.id);
+        if (!selectedMap.has(dayId)) {
+          selectedMap.set(dayId, new Set());
+        }
+
+        (item.slotNos || []).forEach(slotNo => {
+          const slot = Number(slotNo);
+          if (!slot) return;
+          selectedMap.get(dayId).add(slot);
+        });
+      });
+
+      const safeReasonText = reasonText || '';
+
+      return `
+        <div class="slot-card">
+          <div class="slot-legend">
+            <span><i class="dot on"></i> 신청</span>
+            <span><i class="dot off"></i> 미신청</span>
+          </div>
+  
+          <div class="slot-grid" id="exceptionSlotGridArea">
+            ${(allDays || []).map(day => {
+        const dayId = String(day.id);
+        const set = selectedMap.get(dayId) || new Set();
+
+        return `
+                <div class="slot-row">
+                  <div class="slot-date-wrap">
+                    <div class="slot-date">${escapeHtml(day.day_label || dayId)}</div>
+                  </div>
+                  <div class="slot-times">
+                    ${[1, 2, 3, 4, 5, 6, 7].map(n => {
+          const on = set.has(n);
+          const key = `${dayId}_${n}`;
+          return `
+                        <span
+                          class="${on ? 'on' : 'off'}"
+                          data-exception-slot-key="${key}"
+                          data-original-on="${on ? '1' : '0'}"
+                        >${n}</span>
+                      `;
+        }).join('')}
+                  </div>
+                </div>
+              `;
+      }).join('')}
+          </div>
+  
+          ${safeReasonText ? `
+            <div class="slot-reason-line">
+              5T 미만 사유: ${escapeHtml(safeReasonText)}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function initEditedExceptionSlotsFromCurrent() {
+      editedExceptionSlots = new Map();
+
+      document.querySelectorAll('#exceptionSlotGridArea .slot-times span').forEach(span => {
+        const key = span.dataset.exceptionSlotKey;
+        if (!key) return;
+        editedExceptionSlots.set(key, span.dataset.originalOn === '1');
+      });
+    }
+
+    function updateExceptionSlotVisuals() {
+      document.querySelectorAll('#exceptionSlotGridArea .slot-times span').forEach(span => {
+        const key = span.dataset.exceptionSlotKey;
+        if (!key) return;
+
+        const selected = editedExceptionSlots.has(key)
+          ? editedExceptionSlots.get(key)
+          : span.dataset.originalOn === '1';
+
+        span.classList.toggle('on', !!selected);
+        span.classList.toggle('off', !selected);
+      });
+    }
+
+    function bindExceptionSlotClicks() {
+      const gridArea = document.getElementById('exceptionSlotGridArea');
+      if (!gridArea) return;
+
+      gridArea.querySelectorAll('.slot-times span').forEach(span => {
+        span.style.cursor = editExceptionMode ? 'pointer' : 'default';
+
+        span.onclick = () => {
+          if (!editExceptionMode) return;
+
+          const key = span.dataset.exceptionSlotKey;
+          if (!key) return;
+
+          const originalOn = span.dataset.originalOn === '1';
+          const next = editedExceptionSlots.has(key)
+            ? !editedExceptionSlots.get(key)
+            : !originalOn;
+
+          editedExceptionSlots.set(key, next);
+          updateExceptionSlotVisuals();
+        };
+      });
+    }
+
+    async function saveExceptionAsResponse() {
+      console.group('[saveExceptionAsResponse] start');
+
+      const supabase = getClient();
+      if (!supabase || !selectedExceptionRow) {
+        console.warn('[saveExceptionAsResponse] supabase 또는 selectedExceptionRow 없음', {
+          hasSupabase: !!supabase,
+          selectedExceptionRow
+        });
+        log('saveExceptionAsResponse 중단: supabase 또는 선택된 예외 row 없음');
+        console.groupEnd();
+        return;
+      }
+
+      const editedStudentId = document.getElementById('editedExceptionStudentId')?.value.trim() || '';
+      const editedName = document.getElementById('editedExceptionName')?.value.trim() || '';
+      const editedClassName = document.getElementById('editedExceptionClassName')?.value.trim() || '';
+
+      if (!editedStudentId || !editedName) {
+        alert('학번과 이름을 모두 입력하세요.');
+        console.groupEnd();
+        return;
+      }
+
+      const normalizedEditedName = normalizeText(editedName);
+
+      const matchedById = selectedExceptionRow.matchbystudentid || null;
+      const matchedByName = selectedExceptionRow.matchbyname || null;
+
+      const exactMatchedStudent =
+        matchedById &&
+          String(matchedById.studentid || '') === editedStudentId &&
+          normalizeText(matchedById.name || '') === normalizedEditedName
+          ? matchedById
+          : matchedByName &&
+            String(matchedByName.studentid || '') === editedStudentId &&
+            normalizeText(matchedByName.name || '') === normalizedEditedName
+            ? matchedByName
+            : null;
+
+      console.log('[saveExceptionAsResponse] exactMatchedStudent', exactMatchedStudent);
+
+      if (!exactMatchedStudent) {
+        alert('학생 정보가 정확히 매칭되지 않아 저장할 수 없습니다. 학번+이름이 모두 일치해야 합니다.');
+        console.groupEnd();
+        return;
+      }
+
+      const finalClassName =
+        editedClassName ||
+        exactMatchedStudent.classname ||
+        selectedExceptionRow.classname ||
+        '';
+
+      const finalEmail =
+        exactMatchedStudent.email ||
+        selectedExceptionRow.email ||
+        null;
+
+      const reasonInput = document.getElementById('editedExceptionReasonText');
+      const reasonText = reasonInput
+        ? reasonInput.value.trim()
+        : (currentExceptionReasonText || selectedExceptionRow.reasontext || '');
+
+      try {
+        const { data: existingResponse, error: existingErr } = await supabase
+          .from('study_plan_responses')
+          .select('id, submitted_at')
+          .eq('batch_id', selectedExceptionRow.batchid)
+          .eq('student_id', editedStudentId)
+          .maybeSingle();
+
+        console.log('[saveExceptionAsResponse] existingResponse', {
+          existingResponse,
+          existingErr
+        });
+
+        if (existingErr) throw existingErr;
+
+        if (existingResponse) {
+          const shouldOverwrite = window.confirm(
+            '기존 기록이 있습니다. 기존 기록을 덮어쓰고 반영할까요?'
+          );
+
+          if (!shouldOverwrite) {
+            log('saveExceptionAsResponse: 기존 기록 덮어쓰기 취소');
+            console.groupEnd();
+            return;
+          }
+        }
+
+        const upsertPayload = {
+          batch_id: selectedExceptionRow.batchid,
+          student_id: editedStudentId,
+          class_name: finalClassName,
+          name: editedName,
+          email: finalEmail,
+          form_response_key: selectedExceptionRow.formresponsekey || `manual_${selectedExceptionRow.batchid}_${editedStudentId}`,
+          submitted_at: selectedExceptionRow.submittedat || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          reason_text: reasonText,
+          raw_payload: selectedExceptionRow.rawpayload || { source: 'exception-manual-save' }
+        };
+
+        console.log('[saveExceptionAsResponse] upsertPayload', upsertPayload);
+
+        const { data: responseUpsert, error: respErr } = await supabase
+          .from('study_plan_responses')
+          .upsert(upsertPayload, {
+            onConflict: 'batch_id,student_id'
+          })
+          .select('id')
+          .single();
+
+        console.log('[saveExceptionAsResponse] response upsert result', {
+          responseUpsert,
+          respErr
+        });
+
+        if (respErr) throw respErr;
+
+        const responseId = responseUpsert.id;
+
+        const { error: delSlotErr } = await supabase
+          .from('study_plan_response_slots')
+          .delete()
+          .eq('response_id', responseId);
+
+        console.log('[saveExceptionAsResponse] delete old slots result', {
+          responseId,
+          delSlotErr
+        });
+
+        if (delSlotErr) throw delSlotErr;
+
+        const slotInsertRows = [];
+        editedExceptionSlots.forEach((selected, key) => {
+          if (!selected) return;
+
+          const [dayId, slotId] = String(key).split('_');
+          if (!dayId || !slotId) return;
+
+          slotInsertRows.push({
+            response_id: responseId,
+            study_plan_day_id: Number(dayId),
+            slot_id: Number(slotId),
+            selected: true
+          });
+        });
+
+        console.log('[saveExceptionAsResponse] slotInsertRows', slotInsertRows);
+
+        if (slotInsertRows.length > 0) {
+          const { error: insErr } = await supabase
+            .from('study_plan_response_slots')
+            .insert(slotInsertRows);
+
+          console.log('[saveExceptionAsResponse] insert slots result', {
+            insErr,
+            slotInsertCount: slotInsertRows.length
+          });
+
+          if (insErr) throw insErr;
+        }
+
+        const targetId = selectedExceptionRow.id;
+
+        const { data: beforeDeleteRow, error: beforeDeleteErr } = await supabase
+          .from('study_plan_failed_responses')
+          .select('id, batch_id, student_id, name')
+          .eq('id', targetId)
+          .maybeSingle();
+
+        console.log('[saveExceptionAsResponse] before delete row', {
+          targetId,
+          beforeDeleteRow,
+          beforeDeleteErr
+        });
+
+        const { data: deletedRows, error: failedDeleteErr } = await supabase
+          .from('study_plan_failed_responses')
+          .delete()
+          .eq('id', targetId)
+          .select('id');
+
+        console.log('[saveExceptionAsResponse] delete result detail', {
+          targetId,
+          deletedRows,
+          failedDeleteErr
+        });
+
+        if (failedDeleteErr) throw failedDeleteErr;
+
+        if (!deletedRows || deletedRows.length === 0) {
+          throw new Error('study_plan_failed_responses 삭제가 반영되지 않았습니다. DELETE 정책 또는 RLS 조건을 확인하세요.');
+        }
+
+        const { data: afterDeleteRow, error: afterDeleteErr } = await supabase
+          .from('study_plan_failed_responses')
+          .select('id, batch_id, student_id, name')
+          .eq('id', targetId)
+          .maybeSingle();
+
+        console.log('[saveExceptionAsResponse] after delete row', {
+          targetId,
+          afterDeleteRow,
+          afterDeleteErr
+        });
+
+        resetExceptionEditState();
+        selectedExceptionRow = null;
+
+        alert('정상 응답으로 반영했고, 예외처리함에서 삭제했습니다.');
+
+        await loadExceptionRows();
+        console.log('[saveExceptionAsResponse] after loadExceptionRows', {
+          deletedExceptionRowId: targetId,
+          remainingIds: (exceptionRows || []).map(row => row.id),
+          stillExists: (exceptionRows || []).some(row => String(row.id) === String(targetId))
+        });
+
+        await executeQuery();
+        console.log('[saveExceptionAsResponse] after executeQuery complete');
+
+        log(`saveExceptionAsResponse 완료: failed_response id=${targetId}`);
+      } catch (err) {
+        console.error('[saveExceptionAsResponse] error', err);
+        log(`saveExceptionAsResponse 오류: ${err.message}`);
+        alert(err.message || '저장 중 오류가 발생했습니다.');
+      } finally {
+        console.groupEnd();
+      }
+    }
+
+    function renderExceptionTab() {
+      const tbody = document.getElementById('exceptionList');
+      const detailCard = document.getElementById('exceptionDetailCard');
+      const actionCard = document.getElementById('exceptionActionCard');
+
+      if (!tbody) return;
+
+      if (!exceptionRows.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="empty">조회된 예외 응답이 없습니다.</td>
+          </tr>
+        `;
+
+        if (detailCard) {
+          detailCard.innerHTML = `<h2>예외 상세</h2><div class="empty">선택된 항목이 없습니다.</div>`;
+        }
+
+        if (actionCard) {
+          actionCard.innerHTML = `<h2>처리</h2><div class="empty">선택된 항목이 없습니다.</div>`;
+        }
+
+        return;
+      }
+
+      const selectedId = selectedExceptionRow?.id ?? null;
+      const matchedSelected = selectedId
+        ? exceptionRows.find(row => String(row.id) === String(selectedId))
+        : null;
+
+      selectedExceptionRow = matchedSelected || null;
+
+      tbody.innerHTML = exceptionRows.map(row => {
+        const isSelected = selectedExceptionRow && String(selectedExceptionRow.id) === String(row.id);
+        const statusBadge = row.hasresponse
+          ? `<span class="badge-success">반영됨</span>`
+          : `<span class="badge-neutral">미반영</span>`;
+
+        return `
+          <tr data-exception-id="${escapeHtml(row.id)}" class="${isSelected ? 'selected' : ''}">
+            <td><span class="badge-warning">${escapeHtml(row.classname || '-')}</span></td>
+            <td>${escapeHtml(row.studentid || '-')}</td>
+            <td>${escapeHtml(row.name || '-')}</td>
+            <td title="${escapeHtml(row.errorreason || '-')}">${escapeHtml(row.errorreason || '-')}</td>
+            <td>${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
+
+      if (!selectedExceptionRow) {
+        selectedExceptionRow = exceptionRows[0];
+      }
+
+      renderExceptionDetail(selectedExceptionRow);
+    }
+
+    function renderExceptionDetail(row) {
+      const detailCard = document.getElementById('exceptionDetailCard');
+      const actionCard = document.getElementById('exceptionActionCard');
+
+      if (!row) {
+        if (detailCard) {
+          detailCard.innerHTML = `<h2>예외 상세</h2><div class="empty">선택된 항목이 없습니다.</div>`;
+        }
+        if (actionCard) {
+          actionCard.innerHTML = `<h2>처리</h2><div class="empty">선택된 항목이 없습니다.</div>`;
+        }
+        return;
+      }
+
+      const slotGridHtml = renderExceptionSlotGrid(
+        currentAllDays || [],
+        row.parsedslots || [],
+        row.reasontext || ''
+      );
+
+      if (detailCard) {
+        detailCard.innerHTML = `
+          <h2>예외 상세</h2>
+  
+          <div class="detail-grid">
+            <div class="label">입력 반</div>
+            <div class="value">
+              ${editExceptionMode
+            ? `<input id="editedExceptionClassName" class="filter-control exception-edit-input" value="${escapeHtml(row.classname || '')}">`
+            : escapeHtml(row.classname || '-')
+          }
+            </div>
+  
+            <div class="label">입력 학번</div>
+            <div class="value">
+              ${editExceptionMode
+            ? `<input id="editedExceptionStudentId" class="filter-control exception-edit-input" value="${escapeHtml(row.studentid || '')}">`
+            : escapeHtml(row.studentid || '-')
+          }
+            </div>
+  
+            <div class="label">입력 이름</div>
+            <div class="value">
+              ${editExceptionMode
+            ? `<input id="editedExceptionName" class="filter-control exception-edit-input" value="${escapeHtml(row.name || '')}">`
+            : escapeHtml(row.name || '-')
+          }
+            </div>
+  
+            <div class="label">제출 시각</div>
+            <div class="value">${escapeHtml(row.submittedat || row.createdat || '-')}</div>
+          </div>
+  
+          <div class="exception-candidate-stack">
+            ${renderExceptionCandidateBox('이름 기준 후보', row.matchbyname, 'name-tone')}
+            ${renderExceptionCandidateBox('학번 기준 후보', row.matchbystudentid, 'id-tone')}
+          </div>
+  
+          <div class="exception-slot-section">
+            <div class="exception-slot-title">슬롯 확인</div>
+            ${slotGridHtml}
+          </div>
+        `;
+      }
+
+      if (actionCard) {
+        actionCard.innerHTML = `
+          <h2>처리</h2>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="muted">
+              ${row.hasresponse
+            ? '정상 응답 테이블에 이미 반영된 학생입니다.'
+            : '정상 응답 테이블에 아직 반영되지 않았습니다.'
+          }
+            </div>
+  
+            ${editExceptionMode
+            ? `
+                <div class="exception-action-row">
+                  <button type="button" class="btn btn-secondary" id="cancelExceptionEditBtn">취소</button>
+                  <button type="button" class="btn" id="saveExceptionAsResponseBtn">수정 후 응답 기록</button>
+                </div>
+              `
+            : `
+                <button type="button" class="btn" id="openExceptionEditBtn">수정</button>
+              `
+          }
+          </div>
+        `;
+      }
+
+      bindExceptionSlotClicks();
+
+      if (editExceptionMode) {
+        initEditedExceptionSlotsFromCurrent();
+        updateExceptionSlotVisuals();
+      }
+    }
+
+    async function loadExceptionRows() {
+      const supabase = getClient();
+      console.group('[loadExceptionRows] start');
+
+      if (!supabase) {
+        console.error('[loadExceptionRows] supabase client 없음');
+        log('loadExceptionRows: supabase client 없음');
+        console.groupEnd();
+        return;
+      }
+
+      const batchId = document.getElementById('batchSelect')?.value || '';
+      const className = document.getElementById('classSelect')?.value || '';
+      const term = document.getElementById('studentSearch')?.value.trim().toLowerCase() || '';
+
+      console.log('[loadExceptionRows] filters', { batchId, className, term });
+      log(`예외처리함 조회 시작 batch=${batchId || '-'} class=${className || '-'} term=${term || '-'}`);
+
+      if (!batchId) {
+        exceptionRows = [];
+        selectedExceptionRow = null;
+        renderExceptionTab();
+        console.groupEnd();
+        return;
+      }
+
+      try {
+        const { data: failedRows, error: failedErr } = await supabase
+          .from('study_plan_failed_responses')
+          .select(`
+            id,
+            batchid:batch_id,
+            studentid:student_id,
+            classname:class_name,
+            name,
+            email,
+            formresponsekey:form_response_key,
+            submittedat:submitted_at,
+            updatedat:updated_at,
+            reasontext:reason_text,
+            validationstatus:validation_status,
+            errorreason:validation_error,
+            resolvedat:resolved_at,
+            rawpayload:raw_payload
+          `)
+          .eq('batch_id', batchId)
+          .order('submitted_at', { ascending: false });
+
+        if (failedErr) {
+          console.error('[loadExceptionRows] failed query error', failedErr);
+          log(`study_plan_failed_responses 오류: ${failedErr.message}`);
+          exceptionRows = [];
+          selectedExceptionRow = null;
+          renderExceptionTab();
+          console.groupEnd();
+          return;
+        }
+
+        let filteredRows = failedRows || [];
+
+        if (className) {
+          const { data: classStudents, error: classErr } = await supabase
+            .from('students')
+            .select(`
+              studentid:student_id,
+              classname:class_name
+            `)
+            .eq('class_name', className);
+
+          if (classErr) {
+            console.error('[loadExceptionRows] students(class filter) error', classErr);
+            log(`students(class filter) 오류: ${classErr.message}`);
+            console.groupEnd();
+            return;
+          }
+
+          const classStudentIds = new Set((classStudents || []).map(s => String(s.studentid)));
+          filteredRows = filteredRows.filter(row => classStudentIds.has(String(row.studentid)));
+        }
+
+        if (term) {
+          filteredRows = filteredRows.filter(row => {
+            const hay =
+              `${row.studentid || ''} ${row.classname || ''} ${row.name || ''} ${row.errorreason || ''} ${row.reasontext || ''}`.toLowerCase();
+            return hay.includes(term);
+          });
+        }
+
+        const failedStudentIds = [
+          ...new Set(
+            filteredRows
+              .map(row => String(row.studentid || ''))
+              .filter(Boolean)
+          )
+        ];
+
+        let responseSet = new Set();
+
+        if (failedStudentIds.length) {
+          const { data: responseRows, error: responseErr } = await supabase
+            .from('study_plan_responses')
+            .select(`
+              batchid:batch_id,
+              studentid:student_id
+            `)
+            .eq('batch_id', batchId)
+            .in('student_id', failedStudentIds);
+
+          if (responseErr) {
+            console.error('[loadExceptionRows] response query error', responseErr);
+            log(`study_plan_responses 오류: ${responseErr.message}`);
+            console.groupEnd();
+            return;
+          }
+
+          responseSet = new Set(
+            (responseRows || []).map(row => `${row.batchid}__${row.studentid}`)
+          );
+        }
+
+        const { data: allStudents, error: studentErr } = await supabase
+          .from('students')
+          .select(`
+            studentid:student_id,
+            name,
+            classname:class_name
+          `);
+
+        if (studentErr) {
+          console.error('[loadExceptionRows] students(all) error', studentErr);
+          log(`students(all) 오류: ${studentErr.message}`);
+          console.groupEnd();
+          return;
+        }
+
+        const studentById = new Map();
+        const studentsByName = new Map();
+
+        (allStudents || []).forEach(student => {
+          const sid = String(student.studentid || '');
+          const normalizedName = normalizeText(student.name);
+
+          if (sid) {
+            studentById.set(sid, student);
+          }
+
+          if (normalizedName) {
+            if (!studentsByName.has(normalizedName)) {
+              studentsByName.set(normalizedName, []);
+            }
+            studentsByName.get(normalizedName).push(student);
+          }
+        });
+
+        exceptionRows = filteredRows.map(row => {
+          const parsed = parseExceptionPayload(row.rawpayload);
+
+          const finalStudentId = String(row.studentid || parsed.payloadstudentid || '').trim();
+          const finalClassName = String(row.classname || parsed.payloadclassname || '').trim();
+          const finalName = String(row.name || parsed.payloadname || '').trim();
+
+          const matchByStudentId = studentById.get(finalStudentId) || null;
+
+          const nameCandidates = studentsByName.get(normalizeText(finalName)) || [];
+          const matchByName =
+            nameCandidates.find(s => String(s.classname || '') === finalClassName) ||
+            nameCandidates[0] ||
+            null;
+
+          return {
+            id: row.id,
+            batchid: row.batchid,
+            studentid: finalStudentId,
+            classname: finalClassName,
+            name: finalName,
+            email: row.email || '',
+            formresponsekey: row.formresponsekey || '',
+            submittedat: row.submittedat || parsed.payloadsubmittedat || '',
+            updatedat: row.updatedat || '',
+            reasontext: row.reasontext || parsed.payloadreasontext || '',
+            validationstatus: row.validationstatus || '',
+            errorreason: row.errorreason || '',
+            resolvedat: row.resolvedat || '',
+            rawpayload: row.rawpayload,
+            parsedslots: parsed.parsedslots,
+            editresponseurl: parsed.editresponseurl,
+            matchbystudentid: matchByStudentId,
+            matchbyname: matchByName,
+            hasresponse: responseSet.has(`${row.batchid}__${finalStudentId}`)
+          };
+        });
+
+        console.log('[loadExceptionRows] exceptionRows final length', exceptionRows.length);
+        console.log('[loadExceptionRows] exceptionRows final sample', exceptionRows.slice(0, 10));
+        log(`예외처리함 ${exceptionRows.length}건`);
+
+        if (
+          selectedExceptionRow &&
+          !exceptionRows.some(row => String(row.id) === String(selectedExceptionRow.id))
+        ) {
+          selectedExceptionRow = null;
+        }
+
+        renderExceptionTab();
+      } catch (err) {
+        console.error('[loadExceptionRows] catch error', err);
+        log(`loadExceptionRows 오류: ${err.message}`);
+        exceptionRows = [];
+        selectedExceptionRow = null;
+        renderExceptionTab();
+      } finally {
+        console.groupEnd();
+      }
+    }
+
+    // =========================
+    // Events
+    // =========================
+    document.addEventListener('click', async (e) => {
+      const sortHeader = e.target.closest('th[data-plan-sort]');
+      if (sortHeader) {
+        const nextKey = sortHeader.dataset.planSort;
+        if (planSortKey === nextKey) {
+          planSortDir = planSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          planSortKey = nextKey;
+          planSortDir = 'asc';
+        }
+        syncPlanTabFromDashboard(getPlanSyncContext());
+        return;
+      }
+
+      const attendanceSortHeader = e.target.closest('th[data-attendance-sort]');
+      if (attendanceSortHeader) {
+        const nextKey = attendanceSortHeader.dataset.attendanceSort;
+
+        if (attendanceSortKey === nextKey) {
+          attendanceSortDir = attendanceSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          attendanceSortKey = nextKey;
+          attendanceSortDir = nextKey === 'missed_count' ? 'desc' : 'asc';
+        }
+
+        renderAttendanceTab();
+        return;
+      }
+
+      const exportAttendanceExcelBtn = e.target.closest('#exportAttendanceExcelBtn');
+      if (exportAttendanceExcelBtn) {
+        exportAttendanceTableToExcel();
+        return;
+      }
+
+      const unsubmittedToggle = e.target.closest('#toggleUnsubmittedOnly');
+      if (unsubmittedToggle) {
+        onlyUnsubmitted = unsubmittedToggle.checked;
+        syncPlanTabFromDashboard(getPlanSyncContext());
+        return;
+      }
+
+      const requiredMissingToggle = e.target.closest('#toggleRequiredMissingOnly');
+      if (requiredMissingToggle) {
+        onlyRequiredMissing = requiredMissingToggle.checked;
+        syncPlanTabFromDashboard(getPlanSyncContext());
+        return;
+      }
+
+      const exportPlansExcelBtn = e.target.closest('#exportPlansExcelBtn');
+      if (exportPlansExcelBtn) {
+        exportPlansTableToExcel();
+        return;
+      }
+
+      const manualBtn = e.target.closest('[data-plan-manual]');
+      if (manualBtn) {
+        log(`수동입력 대상: ${manualBtn.dataset.planManual}`);
+        return;
+      }
+
+      const planItem = e.target.closest('[data-plan-student]');
+      if (planItem) {
+        const studentId = planItem.dataset.planStudent;
+        const student = planRows.find(r => String(r.student_id) === String(studentId));
+        if (student) {
+          resetPlanEditState();
+          await renderPlanStudentSummary(student, currentAllDays);
+        }
+        return;
+      }
+
+      const openBtn = e.target.closest('#openManualEditBtn');
+      if (openBtn) {
+        if (editPlanMode) {
+          resetPlanEditState();
+          if (selectedPlanStudent) {
+            await renderPlanStudentSummary(selectedPlanStudent, currentAllDays);
+          }
+        } else {
+          setEditPlanMode(true);
+        }
+        return;
+      }
+
+      const cancelBtn = e.target.closest('#cancelEditPlanBtn');
+      if (cancelBtn) {
+        resetPlanEditState();
+        if (selectedPlanStudent) {
+          await renderPlanStudentSummary(selectedPlanStudent, currentAllDays);
+        }
+        return;
+      }
+
+      const saveBtn = e.target.closest('#saveEditPlanBtn');
+      if (saveBtn) {
+        await saveEditPlan();
+        return;
+      }
+
+      const exceptionRow = e.target.closest('tr[data-exception-id]');
+      if (exceptionRow) {
+        const id = exceptionRow.dataset.exceptionId;
+        selectedExceptionRow = exceptionRows.find(r => String(r.id) === String(id)) || null;
+        resetExceptionEditState();
+        renderExceptionTab();
+        return;
+      }
+
+      const openExceptionEditBtn = e.target.closest('#openExceptionEditBtn');
+      if (openExceptionEditBtn && selectedExceptionRow) {
+        openExceptionEditMode(selectedExceptionRow);
+        return;
+      }
+
+      const cancelExceptionEditBtn = e.target.closest('#cancelExceptionEditBtn');
+      if (cancelExceptionEditBtn) {
+        closeExceptionEditMode();
+        return;
+      }
+
+      const saveExceptionAsResponseBtn = e.target.closest('#saveExceptionAsResponseBtn');
+      if (saveExceptionAsResponseBtn) {
+        await saveExceptionAsResponse();
+        return;
+      }
+    });
+
+    document.addEventListener('input', (e) => {
+      const reasonInput = e.target.closest('#editedPlanReasonText');
+      if (reasonInput) {
+        editedPlanReasonText = reasonInput.value;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadBatches();
+      await loadClasses();
+
+      els.btnQuery.addEventListener('click', async () => {
+        await executeQuery();
+        await loadExceptionRows();
+      });
+
+      els.search.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+          await executeQuery();
+          await loadExceptionRows();
+        }
+      });
+
+      const tabs = document.querySelectorAll('.top-tab');
+      const panels = document.querySelectorAll('.tab-panel');
+
+      async function openPanel(id) {
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.panel === id));
+        panels.forEach(p => p.classList.toggle('active', p.id === id));
+
+        if (id === 'exceptionsTab') {
+          await loadExceptionRows();
+        }
+      }
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', async () => {
+          await openPanel(tab.dataset.panel);
+        });
+      });
+
+      openPanel('dashboardTab');
+    });
+  </script>
+</body>
+
+</html>
