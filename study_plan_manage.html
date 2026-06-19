@@ -4613,6 +4613,68 @@
       });
     }
 
+    function exportAttendanceTableToExcel() {
+      if (!window.XLSX) {
+        alert('엑셀 라이브러리를 불러오지 못했습니다.');
+        return;
+      }
+
+      const visibleRows = sortAttendanceRows(attendanceRows || []);
+
+      if (!visibleRows.length) {
+        alert('저장할 출결 데이터가 없습니다.');
+        return;
+      }
+
+      const exportRows = visibleRows.map(row => {
+        const exportRow = {
+          '반': row.class_name || '',
+          '학번': row.student_id || '',
+          '이름': row.name || ''
+        };
+
+        (currentAllDays || []).forEach(day => {
+          exportRow[day.day_label || '날짜'] = getPlannedSlotTextByDay(row.student_id, day.id);
+        });
+
+        exportRow['5T미만 사유'] = row.reason_text || '-';
+
+        return exportRow;
+      });
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+
+      const cols = [
+        { wch: 8 },
+        { wch: 10 },
+        { wch: 12 },
+        ...(currentAllDays || []).map(() => ({ wch: 14 })),
+        { wch: 28 }
+      ];
+      worksheet['!cols'] = cols;
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, '출결관리');
+
+      const batchText =
+        els.batchSelect?.selectedOptions?.[0]?.textContent?.trim() || 'batch';
+      const classText =
+        els.classSelect?.selectedOptions?.[0]?.textContent?.trim() || '전체';
+
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+
+      const safeBatch = batchText.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+      const safeClass = classText.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+
+      XLSX.writeFile(
+        workbook,
+        `출결관리_${safeBatch}_${safeClass}_${y}${m}${d}.xlsx`
+      );
+    }
+
     // =========================
     // 학생관리 탭 : batch multi
     // =========================
