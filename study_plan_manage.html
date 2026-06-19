@@ -2464,10 +2464,204 @@
         font-size: 13px;
       }
     }
+
+    /* ==================== GNB Sidebar ==================== */
+    :root {
+      --gnb-sidebar-width: 248px;
+      --sidebar-bg: #ffffff;
+      --border-color: #e5e7eb;
+      --text-navy: #1f2937;
+      --text-gray: #6b7280;
+      --primary-bg: #5DC6C2;
+      --primary-hover: #4BB3AF;
+    }
+
+    .gnb-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--gnb-sidebar-width);
+      height: 100vh;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      padding: 20px 0;
+      z-index: 1000;
+      box-shadow: 5px 0 25px rgba(26, 43, 75, 0.15);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gnb-brand {
+      font-size: 1.3rem;
+      font-weight: 800;
+      padding: 0 20px 20px 20px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-navy);
+      text-decoration: none;
+      display: block;
+    }
+
+    .gnb-brand::after {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 3px;
+      background: var(--primary-bg);
+      margin-top: 10px;
+      border-radius: 2px;
+    }
+
+    .gnb-menu {
+      list-style: none;
+      padding: 0 10px;
+      margin: 0;
+    }
+
+    .gnb-item {
+      margin: 0;
+      padding: 0;
+    }
+
+    .gnb-link {
+      display: flex;
+      align-items: center;
+      padding: 14px 18px;
+      color: var(--text-gray);
+      text-decoration: none;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+      font-size: 1rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .gnb-link:hover {
+      background-color: #e6fcf5;
+      color: #0ca678;
+      transform: translateX(5px);
+      border-color: #c3fae8;
+    }
+
+    .gnb-link.active {
+      background-color: var(--primary-bg);
+      color: #ffffff;
+      font-weight: 900;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 15px rgba(93, 198, 194, 0.5);
+      border: 1px solid var(--primary-hover);
+    }
+
+    .gnb-icon {
+      margin-right: 10px;
+      font-size: 1.1rem;
+      width: 24px;
+      text-align: center;
+      color: inherit;
+      flex-shrink: 0;
+    }
+
+    .gnb-text {
+      display: inline-block;
+      line-height: 1.2;
+    }
+
+    /* 메인 콘텐츠를 사이드바 오른쪽으로 이동 */
+    .main-content {
+      margin-left: var(--gnb-sidebar-width);
+      width: calc(100% - var(--gnb-sidebar-width));
+      max-width: none;
+      box-sizing: border-box;
+    }
+
+    /* 상단 탭/헤더가 자연스럽게 콘텐츠 영역 안에서 시작되도록 */
+    .top-tabs,
+    .page-header,
+    .filter-section,
+    .kpi-section,
+    .panel-section {
+      max-width: 100%;
+    }
+
+    /* 모바일에서는 기존 구조 유지 */
+    @media (max-width: 900px) {
+      .gnb-sidebar {
+        display: none;
+      }
+
+      .main-content {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
   </style>
 </head>
 
 <body>
+  <!-- 1. 좌측 GNB 사이드바 -->
+  <nav class="gnb-sidebar">
+    <a href="index.html" class="gnb-brand">강남대성</a>
+
+    <ul class="gnb-menu">
+      <li class="gnb-item">
+        <a href="Dashboard.html" class="gnb-link">
+          <span class="gnb-icon">📝</span>
+          <span class="gnb-text">퀀텀 지도 현황</span>
+        </a>
+      </li>
+
+      <li class="gnb-item">
+        <a href="attendance.html" class="gnb-link">
+          <span class="gnb-icon">📋</span>
+          <span class="gnb-text">출결보고</span>
+        </a>
+      </li>
+
+      <li class="gnb-item">
+        <a href="penaltyscore.html" class="gnb-link">
+          <span class="gnb-icon">🚫</span>
+          <span class="gnb-text">벌점관리</span>
+        </a>
+      </li>
+
+      <li class="gnb-item">
+        <a href="content_list.html" class="gnb-link">
+          <span class="gnb-icon">📚</span>
+          <span class="gnb-text">컨텐츠 배부</span>
+        </a>
+      </li>
+
+      <li class="gnb-item">
+        <a href="search_tc.html" class="gnb-link">
+          <span class="gnb-icon">🔍</span>
+          <span class="gnb-text">학생 검색</span>
+        </a>
+      </li>
+
+      <li class="gnb-item">
+        <a href="sms.html" class="gnb-link">
+          <span class="gnb-icon">💬</span>
+          <span class="gnb-text">출결 문자</span>
+        </a>
+      </li>
+
+      <li class="gnb-item">
+        <a href="gatepass.html" class="gnb-link">
+          <span class="gnb-icon">🏷️</span>
+          <span class="gnb-text">조퇴/외출</span>
+        </a>
+      </li>
+
+      <li class="gnb-item">
+        <a href="#" class="gnb-link active">
+          <span class="gnb-icon">📋</span>
+          <span class="gnb-text">자습계획</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
 
   <!-- ========================================== -->
   <!-- 2. HTML BLOCK -->
