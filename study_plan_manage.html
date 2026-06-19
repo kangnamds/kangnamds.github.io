@@ -5386,26 +5386,34 @@
       renderExceptionDetail(selectedExceptionRow);
     }
 
-    function renderExceptionCandidateBox(title, student, tone = 'neutral') {
-      if (!student) {
+    function renderExceptionCandidateBox(title, students, tone = 'neutral') {
+      const list = Array.isArray(students)
+        ? students.filter(Boolean)
+        : (students ? [students] : []);
+
+      if (!list.length) {
         return `
-          <div class="exception-candidate-box empty-tone">
-            <div class="exception-candidate-title">${escapeHtml(title)}</div>
-            <div class="exception-candidate-empty">후보 없음</div>
-          </div>
-        `;
+      <div class="exception-candidate-box empty-tone">
+        <div class="exception-candidate-title">${escapeHtml(title)}</div>
+        <div class="exception-candidate-empty">후보 없음</div>
+      </div>
+    `;
       }
 
       return `
-        <div class="exception-candidate-box ${tone}">
-          <div class="exception-candidate-title">${escapeHtml(title)}</div>
-          <div class="exception-candidate-main">
-            <span class="candidate-class">${escapeHtml(student.classname || '-')}</span>
-            <span class="candidate-studentid">${escapeHtml(student.studentid || '-')}</span>
-            <span class="candidate-name">${escapeHtml(student.name || '-')}</span>
-          </div>
+    <div class="exception-candidate-box ${tone}">
+      <div class="exception-candidate-title">
+        ${escapeHtml(title)} (${list.length}명)
+      </div>
+      ${list.map(student => `
+        <div class="exception-candidate-main" style="margin-top:8px;">
+          <span class="candidate-class">${escapeHtml(student.classname || '-')}</span>
+          <span class="candidate-studentid">${escapeHtml(student.studentid || '-')}</span>
+          <span class="candidate-name">${escapeHtml(student.name || '-')}</span>
         </div>
-      `;
+      `).join('')}
+    </div>
+  `;
     }
 
     function renderExceptionSlotGrid(allDays, parsedslots, reasonText = '') {
@@ -5552,18 +5560,19 @@
       const normalizedEditedName = normalizeText(editedName);
 
       const matchedById = selectedExceptionRow.matchbystudentid || null;
-      const matchedByName = selectedExceptionRow.matchbyname || null;
+      const matchedByNameCandidates = Array.isArray(selectedExceptionRow.matchbynamecandidates)
+        ? selectedExceptionRow.matchbynamecandidates
+        : (selectedExceptionRow.matchbyname ? [selectedExceptionRow.matchbyname] : []);
 
       const exactMatchedStudent =
         matchedById &&
           String(matchedById.studentid || '') === editedStudentId &&
           normalizeText(matchedById.name || '') === normalizedEditedName
           ? matchedById
-          : matchedByName &&
-            String(matchedByName.studentid || '') === editedStudentId &&
-            normalizeText(matchedByName.name || '') === normalizedEditedName
-            ? matchedByName
-            : null;
+          : matchedByNameCandidates.find(student =>
+            String(student.studentid || '') === editedStudentId &&
+            normalizeText(student.name || '') === normalizedEditedName
+          ) || null;
 
       console.log('[saveExceptionAsResponse] exactMatchedStudent', exactMatchedStudent);
 
@@ -5923,7 +5932,7 @@
       </div>
 
       <div class="exception-candidate-stack">
-        ${renderExceptionCandidateBox('이름 기준 후보', row.matchbyname, 'name-tone')}
+        ${renderExceptionCandidateBox('이름 기준 후보', row.matchbynamecandidates, 'name-tone')}
         ${renderExceptionCandidateBox('학번 기준 후보', row.matchbystudentid, 'id-tone')}
       </div>
 
@@ -6145,11 +6154,20 @@
 
           const matchByStudentId = studentById.get(finalStudentId) || null;
 
-          const nameCandidates = studentsByName.get(normalizeText(finalName)) || [];
-          const matchByName =
-            nameCandidates.find(s => String(s.classname || '') === finalClassName) ||
-            nameCandidates[0] ||
-            null;
+          const nameCandidates = (studentsByName.get(normalizeText(finalName)) || []).slice();
+
+          const sortedNameCandidates = nameCandidates.sort((a, b) => {
+            const aClassMatched = String(a.classname || '') === finalClassName ? 1 : 0;
+            const bClassMatched = String(b.classname || '') === finalClassName ? 1 : 0;
+
+            if (aClassMatched !== bClassMatched) {
+              return bClassMatched - aClassMatched;
+            }
+
+            return String(a.studentid || '').localeCompare(String(b.studentid || ''), 'ko', {
+              numeric: true
+            });
+          });
 
           return {
             id: row.id,
@@ -6169,7 +6187,8 @@
             parsedslots: parsed.parsedslots,
             editresponseurl: parsed.editresponseurl,
             matchbystudentid: matchByStudentId,
-            matchbyname: matchByName,
+            matchbynamecandidates: sortedNameCandidates,
+            matchbyname: sortedNameCandidates[0] || null,
             hasresponse: responseSet.has(`${row.batchid}__${finalStudentId}`)
           };
         });
