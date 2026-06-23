@@ -1100,7 +1100,7 @@
       box-shadow: inset 0 -1px 0 var(--border);
     }
 
-    .attendance-table thead th:nth-child(-n+6) {
+    .attendance-table thead th:nth-child(-n+7) {
       z-index: 22;
       background: #f9fafb !important;
     }
@@ -1125,7 +1125,9 @@
     .attendance-table th:nth-child(5),
     .attendance-table td:nth-child(5),
     .attendance-table th:nth-child(6),
-    .attendance-table td:nth-child(6) {
+    .attendance-table td:nth-child(6),
+    .attendance-table th:nth-child(7),
+    .attendance-table td:nth-child(7) {
       min-width: 58px;
       text-align: center;
     }
@@ -1339,6 +1341,31 @@
       background: #f5f7fa;
       border-color: #b9c5d3;
       border-style: dashed;
+    }
+
+    /* 세로 모드: 이름 아래 날짜별 슬롯 리스트 */
+    .attendance-day-list-vertical {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .attendance-day-row {
+      display: grid;
+      grid-template-columns: 80px minmax(0, 1fr);
+      column-gap: 10px;
+      align-items: flex-start;
+    }
+
+    .attendance-day-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6b7280;
+    }
+
+    .attendance-day-slots {
+      /* 기존 .attendance-day-wrap 안 구조를 그대로 사용 */
     }
 
     /* ==========================================
@@ -1562,7 +1589,7 @@
 
     .student-mgmt-table-wrap th:nth-child(4),
     .student-mgmt-table-wrap td:nth-child(4) {
-      width: 500px;
+      width: 440px;
     }
 
     .student-mgmt-table-wrap th:nth-child(5),
@@ -1590,6 +1617,23 @@
       line-height: 1.6;
       white-space: normal;
       word-break: keep-all;
+    }
+
+    .student-mgmt-batch-reason-block {
+      padding: 6px 0 10px;
+      display: flex;
+      align-items: flex-start;
+      line-height: 1.6;
+    }
+
+    .student-mgmt-batch-reason-block+.student-mgmt-batch-reason-block {
+      margin-top: 10px;
+      padding-top: 14px;
+      border-top: 1px dashed rgba(148, 163, 184, 0.28);
+    }
+
+    .student-mgmt-batch-reason-block.is-empty {
+      color: #9ca3af;
     }
 
     .student-mgmt-plan-cell {
@@ -2877,14 +2921,21 @@
           <div class="card-header-row">
             <div>
               <h2>출결 관리</h2>
+              <div class="plan-filter-switches">
+                <label class="filter-switch">
+                  <input type="checkbox" id="toggleBelowRequiredAttendanceOnly" />
+                  <span class="filter-switch-ui"></span>
+                  <span class="filter-switch-label">의무타임 미만</span>
+                </label>
+                <button type="button" class="btn btn-secondary" id="exportAttendanceExcelBtn">
+                  엑셀 저장
+                </button>
+              </div>
               <div class="muted">학생별 신청 계획과 실제 출석 상태를 날짜별로 확인합니다.</div>
             </div>
 
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
               <div class="muted" id="attendanceSummaryText">조회 결과가 없습니다.</div>
-              <button type="button" class="btn btn-secondary" id="exportAttendanceExcelBtn">
-                엑셀 저장
-              </button>
             </div>
           </div>
 
@@ -2897,6 +2948,7 @@
                   <th>이름</th>
                   <th>신청</th>
                   <th>참여</th>
+                  <th>추가자습</th>
                   <th>미참여</th>
                 </tr>
               </thead>
@@ -2973,18 +3025,15 @@
             <table>
               <thead id="studentMgmtTableHead">
                 <tr>
-                <tr>
                   <th>반</th>
                   <th>학번</th>
                   <th>이름</th>
                   <th>선택 회차 플랜/출결</th>
-                  <th>사유</th>
-                </tr>
                 </tr>
               </thead>
               <tbody id="studentMgmtStudentList">
                 <tr>
-                  <td colspan="8" class="empty">학생관리 데이터를 불러오는 중입니다.</td>
+                  <td colspan="4" class="empty">학생관리 데이터를 불러오는 중입니다.</td>
                 </tr>
               </tbody>
             </table>
@@ -3106,6 +3155,7 @@
     let attendanceSortKey = 'missed_count';
     let attendanceSortDir = 'desc';
     let selectedAttendanceStudent = null;
+    let onlyBelowRequiredAttendance = false;
 
     let exceptionRows = [];
     let onlyUnresolvedExceptions = true;
@@ -3118,7 +3168,7 @@
     let studentMgmtPlanRows = [];
     let studentMgmtCheckRows = [];
     let studentMgmtDays = []; // [{ id, batch_id, day_label, batch_title, day_order }]
-    let studentMgmtLoadedOnce = false;
+    let studentMgmtReasonMap = new Map();
 
     // =========================
     // Common utils
@@ -3192,6 +3242,17 @@
       if (dayCount === 3) return 7;
       if (dayCount === 5) return 12;
       return Math.ceil(dayCount * 2.5);
+    }
+
+    function getVisibleAttendanceRows() {
+      const requiredCount = getRequiredPlanCount((currentAllDays || []).length);
+
+      return (attendanceRows || []).filter(row => {
+        if (!onlyBelowRequiredAttendance) return true;
+
+        const actualStudyCount = Number(row.raw_attendance_count || 0);
+        return actualStudyCount < requiredCount;
+      });
     }
 
     function getAttendanceCheckRound(slotId) {
@@ -3334,6 +3395,12 @@
           case 'attendance_count':
             av = Number(a.attendance_count || 0);
             bv = Number(b.attendance_count || 0);
+            return attendanceSortDir === 'asc' ? av - bv : bv - av;
+
+          // 추가자습 정렬용 케이스
+          case 'extra_study_count':
+            av = Number(a.extra_study_count || 0);
+            bv = Number(b.extra_study_count || 0);
             return attendanceSortDir === 'asc' ? av - bv : bv - av;
 
           case 'missed_count':
@@ -3678,7 +3745,10 @@
 
         const planCountByStudent = new Map();
         const partCountByStudent = new Map();
-        const rawAttendanceCountByStudent = new Map();
+        // 슬롯 기준 실제 출석한 슬롯 수
+        const rawAttendanceSlotsByStudent = new Map();
+        // 계획 외(추가자습) 슬롯 수
+        const extraSlotsByStudent = new Map();
 
         (plans || []).forEach(p => {
           const sid = String(p.student_id || '');
@@ -3695,12 +3765,24 @@
           if (!['present', 'late', 'unknown'].includes(status)) return;
 
           const sid = String(a.student_id || '');
-          const key = `${a.study_plan_day_id}_${a.slot_id}_${a.check_round}`;
+          // 슬롯 단위 키: 하루+슬롯 (체크라운드 제외)
+          const slotKey = `${a.study_plan_day_id}_${a.slot_id}`;
+          // 계획 여부 확인용 키: 학생+하루+슬롯
+          const planKey = `${a.student_id}_${a.study_plan_day_id}_${a.slot_id}`;
 
-          if (!rawAttendanceCountByStudent.has(sid)) {
-            rawAttendanceCountByStudent.set(sid, new Set());
+          // 1) 실제 출석한 슬롯 수 (계획 여부 상관 없음)
+          if (!rawAttendanceSlotsByStudent.has(sid)) {
+            rawAttendanceSlotsByStudent.set(sid, new Set());
           }
-          rawAttendanceCountByStudent.get(sid).add(key);
+          rawAttendanceSlotsByStudent.get(sid).add(slotKey);
+
+          // 2) 계획 외 추가자습 슬롯 수
+          if (!planMap.has(planKey)) {
+            if (!extraSlotsByStudent.has(sid)) {
+              extraSlotsByStudent.set(sid, new Set());
+            }
+            extraSlotsByStudent.get(sid).add(slotKey);
+          }
         });
 
         attendanceRows = filteredStudents
@@ -3708,7 +3790,12 @@
             const studentId = String(student.student_id || '');
             const planCount = planCountByStudent.get(studentId) || 0;
             const attendanceCount = partCountByStudent.get(studentId) || 0;
-            const rawAttendanceCount = rawAttendanceCountByStudent.get(studentId)?.size || 0;
+            // 슬롯 기준 실제 출석한 슬롯 수
+            const rawAttendanceCount =
+              rawAttendanceSlotsByStudent.get(studentId)?.size || 0;
+            // 계획 외(추가자습) 슬롯 수
+            const extraStudyCount =
+              extraSlotsByStudent.get(studentId)?.size || 0;
             const reasonText = responseReasonMap.get(studentId) || '';
 
             return {
@@ -3720,16 +3807,19 @@
               plan_count: planCount,
               attendance_count: attendanceCount,
               raw_attendance_count: rawAttendanceCount,
+              extra_study_count: extraStudyCount,
               reason_text: reasonText
             };
           })
-          .filter(row => row.plan_count > 0 || row.raw_attendance_count > 0 || String(row.reason_text || '').trim() !== '')
+          .filter(row =>
+            row.plan_count > 0 ||
+            row.raw_attendance_count > 0 ||
+            String(row.reason_text || '').trim() !== ''
+          )
           .sort((a, b) => {
             const aMissed = Math.max(0, Number(a.plan_count || 0) - Number(a.attendance_count || 0));
             const bMissed = Math.max(0, Number(b.plan_count || 0) - Number(b.attendance_count || 0));
-
             if (bMissed !== aMissed) return bMissed - aMissed;
-
             return String(a.student_id || '').localeCompare(
               String(b.student_id || ''),
               'ko',
@@ -4507,6 +4597,18 @@
 
       if (!thead || !tbody) return;
 
+      const dayCount = (currentAllDays || []).length;
+      // 5일 초과면 세로 모드, 5일 이하면 기존 가로 모드
+      const useVerticalDays = dayCount > 2;
+
+      if (useVerticalDays) {
+        renderAttendanceVertical(thead, tbody, summary);
+      } else {
+        renderAttendanceHorizontal(thead, tbody, summary);
+      }
+    }
+
+    function renderAttendanceHorizontal(thead, tbody, summary) {
       const dayHeaders = (currentAllDays || []).map(day =>
         `<th class="attendance-day-col">${escapeHtml(day.day_label || '')}</th>`
       ).join('');
@@ -4518,6 +4620,7 @@
       <th data-attendance-sort="name">이름</th>
       <th data-attendance-sort="plan_count">신청</th>
       <th data-attendance-sort="attendance_count">참여</th>
+      <th data-attendance-sort="extra_study_count">추가자습</th>
       <th data-attendance-sort="missed_count">미참여</th>
       ${dayHeaders}
       <th>사유</th>
@@ -4526,41 +4629,56 @@
 
       updateAttendanceSortIndicators();
 
-      if (!(attendanceRows || []).length) {
+      const filteredRows = getVisibleAttendanceRows();
+
+      if (!filteredRows.length) {
         tbody.innerHTML = `
       <tr>
-        <td colspan="${7 + (currentAllDays || []).length}" class="empty">
+        <td colspan="${8 + (currentAllDays || []).length}" class="empty">
           조회된 출결 데이터가 없습니다.
         </td>
       </tr>
     `;
 
         if (summary) {
-          summary.innerHTML = '조회 결과가 없습니다.';
+          summary.innerHTML = onlyBelowRequiredAttendance
+            ? '의무타임 미만 학생이 없습니다.'
+            : '조회 결과가 없습니다.';
         }
         return;
       }
 
-      const visibleRows = sortAttendanceRows(attendanceRows);
+      const visibleRows = sortAttendanceRows(filteredRows);
 
-      const totalPlan = attendanceRows.reduce((sum, row) => sum + Number(row.plan_count || 0), 0);
-      const totalAttend = attendanceRows.reduce((sum, row) => sum + Number(row.attendance_count || 0), 0);
+      const totalPlan = filteredRows.reduce(
+        (sum, row) => sum + Number(row.plan_count || 0),
+        0
+      );
+      const totalAttend = filteredRows.reduce(
+        (sum, row) => sum + Number(row.attendance_count || 0),
+        0
+      );
+      const requiredCount = getRequiredPlanCount((currentAllDays || []).length);
 
       if (summary) {
         summary.innerHTML = `
-      학생 ${attendanceRows.length}명 · 참여 ${totalAttend}/${totalPlan}
+      학생 ${filteredRows.length}명 · 참여 ${totalAttend}/${totalPlan}
+      ${onlyBelowRequiredAttendance ? ` · 의무타임 기준 ${requiredCount} 미만` : ''}
       <div class="attendance-legend-inline">
-        <span><i class="dot planned"></i>신청</span>
+        <span><i class="dot planned"></i>신청(계획)</span>
         <span><i class="dot present"></i>출석</span>
         <span><i class="dot late"></i>지각</span>
         <span><i class="dot unknown"></i>미확인</span>
-        <span><i class="dot mismatch"></i>추가자습</span>
+        <span><i class="dot mismatch"></i>추가자습(계획 외)</span>
       </div>
     `;
       }
 
       tbody.innerHTML = visibleRows.map(row => {
-        const missed = Number(row.plan_count || 0) - Number(row.attendance_count || 0);
+        const plan = Number(row.plan_count || 0);
+        const attend = Number(row.attendance_count || 0);
+        const extra = Number(row.extra_study_count || 0);
+        const missed = plan - attend;
         const isSelected =
           selectedAttendanceStudent &&
           String(selectedAttendanceStudent.student_id) === String(row.student_id);
@@ -4577,8 +4695,9 @@
             <strong>${escapeHtml(row.name || '')}</strong>
           </div>
         </td>
-        <td>${row.plan_count}</td>
-        <td>${row.attendance_count}</td>
+        <td>${plan}</td>
+        <td>${attend}</td>
+        <td>${extra}</td>
         <td>${missed}</td>
         ${(currentAllDays || []).map(day => `
           <td class="attendance-day-cell">
@@ -4588,6 +4707,118 @@
         <td class="muted">${escapeHtml(row.reason_text || '-')}</td>
       </tr>
     `;
+      }).join('');
+
+      bindAttendanceStudentRowEvents();
+    }
+
+    function renderAttendanceVertical(thead, tbody, summary) {
+      thead.innerHTML = `
+    <tr>
+      <th data-attendance-sort="class_name">반</th>
+      <th data-attendance-sort="student_id">학번</th>
+      <th data-attendance-sort="name">이름</th>
+      <th data-attendance-sort="plan_count">신청</th>
+      <th data-attendance-sort="attendance_count">참여</th>
+      <th data-attendance-sort="extra_study_count">추가자습</th>
+      <th data-attendance-sort="missed_count">미참여</th>
+      <th>일자별 상세</th>
+      <th>사유</th>
+    </tr>
+  `;
+
+      updateAttendanceSortIndicators();
+
+      const filteredRows = getVisibleAttendanceRows();
+
+      if (!filteredRows.length) {
+        tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="empty">
+          조회된 출결 데이터가 없습니다.
+        </td>
+      </tr>
+    `;
+
+        if (summary) {
+          summary.innerHTML = onlyBelowRequiredAttendance
+            ? '의무타임 미만 학생이 없습니다.'
+            : '조회 결과가 없습니다.';
+        }
+        return;
+      }
+
+      const visibleRows = sortAttendanceRows(filteredRows);
+
+      const totalPlan = filteredRows.reduce(
+        (sum, row) => sum + Number(row.plan_count || 0),
+        0
+      );
+      const totalAttend = filteredRows.reduce(
+        (sum, row) => sum + Number(row.attendance_count || 0),
+        0
+      );
+      const requiredCount = getRequiredPlanCount((currentAllDays || []).length);
+
+      if (summary) {
+        summary.innerHTML = `
+      학생 ${filteredRows.length}명 · 참여 ${totalAttend}/${totalPlan}
+      ${onlyBelowRequiredAttendance ? ` · 의무타임 기준 ${requiredCount} 미만` : ''}
+      <div class="attendance-legend-inline">
+        <span><i class="dot planned"></i>신청(계획)</span>
+        <span><i class="dot present"></i>출석</span>
+        <span><i class="dot late"></i>지각</span>
+        <span><i class="dot unknown"></i>미확인</span>
+        <span><i class="dot mismatch"></i>추가자습(계획 외)</span>
+      </div>
+    `;
+      }
+
+      tbody.innerHTML = visibleRows.map(row => {
+        const plan = Number(row.plan_count || 0);
+        const attend = Number(row.attendance_count || 0);
+        const extra = Number(row.extra_study_count || 0);
+        const missed = plan - attend;
+        const isSelected =
+          selectedAttendanceStudent &&
+          String(selectedAttendanceStudent.student_id) === String(row.student_id);
+
+        // 일자별 세로 리스트 블록
+        const daysBlock = (currentAllDays || []).map(day => `
+    <div class="attendance-day-row">
+      <div class="attendance-day-name">
+        ${escapeHtml(day.day_label || '')}
+      </div>
+      <div class="attendance-day-slots">
+        ${renderAttendanceDaySlotsCell(day, row.student_id)}
+      </div>
+    </div>
+  `).join('');
+
+        return `
+    <tr
+      data-attendance-student-id="${escapeHtml(row.student_id)}"
+      class="${isSelected ? 'selected' : ''}"
+    >
+      <td>${escapeHtml(row.class_name || '')}</td>
+      <td>${escapeHtml(row.student_id || '')}</td>
+      <td>
+        <div class="attendance-row-name">
+          <strong>${escapeHtml(row.name || '')}</strong>
+        </div>
+      </td>
+      <td>${plan}</td>
+      <td>${attend}</td>
+      <td>${extra}</td>
+      <td>${missed}</td>
+      <td>
+        <div class="attendance-day-list-vertical">
+          ${daysBlock}
+        </div>
+      </td>
+      <td class="muted">${escapeHtml(row.reason_text || '-')}</td>
+    </tr>
+  `;
       }).join('');
 
       bindAttendanceStudentRowEvents();
@@ -4936,12 +5167,28 @@
     `;
       }
 
-      tbody.innerHTML = studentMgmtRows.map(row => {
+      // ★ 기존 tbody.innerHTML = studentMgmtRows.map(...) 전체를 이 블록으로 교체
+      const rowsHtml = studentMgmtRows.map(row => {
         const studentId = String(row.student_id || '');
 
-        const batchBlocksHtml = batchGroups.map(group => {
+        // 이 학생에게 실제로 관련 있는 배치만 골라냄
+        const studentBatchGroups = batchGroups.filter(group => {
+          const bid = String(group.batch_id);
+          const hasPlan = studentMgmtPlanRows.some(
+            p => String(p.student_id) === studentId && String(p.batch_id) === bid
+          );
+          const hasReason = studentMgmtReasonMap.has(`${studentId}_${bid}`);
+          return hasPlan || hasReason;
+        });
+
+        if (!studentBatchGroups.length) return '';
+
+        const rowSpan = studentBatchGroups.length;
+
+        const perBatchRows = studentBatchGroups.map((group, idx) => {
           const dayIds = group.days.map(day => String(day.id));
 
+          // 이 배치에 대한 플랜/출결 집계
           const batchPlanRows = studentMgmtPlanRows.filter(planRow =>
             String(planRow.student_id) === studentId &&
             String(planRow.batch_id) === String(group.batch_id)
@@ -4953,7 +5200,6 @@
           );
 
           const batchAttendanceKeySet = new Set();
-
           studentMgmtCheckRows.forEach(checkRow => {
             if (String(checkRow.student_id) !== studentId) return;
             if (!dayIds.includes(String(checkRow.study_plan_day_id))) return;
@@ -4970,7 +5216,11 @@
           const batchAttendanceCount = batchAttendanceKeySet.size;
           const batchMissedCount = Math.max(0, batchPlanCount - batchAttendanceCount);
 
-          return `
+          // 이 배치에 대한 사유
+          const keyForReason = `${studentId}_${group.batch_id}`;
+          const batchReason = studentMgmtReasonMap.get(keyForReason) || '';
+
+          const planHtml = `
         <div class="student-mgmt-batch-block">
           <div class="student-mgmt-batch-summary">
             <span class="student-mgmt-batch-count">신청 ${batchPlanCount}</span>
@@ -4982,18 +5232,37 @@
           </div>
         </div>
       `;
+
+          const reasonHtml = batchReason
+            ? `<div class="student-mgmt-batch-reason-block">${escapeHtml(batchReason)}</div>`
+            : `<div class="student-mgmt-batch-reason-block is-empty"></div>`;
+
+          // 첫 번째 배치: 반/학번/이름에 rowspan 부여
+          if (idx === 0) {
+            return `
+          <tr data-student-mgmt-student-id="${escapeHtml(studentId)}">
+            <td class="student-mgmt-meta-cell" rowspan="${rowSpan}">${escapeHtml(row.class_name || '')}</td>
+            <td class="student-mgmt-meta-cell" rowspan="${rowSpan}">${escapeHtml(studentId)}</td>
+            <td class="student-mgmt-meta-cell" rowspan="${rowSpan}"><strong>${escapeHtml(row.name || '')}</strong></td>
+            <td class="student-mgmt-plan-cell">${planHtml}</td>
+            <td class="student-mgmt-reason-cell">${reasonHtml}</td>
+          </tr>
+        `;
+          }
+
+          // 나머지 배치: 플랜/사유만 한 줄씩
+          return `
+        <tr data-student-mgmt-student-id="${escapeHtml(studentId)}">
+          <td class="student-mgmt-plan-cell">${planHtml}</td>
+          <td class="student-mgmt-reason-cell">${reasonHtml}</td>
+        </tr>
+      `;
         }).join('');
 
-        return `
-      <tr data-student-mgmt-student-id="${escapeHtml(studentId)}">
-        <td class="student-mgmt-meta-cell">${escapeHtml(row.class_name || '')}</td>
-        <td class="student-mgmt-meta-cell">${escapeHtml(studentId)}</td>
-        <td class="student-mgmt-meta-cell"><strong>${escapeHtml(row.name || '')}</strong></td>
-        <td class="student-mgmt-plan-cell">${batchBlocksHtml}</td>
-        <td class="student-mgmt-reason-cell">${escapeHtml(row.reason_text || '-')}</td>
-      </tr>
-    `;
+        return perBatchRows;
       }).join('');
+
+      tbody.innerHTML = rowsHtml;
     }
 
 
@@ -5087,7 +5356,7 @@
           .from('study_plan_days')
           .select('id, batch_id, day_label')
           .in('batch_id', batchIds)
-          .order('batch_id', { ascending: false })
+          .order('batch_id', { ascending: true })
           .order('id', { ascending: true });
 
         if (dayErr) throw dayErr;
@@ -5161,6 +5430,15 @@
             reasonTextMap.set(key, String(row.reason_text || '').trim());
           }
         });
+
+        studentMgmtReasonMap = reasonTextMap;
+
+        console.log(
+          '[학생관리] responses',
+          responseRows,
+          'reasonMap',
+          Array.from(reasonTextMap.entries())
+        );
 
         const planCountMap = new Map();
         studentMgmtPlanRows.forEach(row => {
@@ -5256,7 +5534,6 @@
             `학생 ${studentMgmtRows.length}명 · 회차 ${batchIds.length}개 · 날짜 ${studentMgmtDays.length}개`;
         }
 
-        studentMgmtLoadedOnce = true;
         log(`학생관리 조회 완료: ${studentMgmtRows.length}명`);
       } catch (err) {
         console.error('loadStudentManagementRows error:', err);
@@ -5267,7 +5544,6 @@
         }
       }
     }
-
 
     // =========================
     // 학생관리 탭 : bind
@@ -5317,7 +5593,6 @@
           });
 
           syncStudentMgmtBatchAllToggle();
-          await loadStudentManagementRows();
         });
       }
 
@@ -5327,14 +5602,12 @@
           if (!checkbox) return;
 
           syncStudentMgmtBatchAllToggle();
-          await loadStudentManagementRows();
         });
       }
 
       if (els.studentMgmtClassSelect) {
         els.studentMgmtClassSelect.addEventListener('change', async () => {
           updateStudentMgmtBatchLabel();
-          await loadStudentManagementRows();
         });
       }
 
@@ -6310,6 +6583,13 @@
         return;
       }
 
+      const belowRequiredAttendanceToggle = e.target.closest('#toggleBelowRequiredAttendanceOnly');
+      if (belowRequiredAttendanceToggle) {
+        onlyBelowRequiredAttendance = belowRequiredAttendanceToggle.checked;
+        renderAttendanceTab();
+        return;
+      }
+
       const exportAttendanceExcelBtn = e.target.closest('#exportAttendanceExcelBtn');
       if (exportAttendanceExcelBtn) {
         exportAttendanceTableToExcel();
@@ -6490,10 +6770,6 @@
 
         if (id === 'exceptionsTab') {
           await loadExceptionRows();
-        }
-
-        if (id === 'studentsTab' && !studentMgmtLoadedOnce) {
-          await loadStudentManagementRows();
         }
       }
 
