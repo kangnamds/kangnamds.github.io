@@ -539,7 +539,7 @@
         <span>↻</span> 초기화
       </button>
       <!-- ★ 캡처 버튼 추가 -->
-      <button class="btn-reset" onclick="saveAsJPG()"
+      <button class="btn-reset" onclick="saveAsJPG(this)"
         style="background-color: #5DC6C2; color: white; border: none; margin-left: 10px;">
         <span>📷 JPG 저장</span>
       </button>
@@ -594,6 +594,11 @@
     // 3. Supabase에서 학생 데이터 불러오기 (기존 fetchData 대체)
     // ==========================================
     window.onload = async function () {
+      if (!window.supabase || !window.html2canvas) {
+        alert('필수 라이브러리가 아직 로드되지 않았습니다.');
+        return;
+      }
+
       const listBody = document.getElementById('listBody');
       const input = document.getElementById('searchInput');
 
@@ -778,24 +783,24 @@
       }
     }
 
-    function saveAsJPG(event) {
+    function saveAsJPG(btn) {
       const captureArea = document.querySelector('.list-container');
       if (!captureArea || searchHistory.length === 0) {
         alert('저장할 목록이 없습니다.');
         return;
       }
 
-      const saveBtn = event.currentTarget;
+      const saveBtn = btn;
       const originalText = saveBtn.innerHTML;
       saveBtn.innerHTML = '<span>저장 중...</span>';
+      saveBtn.disabled = true;
 
       document.querySelectorAll('input').forEach(input => input.blur());
+      captureArea.classList.add('capture-mode');
 
       setTimeout(() => {
-        captureArea.classList.add('capture-mode');
-
         html2canvas(captureArea, {
-          scale: 3,
+          scale: Math.max(window.devicePixelRatio || 1, 2),
           backgroundColor: '#ffffff',
           useCORS: true,
           logging: false
@@ -808,16 +813,15 @@
           const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
           const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
 
-          link.download = `시간표_${dateStr}_${timeStr}.jpg`;
+          link.download = `명단_${dateStr}_${timeStr}.jpg`;
           link.click();
-
-          captureArea.classList.remove('capture-mode');
-          saveBtn.innerHTML = originalText;
         }).catch(err => {
           console.error('캡처 실패:', err);
           alert('이미지 저장에 실패했습니다.');
+        }).finally(() => {
           captureArea.classList.remove('capture-mode');
           saveBtn.innerHTML = originalText;
+          saveBtn.disabled = false;
         });
       }, 150);
     }
