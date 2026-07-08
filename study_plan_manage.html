@@ -2922,44 +2922,52 @@
             <div>
               <h2>출결 관리</h2>
               <div class="plan-filter-switches">
+                <!-- 의무타임 미만 필터 -->
                 <label class="filter-switch">
                   <input type="checkbox" id="toggleBelowRequiredAttendanceOnly" />
                   <span class="filter-switch-ui"></span>
                   <span class="filter-switch-label">의무타임 미만</span>
                 </label>
+
+                <!-- 출결 수정 모드 토글 -->
+                <label class="filter-switch">
+                  <input type="checkbox" id="toggleAttendanceEditMode" />
+                  <span class="filter-switch-ui"></span>
+                  <span class="filter-switch-label">출결 수정 모드</span>
+                </label>
+
+                <!-- 엑셀 저장 -->
                 <button type="button" class="btn btn-secondary" id="exportAttendanceExcelBtn">
-                  문자용 엑셀 저장
+                  엑셀 저장
+                </button>
+
+                <!-- 출결 저장 -->
+                <button type="button" class="btn" id="saveAttendanceBtn" style="display:none;">
+                  출결 저장
                 </button>
               </div>
-              <div class="muted">학생별 신청 계획과 실제 출석 상태를 날짜별로 확인합니다.</div>
-            </div>
 
-            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
-              <div class="muted" id="attendanceSummaryText">조회 결과가 없습니다.</div>
+              <div class="table-scroll attendance-table-scroll">
+                <table class="data-table attendance-table">
+                  <thead id="attendanceTableHead">
+                    <tr>
+                      <th>반</th>
+                      <th>학번</th>
+                      <th>이름</th>
+                      <th>신청</th>
+                      <th>참여</th>
+                      <th>추가자습</th>
+                      <th>미참여</th>
+                    </tr>
+                  </thead>
+                  <tbody id="attendanceStudentList">
+                    <tr>
+                      <td colspan="6" class="empty">조회 버튼을 눌러주세요.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-
-          <div class="table-scroll attendance-table-scroll">
-            <table class="data-table attendance-table">
-              <thead id="attendanceTableHead">
-                <tr>
-                  <th>반</th>
-                  <th>학번</th>
-                  <th>이름</th>
-                  <th>신청</th>
-                  <th>참여</th>
-                  <th>추가자습</th>
-                  <th>미참여</th>
-                </tr>
-              </thead>
-              <tbody id="attendanceStudentList">
-                <tr>
-                  <td colspan="6" class="empty">조회 버튼을 눌러주세요.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
       </section>
 
       <!-- ========================================== -->
@@ -3156,6 +3164,9 @@
     let attendanceSortDir = 'desc';
     let selectedAttendanceStudent = null;
     let onlyBelowRequiredAttendance = false;
+    let editAttendanceMode = false;
+    let editedAttendanceMap = new Map(); // key: studentId_dayId_slotId_checkRound, value: status 문자열
+    let attendanceSlotsBound = false; // 출결 칩 클릭 리스너가 이미 붙었는지 여부
 
     let exceptionRows = [];
     let onlyUnresolvedExceptions = true;
@@ -4473,7 +4484,7 @@
       return map;
     }
 
-    function renderDaySlotsBlock(day, planSet, checkMap, showMobileDayLabel = true) {
+    function renderDaySlotsBlock(day, planSet, checkMap, showMobileDayLabel = true, studentId) {
       const dayId = String(day.id || '');
       const circledMap = {
         1: '①',
@@ -4501,27 +4512,30 @@
           const mismatch = !planned && !!att;
 
           const classes = [
-            'attendance-single-chip',
             'attendance-chip-core',
+            'attendance-single-chip',
             planned ? 'is-planned' : 'is-unplanned',
             status ? `status-${status}` : 'status-none',
             mismatch ? 'is-mismatch' : ''
           ].filter(Boolean).join(' ');
 
-          const title = [
-            `${day.day_label || ''}`,
-            '5T',
-            '1차',
-            getAttendanceStatusLabel(status),
-            mismatch ? '추가자습' : ''
-          ].filter(Boolean).join(' / ');
+          const title = `${day.day_label} · 5T · ${getAttendanceStatusLabel(status)}${mismatch ? ' · 추가자습' : ''}`;
+          const safeStatus = status || 'none';
+          const attKey = `${studentId}_${dayId}_5_1`;
 
           return `
-              <div class="attendance-slot attendance-slot--single">
-                <span class="${classes}" title="${escapeHtml(title)}">1</span>
-                <em class="attendance-slot-no">${circledMap[5]}</em>
-              </div>
-            `;
+            <div class="attendance-slot attendance-slot--single">
+              <span
+                class="${classes}"
+                title="${escapeHtml(title)}"
+                data-attendance-key="${escapeHtml(attKey)}"
+                data-attendance-status="${escapeHtml(safeStatus)}"
+              >
+                1
+              </span>
+              <em class="attendance-slot-no">${circledMap[5]}</em>
+            </div>
+          `;
         }
 
         const leftAtt = checkMap.get(`${dayId}_${slotNo}_1`) || null;
@@ -4557,13 +4571,31 @@
           (leftMismatch || rightMismatch) ? '추가자습' : ''
         ].filter(Boolean).join(' / ');
 
+        // 여기서부터 새로 추가되는 부분
+        const safeLeftStatus = leftStatus || 'none';
+        const safeRightStatus = rightStatus || 'none';
+        const attKeyLeft = `${studentId}_${dayId}_${slotNo}_1`;
+        const attKeyRight = `${studentId}_${dayId}_${slotNo}_2`;
+
         return `
-            <div class="attendance-slot attendance-slot--dual" title="${escapeHtml(title)}">
-              <span class="${leftClasses}">1</span>
-              <span class="${rightClasses}">2</span>
-              <em class="attendance-slot-no">${circledMap[slotNo]}</em>
-            </div>
-          `;
+          <div class="attendance-slot attendance-slot--dual" title="${escapeHtml(title)}">
+            <span
+              class="${leftClasses}"
+              data-attendance-key="${escapeHtml(attKeyLeft)}"
+              data-attendance-status="${escapeHtml(safeLeftStatus)}"
+            >
+              1
+            </span>
+            <span
+              class="${rightClasses}"
+              data-attendance-key="${escapeHtml(attKeyRight)}"
+              data-attendance-status="${escapeHtml(safeRightStatus)}"
+            >
+              2
+            </span>
+            <em class="attendance-slot-no">${circledMap[slotNo]}</em>
+          </div>
+        `;
       }).join('')}
       </div>
     </div>
@@ -4587,7 +4619,7 @@
     function renderAttendanceDaySlotsCell(day, studentId) {
       const planSet = buildAttendancePlanSetForStudent(studentId);
       const checkMap = buildAttendanceCheckMapForStudent(studentId);
-      return renderDaySlotsBlock(day, planSet, checkMap, true);
+      return renderDaySlotsBlock(day, planSet, checkMap, true, studentId);
     }
 
     function renderAttendanceTab() {
@@ -4710,6 +4742,7 @@
       }).join('');
 
       bindAttendanceStudentRowEvents();
+      bindAttendanceSlotEditClicks();
     }
 
     function renderAttendanceVertical(thead, tbody, summary) {
@@ -4822,6 +4855,7 @@
       }).join('');
 
       bindAttendanceStudentRowEvents();
+      bindAttendanceSlotEditClicks();
     }
 
     function bindAttendanceStudentRowEvents() {
@@ -4904,6 +4938,133 @@
         workbook,
         `출결관리_${safeBatch}_${safeClass}_${y}${m}${d}.xlsx`
       );
+    }
+
+    function bindAttendanceSlotEditClicks() {
+      const table = document.querySelector('#attendanceTab .attendance-table');
+      if (!table) return;
+
+      // 이미 리스너를 붙였으면 다시 붙이지 않음
+      if (attendanceSlotsBound) return;
+      attendanceSlotsBound = true;
+
+      table.addEventListener('click', (e) => {
+        const chip = e.target.closest('.attendance-chip-core');
+        if (!chip) return;
+        if (!editAttendanceMode) return; // 편집 모드 아닐 때는 무시
+
+        const key = chip.dataset.attendanceKey;
+        let status = (chip.dataset.attendanceStatus || '').trim().toLowerCase();
+
+        // 상태 순환: none → present → late → unknown → none
+        const order = ['none', 'present', 'late', 'unknown'];
+        if (!order.includes(status)) {
+          status = 'none';
+        }
+        const idx = order.indexOf(status);
+        const nextStatus = order[(idx + 1) % order.length];
+
+        chip.dataset.attendanceStatus = nextStatus;
+        editedAttendanceMap.set(key, nextStatus);
+
+        chip.classList.remove('status-present', 'status-late', 'status-unknown', 'status-none');
+        chip.classList.add(`status-${nextStatus}`);
+      });
+    }
+
+    async function saveAttendanceEdits() {
+      const supabase = getClient();
+      if (!supabase) return;
+
+      if (!editedAttendanceMap.size) {
+        alert('변경된 출결 내용이 없습니다.');
+        return;
+      }
+
+      try {
+        const rows = [];
+
+        editedAttendanceMap.forEach((status, key) => {
+          const [studentId, dayId, slotId, checkRound] = key.split('_');
+          if (!studentId || !dayId || !slotId || !checkRound) return;
+
+          if (status === 'none') {
+            // 체크 삭제
+            rows.push({
+              type: 'delete',
+              student_id: studentId,
+              study_plan_day_id: Number(dayId),
+              slot_id: Number(slotId),
+              check_round: Number(checkRound)
+            });
+          } else {
+            // upsert 대상
+            rows.push({
+              type: 'upsert',
+              student_id: studentId,
+              study_plan_day_id: Number(dayId),
+              slot_id: Number(slotId),
+              check_round: Number(checkRound),
+              status,
+              checked_at: new Date().toISOString()
+            });
+          }
+        });
+
+        const deleteTargets = rows.filter(r => r.type === 'delete');
+        const upsertTargets = rows.filter(r => r.type === 'upsert');
+
+        // delete 먼저
+        for (const r of deleteTargets) {
+          const { error: delErr } = await supabase
+            .from('study_attendance_checks')
+            .delete()
+            .eq('student_id', r.student_id)
+            .eq('study_plan_day_id', r.study_plan_day_id)
+            .eq('slot_id', r.slot_id)
+            .eq('check_round', r.check_round);
+
+          if (delErr) throw delErr;
+        }
+
+        // upsert
+        if (upsertTargets.length) {
+          const { error: upsertErr } = await supabase
+            .from('study_attendance_checks')
+            .upsert(
+              upsertTargets.map(r => ({
+                student_id: r.student_id,
+                study_plan_day_id: r.study_plan_day_id,
+                slot_id: r.slot_id,
+                check_round: r.check_round,
+                status: r.status,
+                checked_at: r.checked_at
+              })),
+              { onConflict: 'student_id,study_plan_day_id,slot_id,check_round' }
+            );
+
+          if (upsertErr) throw upsertErr;
+        }
+
+        editedAttendanceMap = new Map();
+        editAttendanceMode = false;
+
+        const editToggle = document.getElementById('toggleAttendanceEditMode');
+        if (editToggle) {
+          editToggle.checked = false;
+        }
+
+        const saveBtn = document.getElementById('saveAttendanceBtn');
+        if (saveBtn) {
+          saveBtn.style.display = 'none';
+        }
+
+        await executeQuery();
+        alert('출결 내용이 저장되었습니다.');
+      } catch (err) {
+        console.error('saveAttendanceEdits error', err);
+        alert(`출결 저장 중 오류: ${err.message}`);
+      }
     }
 
     // =========================
@@ -6593,6 +6754,25 @@
       const exportAttendanceExcelBtn = e.target.closest('#exportAttendanceExcelBtn');
       if (exportAttendanceExcelBtn) {
         exportAttendanceTableToExcel();
+        return;
+      }
+
+      const attendanceEditToggle = e.target.closest('#toggleAttendanceEditMode');
+      if (attendanceEditToggle) {
+        editAttendanceMode = attendanceEditToggle.checked;
+        editedAttendanceMap = new Map();
+
+        const saveBtn = document.getElementById('saveAttendanceBtn');
+        if (saveBtn) {
+          saveBtn.style.display = editAttendanceMode ? '' : 'none';
+        }
+
+        return;
+      }
+
+      const saveAttendanceBtn = e.target.closest('#saveAttendanceBtn');
+      if (saveAttendanceBtn) {
+        await saveAttendanceEdits();
         return;
       }
 
