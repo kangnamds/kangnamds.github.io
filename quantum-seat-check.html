@@ -21,8 +21,6 @@
       --present-border: #16a34a;
       --late: #fef3c7;
       --late-border: #d97706;
-      --unknown: #e5e7eb;
-      --unknown-border: #6b7280;
       --empty: #f8fafc;
     }
 
@@ -286,11 +284,6 @@
       border-color: var(--late-border);
     }
 
-    .legend-unknown {
-      background: var(--unknown);
-      border-color: var(--unknown-border);
-    }
-
     /* =========================
    Room / Seat grid
 ========================= */
@@ -371,9 +364,9 @@
       border: 2px solid var(--late-border);
     }
 
-    .seat.status-unknown {
-      background: var(--unknown);
-      border: 2px solid var(--unknown-border);
+    .seat.status-none {
+      background: #ffffff;
+      border: 1px solid var(--border);
     }
 
     .seat.is-study-planned {
@@ -791,7 +784,7 @@
         <div class="legend-box legend-late"></div><span>지각</span>
       </div>
       <div class="legend-item">
-        <div class="legend-box legend-unknown"></div><span>미확인</span>
+        <div class="legend-box" style="background:#ffffff;border-color:var(--border);"></div><span>미체크</span>
       </div>
     </div>
 
@@ -9402,20 +9395,20 @@
     }
 
     function getNextAttendanceStatus(currentStatus) {
+      if (currentStatus === 'none') return 'present';
       if (currentStatus === 'present') return 'late';
-      if (currentStatus === 'late') return 'unknown';
-      return 'present';
+      return 'none';
     }
 
     function getSeatCurrentDisplayStatus(seatEl) {
       const studentId = String(seatEl.dataset.studentId || '').trim();
-      if (!studentId) return 'unknown';
+      if (!studentId) return 'none';
 
       if (pendingAttendanceChanges.has(studentId)) {
         return pendingAttendanceChanges.get(studentId).status;
       }
 
-      return currentAttendanceStatusMap.get(studentId)?.status || 'unknown';
+      return currentAttendanceStatusMap.get(studentId)?.status || 'none';
     }
 
     function applySeatStatus(seatEl, status, { dirty = false } = {}) {
@@ -9426,7 +9419,7 @@
       } else if (status === 'late') {
         seatEl.classList.add('status-late');
       } else {
-        seatEl.classList.add('status-unknown');
+        seatEl.classList.add('status-none');
       }
 
       seatEl.classList.toggle('is-dirty', dirty);
@@ -9453,7 +9446,7 @@
     }
 
     function clearSeatStatusClasses(seatEl) {
-      seatEl.classList.remove('status-present', 'status-late', 'status-unknown', 'is-dirty');
+      seatEl.classList.remove('status-present', 'status-late', 'status-none', 'is-dirty');
     }
 
     function clearStudyPlanClasses(seatEl) {
@@ -9467,7 +9460,7 @@
           'has-student',
           'status-present',
           'status-late',
-          'status-unknown',
+          'status-none',
           'is-dirty',
           'is-study-planned'
         );
@@ -9642,9 +9635,9 @@
         const studentId = String(seat.dataset.studentId || '').trim();
         if (!studentId) return;
 
+        const originalStatus = currentAttendanceStatusMap.get(studentId)?.status || 'none';
         const currentStatus = getSeatCurrentDisplayStatus(seat);
         const nextStatus = getNextAttendanceStatus(currentStatus);
-        const originalStatus = currentAttendanceStatusMap.get(studentId)?.status || 'unknown';
 
         applySeatStatus(seat, nextStatus, { dirty: nextStatus !== originalStatus });
 
@@ -9853,8 +9846,8 @@
 
         seatEls.forEach(seat => {
           clearSeatStatusClasses(seat);
-          applySeatStatus(seat, 'unknown');
-          seat.title = '미확인';
+          applySeatStatus(seat, 'none');
+          seat.title = '미체크';
         });
 
         if (!studentIds.length) {
@@ -9882,7 +9875,7 @@
           const normalizedStatus =
             row.status === 'present' || row.status === 'late'
               ? row.status
-              : 'unknown';
+              : 'none';
 
           currentAttendanceStatusMap.set(studentId, {
             ...row,
@@ -9893,16 +9886,16 @@
         seatEls.forEach(seat => {
           const studentId = String(seat.dataset.studentId || '').trim();
           const row = currentAttendanceStatusMap.get(studentId);
-          const status = row?.status || 'unknown';
-
+          const status = row?.status || 'none';
           applySeatStatus(seat, status);
+
           seat.title = row?.checked_by
             ? `${status} / ${row.checked_by}`
             : status === 'present'
               ? '출석'
               : status === 'late'
                 ? '지각'
-                : '미확인';
+                : '미체크';
         });
 
         pendingAttendanceChanges.clear();
@@ -9948,9 +9941,7 @@
           document.querySelectorAll('.seat.has-student').forEach(seat => {
             const studentId = String(seat.dataset.studentId || '').trim();
             const row = currentAttendanceStatusMap.get(studentId);
-            const status = row?.status || 'unknown';
-
-            clearSeatStatusClasses(seat);
+            const status = row?.status || 'none';
             applySeatStatus(seat, status);
 
             seat.title = row?.checked_by
@@ -9959,7 +9950,7 @@
                 ? '출석'
                 : status === 'late'
                   ? '지각'
-                  : '미확인';
+                  : '미체크';
           });
 
           const toggleEl = document.getElementById('attendanceModeToggle');
@@ -9992,24 +9983,50 @@
           console.warn('auth.getUser fallback to anonymous', authError);
         }
 
-        const payload = Array.from(pendingAttendanceChanges.values()).map(item => ({
-          student_id: String(item.student_id).trim(),
-          study_plan_day_id: dayId,
-          slot_id: slotId,
-          check_round: checkRound,
-          status: item.status === 'present' || item.status === 'late' ? item.status : 'unknown',
-          checked_by: checkedBy
-        }));
+        const changes = Array.from(pendingAttendanceChanges.values());
 
-        const { error } = await supabase
-          .from('study_attendance_checks')
-          .upsert(payload, {
-            onConflict: 'student_id,study_plan_day_id,slot_id,check_round'
-          });
+        const upsertPayload = changes
+          .filter(item => item.status === 'present' || item.status === 'late')
+          .map(item => ({
+            student_id: String(item.student_id).trim(),
+            study_plan_day_id: dayId,
+            slot_id: slotId,
+            check_round: checkRound,
+            status: item.status,
+            checked_by: checkedBy
+          }));
 
-        if (error) {
-          alert(`저장 실패: ${error.message}`);
-          return;
+        const deleteStudentIds = changes
+          .filter(item => item.status === 'none')
+          .map(item => String(item.student_id).trim())
+          .filter(Boolean);
+
+        if (upsertPayload.length > 0) {
+          const { error: upsertError } = await supabase
+            .from('study_attendance_checks')
+            .upsert(upsertPayload, {
+              onConflict: 'student_id,study_plan_day_id,slot_id,check_round'
+            });
+
+          if (upsertError) {
+            alert(`저장 실패: ${upsertError.message}`);
+            return;
+          }
+        }
+
+        if (deleteStudentIds.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('study_attendance_checks')
+            .delete()
+            .eq('study_plan_day_id', dayId)
+            .eq('slot_id', slotId)
+            .eq('check_round', checkRound)
+            .in('student_id', deleteStudentIds);
+
+          if (deleteError) {
+            alert(`삭제 실패: ${deleteError.message}`);
+            return;
+          }
         }
 
         pendingAttendanceChanges.clear();
@@ -10019,7 +10036,7 @@
         setAttendanceMode(false);
 
         await loadAttendanceChecksForCurrentView();
-        setStatusText(`출결 ${payload.length}건 저장 완료`);
+        setStatusText(`출결 ${upsertPayload.length}건 저장, ${deleteStudentIds.length}건 삭제 완료`);
       } catch (e) {
         alert(`저장 실패: ${e?.message || e}`);
       } finally {
@@ -10060,7 +10077,7 @@
 
         document.querySelectorAll('.seat.has-student').forEach(seat => {
           const studentId = String(seat.dataset.studentId || '').trim();
-          const status = currentAttendanceStatusMap.get(studentId)?.status || 'unknown';
+          const status = currentAttendanceStatusMap.get(studentId)?.status || 'none';
           applySeatStatus(seat, status);
         });
       }
