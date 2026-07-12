@@ -1253,10 +1253,10 @@
       color: #7a4900;
     }
 
-    .attendance-chip-core.status-unknown {
-      background: #d6deea;
-      border-color: #7f90a6;
-      color: #334155;
+    .attendance-chip-core.status-exam {
+      background-color: #9abaff;
+      border-color: #0048e2;
+      color: #002f96;
     }
 
     .attendance-chip-core.status-none {
@@ -1332,9 +1332,9 @@
       border-color: #d69100;
     }
 
-    .attendance-legend-inline .dot.unknown {
-      background: #d6deea;
-      border-color: #7f90a6;
+    .attendance-legend-inline .dot.exam {
+      background: #9abaff;
+      border-color: #0048e2;
     }
 
     .attendance-legend-inline .dot.mismatch {
@@ -1366,6 +1366,35 @@
 
     .attendance-day-slots {
       /* 기존 .attendance-day-wrap 안 구조를 그대로 사용 */
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      /* 오버레이만 반투명 */
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background-color: #ffffff;
+      /* 카드는 완전 불투명 */
+      border-radius: 8px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+      overflow: hidden;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      background-color: #ffffff;
     }
 
     /* ==========================================
@@ -2640,6 +2669,288 @@
         width: 100%;
       }
     }
+
+    /* =========================
+   실전모의고사 업로드 모달
+   ========================= */
+
+    #examUploadModal.modal {
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.48);
+      backdrop-filter: blur(3px);
+    }
+
+    #examUploadModal.modal.show {
+      display: flex;
+    }
+
+    #examUploadModal .modal-dialog {
+      width: min(100%, 560px);
+      margin: 0;
+      animation: examModalIn 0.18s ease-out;
+    }
+
+    #examUploadModal .modal-content {
+      overflow: hidden;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow:
+        0 24px 60px rgba(15, 23, 42, 0.24),
+        0 4px 12px rgba(15, 23, 42, 0.10);
+    }
+
+    /* 상단 */
+    #examUploadModal .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 76px;
+      padding: 20px 24px;
+      background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 72%);
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    #examUploadModal .modal-header h3 {
+      margin: 0;
+      color: #172033;
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    #examUploadModal .close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      color: #64748b;
+      font-size: 25px;
+      font-weight: 400;
+      line-height: 1;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      cursor: pointer;
+    }
+
+    #examUploadModal .close:hover {
+      color: #0f766e;
+      background: #ecfdf5;
+      border-color: #99f6e4;
+    }
+
+    /* 내용 */
+    #examUploadModal .modal-body {
+      display: grid;
+      gap: 20px;
+      padding: 24px;
+      background: #ffffff;
+    }
+
+    #examUploadModal .form-group {
+      display: grid;
+      gap: 8px;
+      margin: 0 !important;
+    }
+
+    #examUploadModal .form-group label {
+      display: block;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+    }
+
+    /* 날짜 선택 */
+    #examUploadModal .form-control,
+    #examUploadModal select,
+    #examUploadModal input[type="file"] {
+      width: 100%;
+      height: 44px;
+      padding: 0 13px;
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 600;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    #examUploadModal select:focus,
+    #examUploadModal input[type="file"]:focus {
+      background: #ffffff;
+      border-color: #14b8a6;
+      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
+    }
+
+    /* 파일 선택 버튼 */
+    #examUploadModal input[type="file"] {
+      height: auto;
+      min-height: 44px;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+
+    #examUploadModal input[type="file"]::file-selector-button {
+      height: 32px;
+      margin-right: 10px;
+      padding: 0 11px;
+      color: #0f766e;
+      font-size: 13px;
+      font-weight: 750;
+      background: #ffffff;
+      border: 1px solid #99f6e4;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    #examUploadModal input[type="file"]::file-selector-button:hover {
+      background: #f0fdfa;
+    }
+
+    /* 안내 문구 */
+    #examUploadModal .modal-body .muted,
+    #examUploadModal .modal-body small,
+    #examUploadModal .modal-body p {
+      margin: -8px 0 0;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    /* 하단 버튼 영역 */
+    #examUploadModal .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 24px 20px;
+      background: #f8fafc;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    #examUploadModal .modal-footer .btn {
+      min-width: 76px;
+      height: 40px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 750;
+      border-radius: 9px;
+    }
+
+    #examUploadModal .modal-footer .btn-secondary {
+      color: #475569;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+    }
+
+    #examUploadModal .modal-footer .btn-secondary:hover {
+      color: #1e293b;
+      background: #f1f5f9;
+    }
+
+    #examUploadModal .modal-footer .btn:not(.btn-secondary) {
+      color: #ffffff;
+      background: #0f9f9a;
+      border: 1px solid #0f9f9a;
+      box-shadow: 0 4px 10px rgba(15, 159, 154, 0.24);
+    }
+
+    #examUploadModal .modal-footer .btn:not(.btn-secondary):hover {
+      background: #0b827d;
+      border-color: #0b827d;
+    }
+
+    /* 열릴 때만 살짝 올라오는 효과 */
+    @keyframes examModalIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.985);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (max-width: 520px) {
+      #examUploadModal.modal {
+        align-items: flex-end;
+        padding: 12px;
+      }
+
+      #examUploadModal .modal-dialog {
+        width: 100%;
+      }
+
+      #examUploadModal .modal-content {
+        border-radius: 16px 16px 12px 12px;
+      }
+
+      #examUploadModal .modal-header,
+      #examUploadModal .modal-body,
+      #examUploadModal .modal-footer {
+        padding-right: 16px;
+        padding-left: 16px;
+      }
+    }
+
+    #examUploadModal .exam-upload-progress {
+      padding: 14px;
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      border-radius: 10px;
+    }
+
+    #examUploadModal .exam-upload-progress-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: #0f766e;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    #examUploadModal .exam-upload-progress-head strong {
+      flex: 0 0 auto;
+      color: #115e59;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #examUploadModal .exam-upload-progress-track {
+      height: 8px;
+      overflow: hidden;
+      background: #ccfbf1;
+      border-radius: 999px;
+    }
+
+    #examUploadModal .exam-upload-progress-bar {
+      width: 0%;
+      height: 100%;
+      background: #0f9f9a;
+      border-radius: inherit;
+      transition: width 0.2s ease;
+    }
+
+    #examUploadModal.is-uploading .modal-content {
+      pointer-events: none;
+    }
+
+    #examUploadModal.is-uploading .modal-footer .btn-primary {
+      opacity: 0.72;
+    }
   </style>
 </head>
 
@@ -2945,6 +3256,12 @@
                 <button type="button" class="btn" id="saveAttendanceBtn" style="display:none;">
                   출결 저장
                 </button>
+
+                <!-- 실모응시명단 업로드 -->
+                <button type="button" class="btn btn-secondary" id="openExamUploadModalBtn" style="display:none;">
+                  실모응시명단 업로드
+                </button>
+
               </div>
               <div class="muted">학생별 신청 계획과 실제 출석 상태를 날짜별로 확인하고 수정할 수 있습니다.</div>
             </div>
@@ -3110,8 +3427,51 @@
           </div>
         </div>
       </section>
-
     </main>
+  </div>
+  <div class="modal" id="examUploadModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>실전모의고사 응시 명단 업로드</h3>
+          <button type="button" class="close" id="closeExamUploadModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="examAttendanceDaySelect">실모 날짜 선택</label>
+            <select id="examAttendanceDaySelect" class="form-control">
+              <!-- JS에서 currentAllDays로 채움 -->
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-top:12px;">
+            <label for="examAttendanceFile">국어/수학/영어/탐구 응시 학번 엑셀</label>
+            <input type="file" id="examAttendanceFile" accept=".xlsx,.xls" class="form-control" />
+          </div>
+
+          <p class="muted" style="margin-top:8px;">
+            엑셀 헤더: 국어 / 수학 / 영어 / 탐구, 각 열에 과목별 응시 학번을 입력해주세요.
+          </p>
+          <div id="examUploadProgress" class="exam-upload-progress" hidden>
+            <div class="exam-upload-progress-head">
+              <span id="examUploadProgressText">업로드 준비 중...</span>
+              <strong id="examUploadProgressCount">0 / 0</strong>
+            </div>
+            <div class="exam-upload-progress-track">
+              <div id="examUploadProgressBar" class="exam-upload-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelExamUploadBtn">
+            취소
+          </button>
+          <button type="button" class="btn btn-primary" id="saveExamUploadBtn">
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3280,7 +3640,7 @@
 
       if (normalized === 'present') return '출석';
       if (normalized === 'late') return '지각';
-      if (normalized === 'unknown') return '미확인';
+      if (normalized === 'exam') return '실전모의고사';
       return '미체크';
     }
 
@@ -3467,6 +3827,22 @@
       return withSeconds
         ? `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
         : `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+    }
+
+    function populateExamDaySelect() {
+      const select = document.getElementById('examAttendanceDaySelect');
+      if (!select) return;
+
+      // currentAllDays는 executeQuery()에서 studyplandays 로딩 후 채워지는 전역 배열
+      if (!Array.isArray(currentAllDays) || !currentAllDays.length) {
+        select.innerHTML = '<option value="">회차 날짜가 없습니다</option>';
+        return;
+      }
+
+      select.innerHTML = currentAllDays.map(day => {
+        const label = String(day.day_label || '').trim() || String(day.id);
+        return `<option value="${String(day.id)}">${escapeHtml(label)}</option>`;
+      }).join('');
     }
 
     // =========================
@@ -3751,7 +4127,7 @@
         const partMap = new Set();
 
         attendance.forEach(a => {
-          if (['present', 'late'].includes(String(a.status || '').toLowerCase())) {
+          if (['present', 'late', 'exam'].includes(String(a.status || '').toLowerCase())) {
             const key = `${a.student_id}_${a.study_plan_day_id}_${a.slot_id}`;
             if (planMap.has(key)) {
               partMap.add(key);
@@ -3778,7 +4154,7 @@
 
         (attendance || []).forEach(a => {
           const status = String(a.status || '').toLowerCase();
-          if (!['present', 'late', 'unknown'].includes(status)) return;
+          if (!['present', 'late', 'exam'].includes(status)) return;
 
           const sid = String(a.student_id || '');
           // 슬롯 단위 키: 하루+슬롯 (체크라운드 제외)
@@ -3918,6 +4294,12 @@
           </div>
         `;
           }).join('');
+        }
+
+        const examBtn = document.getElementById('openExamUploadModalBtn');
+        if (examBtn) {
+          // 배치/학생 데이터가 로드된 뒤에만 보여줌
+          examBtn.style.display = attendanceRows.length ? 'inline-block' : 'none';
         }
 
         log('→ 렌더링 완료');
@@ -4705,7 +5087,7 @@
         <span><i class="dot planned"></i>신청(계획)</span>
         <span><i class="dot present"></i>출석</span>
         <span><i class="dot late"></i>지각</span>
-        <span><i class="dot unknown"></i>미확인</span>
+        <span><i class="dot exam"></i>실모응시</span>
         <span><i class="dot mismatch"></i>추가자습(계획 외)</span>
       </div>
     `;
@@ -4806,7 +5188,7 @@
         <span><i class="dot planned"></i>신청(계획)</span>
         <span><i class="dot present"></i>출석</span>
         <span><i class="dot late"></i>지각</span>
-        <span><i class="dot unknown"></i>미확인</span>
+        <span><i class="dot exam"></i>실모응시</span>
         <span><i class="dot mismatch"></i>추가자습(계획 외)</span>
       </div>
     `;
@@ -4945,6 +5327,77 @@
       );
     }
 
+    async function parseExamExcelFile(file) {
+      if (!file) {
+        throw new Error('엑셀 파일이 선택되지 않았습니다.');
+      }
+
+      if (!window.XLSX) {
+        throw new Error('XLSX 라이브러리가 로드되지 않았습니다.');
+      }
+
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      // 2차원 배열로 읽기: [ [헤더...], [국어열 값...], ... ]
+      const rows = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        blankrows: false
+      });
+
+      if (!rows.length) {
+        throw new Error('엑셀에 데이터가 없습니다.');
+      }
+
+      const [headerRow, ...dataRows] = rows;
+
+      const idxKorean = headerRow.findIndex(h => String(h).includes('국어'));
+      const idxMath = headerRow.findIndex(h => String(h).includes('수학'));
+      const idxEnglish = headerRow.findIndex(h => String(h).includes('영어'));
+      const idxScience = headerRow.findIndex(h => String(h).includes('탐구'));
+
+      if (idxKorean < 0 && idxMath < 0 && idxEnglish < 0 && idxScience < 0) {
+        throw new Error('엑셀 헤더에 국어/수학/영어/탐구 열이 없습니다.');
+      }
+
+      const koreanIds = [];
+      const mathIds = [];
+      const englishIds = [];
+      const scienceIds = [];
+
+      dataRows.forEach(row => {
+        if (idxKorean >= 0) {
+          const v = row[idxKorean];
+          if (v !== undefined && v !== null && String(v).trim() !== '') {
+            koreanIds.push(String(v).trim());
+          }
+        }
+        if (idxMath >= 0) {
+          const v = row[idxMath];
+          if (v !== undefined && v !== null && String(v).trim() !== '') {
+            mathIds.push(String(v).trim());
+          }
+        }
+        if (idxEnglish >= 0) {
+          const v = row[idxEnglish];
+          if (v !== undefined && v !== null && String(v).trim() !== '') {
+            englishIds.push(String(v).trim());
+          }
+        }
+        if (idxScience >= 0) {
+          const v = row[idxScience];
+          if (v !== undefined && v !== null && String(v).trim() !== '') {
+            scienceIds.push(String(v).trim());
+          }
+        }
+      });
+
+      return { koreanIds, mathIds, englishIds, scienceIds };
+    }
+
     function bindAttendanceSlotEditClicks() {
       const table = document.querySelector('#attendanceTab .attendance-table');
       if (!table) return;
@@ -4961,8 +5414,8 @@
         const key = chip.dataset.attendanceKey;
         let status = (chip.dataset.attendanceStatus || '').trim().toLowerCase();
 
-        // 상태 순환: none → present → late → unknown → none
-        const order = ['none', 'present', 'late', 'unknown'];
+        // 상태 순환: none → present → late → exam → none
+        const order = ['none', 'present', 'late', 'exam'];
         if (!order.includes(status)) {
           status = 'none';
         }
@@ -4972,7 +5425,7 @@
         chip.dataset.attendanceStatus = nextStatus;
         editedAttendanceMap.set(key, nextStatus);
 
-        chip.classList.remove('status-present', 'status-late', 'status-unknown', 'status-none');
+        chip.classList.remove('status-present', 'status-late', 'status-exam', 'status-none');
         chip.classList.add(`status-${nextStatus}`);
       });
     }
@@ -5069,6 +5522,345 @@
       } catch (err) {
         console.error('saveAttendanceEdits error', err);
         alert(`출결 저장 중 오류: ${err.message}`);
+      }
+    }
+
+    function setExamUploadProgress(done, total, batchNo, batchTotal) {
+      const wrap = document.getElementById('examUploadProgress');
+      const text = document.getElementById('examUploadProgressText');
+      const count = document.getElementById('examUploadProgressCount');
+      const bar = document.getElementById('examUploadProgressBar');
+
+      if (!wrap || !text || !count || !bar) return;
+
+      const percent = total ? Math.round((done / total) * 100) : 0;
+
+      wrap.hidden = false;
+      text.textContent = `출결 저장 중 · ${batchNo}/${batchTotal} 묶음`;
+      count.textContent = `${done.toLocaleString()} / ${total.toLocaleString()}건`;
+      bar.style.width = `${percent}%`;
+    }
+
+    function resetExamUploadProgress() {
+      const wrap = document.getElementById('examUploadProgress');
+      const text = document.getElementById('examUploadProgressText');
+      const count = document.getElementById('examUploadProgressCount');
+      const bar = document.getElementById('examUploadProgressBar');
+
+      if (wrap) wrap.hidden = true;
+      if (text) text.textContent = '업로드 준비 중...';
+      if (count) count.textContent = '0 / 0';
+      if (bar) bar.style.width = '0%';
+    }
+
+    async function upsertExamAttendanceForDay(
+      supabase,
+      batchId,
+      dayId,
+      { koreanIds, mathIds, englishIds, scienceIds }
+    ) {
+      const rowMap = new Map();
+      const uploadedAt = new Date().toISOString();
+
+      const pushSubject = (studentIds, slotId, rounds) => {
+        (studentIds || []).forEach(studentId => {
+          const sid = String(studentId ?? '').trim();
+          if (!sid) return;
+
+          rounds.forEach(checkRound => {
+            const row = {
+              student_id: sid,
+              study_plan_day_id: Number(dayId),
+              slot_id: Number(slotId),
+              check_round: Number(checkRound),
+              status: 'exam',
+              checked_at: uploadedAt,
+              checked_by: 'manual_exam_upload',
+              memo: null
+            };
+
+            // 동일 학생·날짜·타임·회차는 한 행만 유지
+            const key = [
+              row.student_id,
+              row.study_plan_day_id,
+              row.slot_id,
+              row.check_round
+            ].join('__');
+
+            rowMap.set(key, row);
+          });
+        });
+      };
+
+      // 과목별 출결 반영 규칙
+      pushSubject(koreanIds, 1, [1, 2]);
+      pushSubject(mathIds, 2, [1, 2]);
+      pushSubject(englishIds, 3, [1, 2]);
+      pushSubject(scienceIds, 4, [1]);
+
+      const allRows = [...rowMap.values()];
+
+      if (!allRows.length) {
+        throw new Error('엑셀에서 저장할 학번을 찾지 못했습니다.');
+      }
+
+      // 1) 엑셀에 나온 전체 학번을 모은다.
+      const uploadedStudentIds = [
+        ...new Set(allRows.map(row => String(row.student_id).trim()))
+      ];
+
+      // 2) students 테이블에 실제 존재하는 학번만 확인한다.
+      const { data: studentRows, error: studentError } = await supabase
+        .from('students')
+        .select('student_id')
+        .in('student_id', uploadedStudentIds);
+
+      if (studentError) {
+        throw new Error(`학생 목록 확인 실패: ${studentError.message}`);
+      }
+
+      const validStudentIdSet = new Set(
+        (studentRows || []).map(row => String(row.student_id).trim())
+      );
+
+      const missingStudentIds = uploadedStudentIds.filter(
+        studentId => !validStudentIdSet.has(studentId)
+      );
+
+      // 3) 존재하는 학생의 출결만 남긴다.
+      const rows = allRows.filter(row =>
+        validStudentIdSet.has(String(row.student_id).trim())
+      );
+
+      if (!rows.length) {
+        throw new Error(
+          '엑셀의 학번이 학생 목록에 한 명도 없습니다. 학번 형식을 확인해주세요.'
+        );
+      }
+
+      // 4) 100건 단위로 나눠 순서대로 저장한다.
+      const CHUNK_SIZE = 100;
+      const total = rows.length;
+      const totalBatches = Math.ceil(total / CHUNK_SIZE);
+
+      for (
+        let start = 0, batchNo = 1;
+        start < total;
+        start += CHUNK_SIZE, batchNo++
+      ) {
+        const chunk = rows.slice(start, start + CHUNK_SIZE);
+
+        setExamUploadProgress(start, total, batchNo, totalBatches);
+
+        const { error } = await supabase
+          .from('study_attendance_checks')
+          .upsert(chunk, {
+            onConflict: 'student_id,study_plan_day_id,slot_id,check_round'
+          });
+
+        if (error) {
+          throw new Error(
+            `${batchNo}/${totalBatches} 묶음 저장 실패: ${error.message}`
+          );
+        }
+
+        setExamUploadProgress(
+          Math.min(start + chunk.length, total),
+          total,
+          batchNo,
+          totalBatches
+        );
+      }
+
+      return {
+        totalRows: total,
+        totalBatches,
+        missingStudentIds
+      };
+    }
+
+    async function applyExamAttendanceFromModal() {
+      const supabase = getClient();
+      if (!supabase) return;
+
+      const daySelect = document.getElementById('examAttendanceDaySelect');
+      const fileInput = document.getElementById('examAttendanceFile');
+
+      const dayId = daySelect?.value;
+      const file = fileInput?.files?.[0];
+
+      if (!dayId) {
+        alert('실모 날짜를 선택해주세요.');
+        return;
+      }
+      if (!file) {
+        alert('실모 응시 학번 엑셀 파일을 선택해주세요.');
+        return;
+      }
+
+      const batchId = els.batchSelect?.value;
+      if (!batchId) {
+        alert('먼저 회차를 선택한 뒤 조회해주세요.');
+        return;
+      }
+
+      const { koreanIds, mathIds, englishIds, scienceIds } =
+        await parseExamExcelFile(file);
+
+      await upsertExamAttendanceForDay(
+        supabase,
+        batchId,
+        dayId,
+        { koreanIds, mathIds, englishIds, scienceIds }
+      );
+
+      setExamUploadModalOpen(false);
+      await executeQuery();
+      alert('실전모의고사 출결이 반영되었습니다.');
+    }
+
+    function setExamUploadModalOpen(open) {
+      const modal = document.getElementById('examUploadModal');
+      if (!modal) return;
+
+      if (open) {
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+
+        requestAnimationFrame(() => {
+          document.getElementById('examAttendanceDaySelect')?.focus();
+        });
+
+        return;
+      }
+
+      // 모달 내부에 남은 포커스를 먼저 밖으로 빼낸다.
+      if (modal.contains(document.activeElement)) {
+        document.getElementById('openExamUploadModalBtn')?.focus();
+      }
+
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function populateExamDaySelect() {
+      const select = document.getElementById('examAttendanceDaySelect');
+      if (!select) return;
+
+      const days = Array.isArray(currentAllDays) ? currentAllDays : [];
+
+      if (!days.length) {
+        select.innerHTML = '<option value="">회차 날짜가 없습니다</option>';
+        return;
+      }
+
+      select.innerHTML = days.map(day => {
+        const value = String(day.id);
+        const label = String(day.day_label || '').trim() || String(day.plan_date || value);
+        return `<option value="${value}">${escapeHtml(label)}</option>`;
+      }).join('');
+    }
+
+    async function applyExamAttendanceFromModal() {
+      const supabase = getClient();
+      if (!supabase) return;
+
+      const modal = document.getElementById('examUploadModal');
+      const daySelect = document.getElementById('examAttendanceDaySelect');
+      const fileInput = document.getElementById('examAttendanceFile');
+      const saveBtn = document.getElementById('saveExamUploadBtn');
+      const cancelBtn = document.getElementById('cancelExamUploadBtn');
+      const closeBtn = document.getElementById('closeExamUploadModalBtn');
+
+      const dayId = daySelect?.value;
+      const file = fileInput?.files?.[0];
+      const batchId = els.batchSelect?.value;
+
+      if (!batchId) {
+        alert('먼저 회차를 선택하고 조회해주세요.');
+        return;
+      }
+
+      if (!dayId) {
+        alert('실모 날짜를 선택해주세요.');
+        return;
+      }
+
+      if (!file) {
+        alert('실모 응시 학번 엑셀 파일을 선택해주세요.');
+        return;
+      }
+
+      const originalSaveText = saveBtn?.textContent || '저장';
+
+      try {
+        if (modal) modal.classList.add('is-uploading');
+
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = '엑셀 확인 중...';
+        }
+
+        if (cancelBtn) cancelBtn.disabled = true;
+        if (closeBtn) closeBtn.disabled = true;
+        if (daySelect) daySelect.disabled = true;
+        if (fileInput) fileInput.disabled = true;
+
+        resetExamUploadProgress();
+
+        const {
+          koreanIds,
+          mathIds,
+          englishIds,
+          scienceIds
+        } = await parseExamExcelFile(file);
+
+        if (saveBtn) saveBtn.textContent = '출결 저장 중...';
+
+        const result = await upsertExamAttendanceForDay(
+          supabase,
+          batchId,
+          dayId,
+          {
+            koreanIds,
+            mathIds,
+            englishIds,
+            scienceIds
+          }
+        );
+
+        if (saveBtn) saveBtn.textContent = '화면 새로고침 중...';
+
+        await executeQuery();
+
+        setExamUploadModalOpen(false);
+
+        const missingMessage = result.missingStudentIds.length
+          ? `\n\n학생 목록에 없어 제외된 학번 (${result.missingStudentIds.length}명)\n` +
+          `${result.missingStudentIds.join(', ')}`
+          : '';
+
+        alert(
+          `실전모의고사 출결 저장 완료\n\n` +
+          `저장·갱신: ${result.totalRows.toLocaleString()}건\n` +
+          `처리 묶음: ${result.totalBatches}개` +
+          missingMessage
+        );
+      } catch (err) {
+        console.error('applyExamAttendanceFromModal error', err);
+        alert(`실모 출결 업로드에 실패했습니다.\n\n${err.message}`);
+      } finally {
+        if (modal) modal.classList.remove('is-uploading');
+
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = originalSaveText;
+        }
+
+        if (cancelBtn) cancelBtn.disabled = false;
+        if (closeBtn) closeBtn.disabled = false;
+        if (daySelect) daySelect.disabled = false;
+        if (fileInput) fileInput.disabled = false;
       }
     }
 
@@ -5319,7 +6111,7 @@
         <span><i class="dot planned"></i>신청</span>
         <span><i class="dot present"></i>출석</span>
         <span><i class="dot late"></i>지각</span>
-        <span><i class="dot unknown"></i>미확인</span>
+        <span><i class="dot exam"></i>실모응시</span>
         <span><i class="dot mismatch"></i>추가자습</span>
       </div>
     `;
@@ -5371,7 +6163,7 @@
             if (!dayIds.includes(String(checkRow.study_plan_day_id))) return;
 
             const status = String(checkRow.status || '').trim().toLowerCase();
-            if (!['present', 'late'].includes(status)) return;
+            if (!['present', 'late', 'exam'].includes(status)) return;
 
             const planKey = `${checkRow.study_plan_day_id}_${checkRow.slot_id}`;
             if (batchPlanKeySet.has(planKey)) {
@@ -6781,6 +7573,26 @@
         return;
       }
 
+      const openBtn = e.target.closest('#openExamUploadModalBtn');
+      if (openBtn) {
+        populateExamDaySelect();
+        setExamUploadModalOpen(true);
+        return;
+      }
+
+      const closeBtn = e.target.closest('#closeExamUploadModalBtn')
+        || e.target.closest('#cancelExamUploadBtn');
+      if (closeBtn) {
+        setExamUploadModalOpen(false);
+        return;
+      }
+
+      const saveBtn = e.target.closest('#saveExamUploadBtn');
+      if (saveBtn) {
+        applyExamAttendanceFromModal();
+        return;
+      }
+
       const unsubmittedToggle = e.target.closest('#toggleUnsubmittedOnly');
       if (unsubmittedToggle) {
         onlyUnsubmitted = unsubmittedToggle.checked;
@@ -6826,31 +7638,24 @@
         return;
       }
 
-      const openBtn = e.target.closest('#openManualEditBtn');
-      if (openBtn) {
-        if (editPlanMode) {
-          resetPlanEditState();
-          if (selectedPlanStudent) {
-            await renderPlanStudentSummary(selectedPlanStudent, currentAllDays);
-          }
-        } else {
-          setEditPlanMode(true);
-        }
+      const examUploadOpenBtn = e.target.closest('#openExamUploadModalBtn');
+      if (examUploadOpenBtn) {
+        populateExamDaySelect();
+        setExamUploadModalOpen(true);
         return;
       }
 
-      const cancelBtn = e.target.closest('#cancelEditPlanBtn');
-      if (cancelBtn) {
-        resetPlanEditState();
-        if (selectedPlanStudent) {
-          await renderPlanStudentSummary(selectedPlanStudent, currentAllDays);
-        }
+      const examUploadCloseBtn =
+        e.target.closest('#closeExamUploadModalBtn') ||
+        e.target.closest('#cancelExamUploadBtn');
+      if (examUploadCloseBtn) {
+        setExamUploadModalOpen(false);
         return;
       }
 
-      const saveBtn = e.target.closest('#saveEditPlanBtn');
-      if (saveBtn) {
-        await saveEditPlan();
+      const examUploadSaveBtn = e.target.closest('#saveExamUploadBtn');
+      if (examUploadSaveBtn) {
+        await applyExamAttendanceFromModal();
         return;
       }
 
@@ -6911,6 +7716,8 @@
 
       // 학생관리 탭 이벤트 바인딩
       bindStudentManagementEvents();
+
+      setExamUploadModalOpen(false);
 
 
       // ==========================================
