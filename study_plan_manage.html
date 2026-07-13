@@ -5679,46 +5679,6 @@
       };
     }
 
-    async function applyExamAttendanceFromModal() {
-      const supabase = getClient();
-      if (!supabase) return;
-
-      const daySelect = document.getElementById('examAttendanceDaySelect');
-      const fileInput = document.getElementById('examAttendanceFile');
-
-      const dayId = daySelect?.value;
-      const file = fileInput?.files?.[0];
-
-      if (!dayId) {
-        alert('실모 날짜를 선택해주세요.');
-        return;
-      }
-      if (!file) {
-        alert('실모 응시 학번 엑셀 파일을 선택해주세요.');
-        return;
-      }
-
-      const batchId = els.batchSelect?.value;
-      if (!batchId) {
-        alert('먼저 회차를 선택한 뒤 조회해주세요.');
-        return;
-      }
-
-      const { koreanIds, mathIds, englishIds, scienceIds } =
-        await parseExamExcelFile(file);
-
-      await upsertExamAttendanceForDay(
-        supabase,
-        batchId,
-        dayId,
-        { koreanIds, mathIds, englishIds, scienceIds }
-      );
-
-      setExamUploadModalOpen(false);
-      await executeQuery();
-      alert('실전모의고사 출결이 반영되었습니다.');
-    }
-
     function setExamUploadModalOpen(open) {
       const modal = document.getElementById('examUploadModal');
       if (!modal) return;
@@ -5791,6 +5751,21 @@
         return;
       }
 
+      const selectedDayLabel =
+        daySelect?.selectedOptions?.[0]?.textContent?.trim() ||
+        '선택한 날짜';
+
+      const confirmed = confirm(
+        `${selectedDayLabel} 데이터를 업로드합니다.\n\n` +
+        `저장 후에는 복구할 수 없습니다.\n\n` +
+        `날짜가 맞는지 확인하세요.\n\n` +
+        `확인을 누르면 엑셀의 응시자 출결 저장이 시작됩니다.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
       const originalSaveText = saveBtn?.textContent || '저장';
 
       try {
@@ -5832,6 +5807,13 @@
         if (saveBtn) saveBtn.textContent = '화면 새로고침 중...';
 
         await executeQuery();
+
+        // 다음 모달을 열었을 때 이전에 선택한 파일이 남지 않도록 초기화
+        if (fileInput) {
+          fileInput.value = '';
+        }
+
+        resetExamUploadProgress();
 
         setExamUploadModalOpen(false);
 
