@@ -7555,26 +7555,6 @@
         return;
       }
 
-      const openBtn = e.target.closest('#openExamUploadModalBtn');
-      if (openBtn) {
-        populateExamDaySelect();
-        setExamUploadModalOpen(true);
-        return;
-      }
-
-      const closeBtn = e.target.closest('#closeExamUploadModalBtn')
-        || e.target.closest('#cancelExamUploadBtn');
-      if (closeBtn) {
-        setExamUploadModalOpen(false);
-        return;
-      }
-
-      const saveBtn = e.target.closest('#saveExamUploadBtn');
-      if (saveBtn) {
-        applyExamAttendanceFromModal();
-        return;
-      }
-
       const unsubmittedToggle = e.target.closest('#toggleUnsubmittedOnly');
       if (unsubmittedToggle) {
         onlyUnsubmitted = unsubmittedToggle.checked;
@@ -7617,6 +7597,36 @@
           resetPlanEditState();
           await renderPlanStudentSummary(student, currentAllDays);
         }
+        return;
+      }
+
+      const openManualEditBtn = e.target.closest('#openManualEditBtn');
+      if (openManualEditBtn) {
+        if (editPlanMode) {
+          resetPlanEditState();
+
+          if (selectedPlanStudent) {
+            await renderPlanStudentSummary(selectedPlanStudent, currentAllDays);
+          }
+        } else {
+          setEditPlanMode(true);
+        }
+        return;
+      }
+
+      const cancelEditPlanBtn = e.target.closest('#cancelEditPlanBtn');
+      if (cancelEditPlanBtn) {
+        resetPlanEditState();
+
+        if (selectedPlanStudent) {
+          await renderPlanStudentSummary(selectedPlanStudent, currentAllDays);
+        }
+        return;
+      }
+
+      const saveEditPlanBtn = e.target.closest('#saveEditPlanBtn');
+      if (saveEditPlanBtn) {
+        await saveEditPlan();
         return;
       }
 
