@@ -1,15 +1,16 @@
 /* =========================================
    [1] 구글 시트 ID 및 설정
    ========================================= */
-const READSHEETID = '1T1FWnYIu-a3fJituoUeFwL0r5YR2cYQAnSUSLxsdZto';
+
+const SUPABASE_URL = 'https://cdugpffigeboqqlxkvzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkdWdwZmZpZ2Vib3FxbHhrdnpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjI2NjIsImV4cCI6MjA5MTE5ODY2Mn0.tTHORlm0EwXTD8u_PAULRZ-lLFMVzNR5QodXY_dmPTM'
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
 const CLASSSHEETID = '1jtye6oY0gHPDn7xJla75uG_fhdy_yktx9v4SObCFHRg';
 const CLASSSHEETNAME = '학생별수업';
-
-const LOGSHEETNAME = '퀀텀관 지도 일지';
-const LOGSHEETGID = '0';
-
-const SCRIPTURL = 'https://script.google.com/macros/s/AKfycbzCfzBoSCraE8ctS3PNVNnFgkSpdOEkOBCgW-95b_rjvxWEzuMaZPWpHwHEpxhGzPGI/exec';
-
 
 /* =========================================
    [2] 전역 변수
@@ -17,7 +18,6 @@ const SCRIPTURL = 'https://script.google.com/macros/s/AKfycbzCfzBoSCraE8ctS3PNVN
 let currentUser = "";
 let occupiedSeats = {};
 let distributionMap = {};
-let localSessionLogs = [];
 let currentSeatInfo = null;
 const requestQueue = [];
 let isProcessing = false;
@@ -131,71 +131,80 @@ function handleMobileSelect(arg) {
 
 
 /* =========================================
-   [5] 데이터 로딩
+   [5-1] 좌석 마스터 로딩 - Supabase students
    ========================================= */
-function loadSheetData() {
+async function loadSheetData() {
     if (requestQueue.length > 0) return;
-
-    const oldMaster = document.getElementById('gviz_master_script');
-    if (oldMaster) oldMaster.remove();
-    const oldClass = document.getElementById('gviz_class_script');
-    if (oldClass) oldClass.remove();
-    const oldAlert = document.getElementById('gviz_alert_script');
-    if (oldAlert) oldAlert.remove();
 
     updateStatus('좌석 데이터 요청 중...', 'black');
 
-    const script = document.createElement('script');
-    script.id = 'gviz_master_script';
-    script.src = `https://docs.google.com/spreadsheets/d/${READSHEETID}/gviz/tq?tq=select%20*&tqx=responseHandler:handleMasterData`;
-    document.body.appendChild(script);
-}
-
-function handleMasterData(response) {
-    if (response.status === 'error') {
-        updateStatus('마스터 데이터 에러', 'red');
-        return;
-    }
     try {
-        const rows = response.table.rows;
+        const { data: students, error } = await supabaseClient
+            .from('students')
+            .select('student_id, class_name, name, study_room, seat_number')
+            .not('study_room', 'is', null)
+            .not('seat_number', 'is', null);
+
+        if (error) throw error;
+
         occupiedSeats = {};
         distributionMap = {};
 
-        for (const r of rows) {
-            const c = r.c;
-            if (!c) continue;
-            const classNum = c[0]?.v;
-            const studentId = c[1]?.v;
-            const name = c[2]?.v;
-            const location = c[4]?.v;
-            const seatNum = c[5]?.v;
+        for (const student of students || []) {
+            const location = String(student.study_room || '').trim();
+            const seatKey = String(student.seat_number || '').trim();
+            const studentId = String(student.student_id || '').trim();
 
-            if (location && seatNum && studentId) {
-                const key = normalizeLocationKey(location);
-                const seatKey = String(seatNum).trim();
-                const stdIdStr = String(studentId).trim();
+            // 관/좌석/학번이 하나라도 없으면 좌석 배정 대상에서 제외
+            if (!location || !seatKey || !studentId) continue;
 
-                if (!occupiedSeats[key]) occupiedSeats[key] = {};
-                occupiedSeats[key][seatKey] = {
-                    classNum: classNum, studentId: stdIdStr, name: name, locationName: location, status: '정상'
-                };
+            const roomKey = normalizeLocationKey(location);
 
-                if (!distributionMap[key]) distributionMap[key] = new Set();
-                distributionMap[key].add(seatKey);
+            if (!occupiedSeats[roomKey]) {
+                occupiedSeats[roomKey] = {};
             }
+
+            occupiedSeats[roomKey][seatKey] = {
+                classNum: student.class_name || '',
+                studentId: studentId,
+                name: student.name || '',
+                locationName: location,
+                status: '정상'
+            };
+
+            if (!distributionMap[roomKey]) {
+                distributionMap[roomKey] = new Set();
+            }
+
+            distributionMap[roomKey].add(seatKey);
         }
+
         updateStatus('출결 시트 로딩 중...', 'blue');
         loadClassData();
-    } catch (e) {
-        console.error(e);
-        updateStatus('마스터 파싱 오류', 'red');
+        loadAlertData();
+
+    } catch (error) {
+        console.error('[Supabase students 로딩 오류]', error);
+        updateStatus(`좌석 데이터 오류: ${error.message}`, 'red');
+
+        // 좌석 데이터가 불러와지지 않아도 이전 화면 잔상은 제거
+        occupiedSeats = {};
+        distributionMap = {};
+        updateSeatColors();
     }
 }
 
 function loadClassData() {
+    const oldClass = document.getElementById('gviz_class_script');
+    if (oldClass) oldClass.remove();
+
     const script = document.createElement('script');
     script.id = 'gviz_class_script';
-    script.src = `https://docs.google.com/spreadsheets/d/${CLASSSHEETID}/gviz/tq?tq=select%20*&tqx=responseHandler:handleClassData&sheet=${encodeURIComponent(CLASSSHEETNAME)}`;
+    script.src =
+        `https://docs.google.com/spreadsheets/d/${CLASSSHEETID}/gviz/tq` +
+        `?tq=select%20*&tqx=responseHandler:handleClassData` +
+        `&sheet=${encodeURIComponent(CLASSSHEETNAME)}`;
+
     document.body.appendChild(script);
 }
 
@@ -261,49 +270,64 @@ function handleClassData(response) {
         updateStatus("수업 데이터 로딩 실패", "red");
         updateSeatColors(); // 실패하더라도 기본 좌석은 표시
     }
-
-    // 다음 단계(로그 데이터) 로딩
-    loadAlertData();
 }
 
 
-function loadAlertData() {
-    const script = document.createElement('script');
-    script.id = 'gviz_alert_script';
-    script.src = `https://docs.google.com/spreadsheets/d/${READSHEETID}/gviz/tq?tqx=responseHandler:handleAlertData&sheet=${encodeURIComponent(LOGSHEETNAME)}&gid=${LOGSHEETGID}`;
-    document.body.appendChild(script);
-}
-
-function handleAlertData(response) {
-    if (response.status === 'error') return;
+/* =========================================
+   [5-3] 과거 지도 알림 로그 - Supabase
+   ========================================= */
+async function loadAlertData() {
     try {
-        const rows = response.table.rows;
-        alertRows = [];
-        for (const r of rows) {
-            const c = r.c;
-            if (!c) continue;
+        const today = new Date();
 
-            const location = c[2]?.v;
-            const seat = c[3]?.v;
-            const classNum = c[4]?.v;
-            const studentId = c[5]?.v;
-            const name = c[6]?.v;
-            const alertText = c[14]?.v;
+        const recordDate = [
+            today.getFullYear(),
+            String(today.getMonth() + 1).padStart(2, '0'),
+            String(today.getDate()).padStart(2, '0')
+        ].join('-');
 
-            if (!alertText && !location) continue;
+        const { data: records, error } = await supabaseClient
+            .from('supervisor_records')
+            .select(`
+                id,
+                record_date,
+                record_time,
+                study_room,
+                seat_number,
+                class_name,
+                student_id,
+                student_name,
+                guidance_type,
+                note,
+                alert_text
+            `)
+            .eq('record_date', recordDate)
+            .neq('alert_text', '')
+            .order('id', { ascending: true });
 
-            alertRows.push({
-                location: location || "",
-                seat: String(seat || "").trim(),
-                classNum: classNum || "",
-                studentId: studentId || "",
-                name: name || "",
-                alertText: alertText || ""
-            });
-        }
+        if (error) throw error;
+
+        alertRows = (records || []).map(record => ({
+            id: record.id,
+            time: String(record.record_time || '').slice(0, 5),
+            location: record.study_room || '',
+            seat: String(record.seat_number || '').trim(),
+            classNum: record.class_name || '',
+            studentId: record.student_id || '',
+            name: record.student_name || '',
+            note: String(record.note || '').trim(),
+            alertText: record.alert_text || '',
+            isNewSession: false
+        }));
+
+        console.log('[Supabase 알림 로그 조회 완료]', alertRows);
+
         renderAlertsForActiveTab();
-    } catch (e) {
-        console.error(e);
+
+    } catch (error) {
+        console.error('[Supabase 알림 로그 조회 실패]', error);
+        alertRows = [];
+        renderAlertsForActiveTab();
     }
 }
 
@@ -350,49 +374,139 @@ function mountAlertsPanelToActiveTab() {
 function renderAlertsForActiveTab() {
     const container = document.getElementById('alerts-container');
     const ta = document.getElementById('alerts-text');
+
     if (!container) return;
 
-    let html = "";
+    const createItem = (text, isNewSession) => {
+        const newBadge = isNewSession
+            ? `<span style="
+                    display:inline-block;
+                    margin-right:6px;
+                    padding:1px 5px;
+                    border-radius:4px;
+                    background:#e7f5eb;
+                    color:#2f7d42;
+                    font-size:10px;
+                    font-weight:bold;
+                ">방금 입력</span>`
+            : '';
 
-    // 로그 아이템 생성 함수 (스타일 적용)
-    const createItem = (text) => {
         return `
-        <div class="log-item" style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee; font-size:13px; color:#555;">
-            <span style="flex:1;">${text}</span>
-            <button onclick="copySingleLog(this)" style="margin-left:10px; padding:2px 8px; border:1px solid #ddd; background:#fff; border-radius:4px; cursor:pointer; font-size:11px; color:#666;">복사</button>
-        </div>`;
+            <div class="log-item" style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                padding:8px 0;
+                border-bottom:1px solid #eee;
+                font-size:13px;
+                color:${isNewSession ? '#333' : '#666'};
+                font-weight:${isNewSession ? '600' : '400'};
+            ">
+                <span style="flex:1;">
+                    ${newBadge}${text}
+                </span>
+                <button
+                    onclick="copySingleLog(this)"
+                    style="
+                        margin-left:10px;
+                        padding:2px 8px;
+                        border:1px solid #ddd;
+                        background:#fff;
+                        border-radius:4px;
+                        cursor:pointer;
+                        font-size:11px;
+                        color:#666;
+                    "
+                >복사</button>
+            </div>
+        `;
     };
 
-    // 1. 현재 세션 로그
-    localSessionLogs.forEach(log => {
-        // [09:15] 2관 2층 1번 K반 1312 이해린 : 내용
-        const fullText = `[${log.time}] ${log.location} ${log.seat}번 ${log.classNum}반 ${log.studentId} ${log.name} : ${log.alertText}`;
-        html += createItem(fullText);
-    });
+    const createSectionTitle = (title, isNewSession) => {
+        return `
+            <div style="
+                margin-top:12px;
+                padding:8px 0 6px;
+                border-bottom:1px solid #ddd;
+                color:${isNewSession ? '#2f7d42' : '#777'};
+                font-size:12px;
+                font-weight:bold;
+            ">
+                ${isNewSession ? '●' : '•'} ${title}
+            </div>
+        `;
+    };
 
-    // 2. 과거 로그 필터링
     const activeTab = getActiveTabElement();
-    let filtered = [];
-    if (activeTab) {
-        const tabKey = normalizeLocationKey(activeTab.id);
-        filtered = alertRows.filter(r => {
-            const locKey = normalizeLocationKey(r.location);
-            return tabKey.startsWith(locKey);
-        });
 
-        filtered.forEach(row => {
-            // 과거 로그엔 시간 정보가 없을 수 있으므로 [기록]으로 대체
-            const fullText = `[기록] ${row.location} ${row.seat}번 ${row.classNum}반 ${row.studentId} ${row.name} : ${row.alertText}`;
-            html += createItem(fullText);
+    if (!activeTab) {
+        container.innerHTML =
+            "<div style='text-align:center; padding:20px; color:#999; font-size:12px;'>표시할 알림 로그가 없습니다.</div>";
+        return;
+    }
+
+    const tabKey = normalizeLocationKey(activeTab.id);
+
+    // 현재 관의 로그만 남긴 뒤, 최신 저장 ID가 위로 오도록 정렬
+    const currentRoomLogs = alertRows
+        .filter(row => {
+            const locationKey = normalizeLocationKey(row.location);
+            return tabKey.startsWith(locationKey);
+        })
+        .sort((a, b) => Number(b.id) - Number(a.id));
+
+    // 이번 접속 중 직접 저장한 로그
+    const newSessionLogs = currentRoomLogs.filter(
+        row => row.isNewSession === true
+    );
+
+    // 관 진입 시 DB에서 불러온 기존 로그
+    const previousLogs = currentRoomLogs.filter(
+        row => row.isNewSession !== true
+    );
+
+    const createLogText = (row) => {
+        const timeLabel = row.time ? `[${row.time}]` : '[기록]';
+
+        // 기타는 alertText 자체가 "기타(note)"이므로 note를 중복 표기하지 않음
+        const isEtcAlert = String(row.alertText || '').startsWith('기타(');
+        const noteSuffix = row.note && !isEtcAlert
+            ? ` (${row.note})`
+            : '';
+
+        return (
+            `${timeLabel} ${row.location} ${row.seat}번 ` +
+            `${row.classNum}반 ${row.studentId} ${row.name} : ` +
+            `${row.alertText}${noteSuffix}`
+        );
+    };
+
+    let html = '';
+
+    if (newSessionLogs.length > 0) {
+        html += createSectionTitle('이번 접속에서 입력한 알림', true);
+
+        newSessionLogs.forEach(row => {
+            html += createItem(createLogText(row), true);
         });
     }
 
-    container.innerHTML = html || "<div style='text-align:center; padding:20px; color:#999; font-size:12px;'>표시할 알림 로그가 없습니다.</div>";
-    container.scrollTop = container.scrollHeight;
+    if (previousLogs.length > 0) {
+        html += createSectionTitle('오늘 기존 알림', false);
 
-    // 전체 복사용 텍스트 업데이트 (숨김 처리됨)
+        previousLogs.forEach(row => {
+            html += createItem(createLogText(row), false);
+        });
+    }
+
+    container.innerHTML = html ||
+        "<div style='text-align:center; padding:20px; color:#999; font-size:12px;'>표시할 알림 로그가 없습니다.</div>";
+
+    // 최신 로그가 상단에 있으므로 상단을 보여줌
+    container.scrollTop = 0;
+
     if (ta) {
-        // ... (필요하다면 전체 텍스트 갱신)
+        ta.value = container.innerText;
     }
 }
 
@@ -524,13 +638,26 @@ function enterBuilding(buildingName) {
         alert("해당하는 탭을 찾을 수 없습니다.");
     }
 
+    // 관 진입 직후: 좌석 배정 + 현재 수업상태 + 오늘 지도알림을 1회 로딩
     loadSheetData();
+
+    // 이후 1분마다: 학생별수업 상태만 다시 가져옴
+    // handleClassData() 내부에서 loadAlertData()도 이어서 실행됨
     if (window.refreshInterval) clearInterval(window.refreshInterval);
-    window.refreshInterval = setInterval(loadSheetData, 30000);
+
+    window.refreshInterval = setInterval(() => {
+        if (requestQueue.length === 0 && !isProcessing) {
+            loadClassData();
+        }
+    }, 60000);
 }
 
 function goToHome() {
     if (!confirm("처음 화면으로 돌아가시겠습니까?")) return;
+    if (window.refreshInterval) {
+        clearInterval(window.refreshInterval);
+        window.refreshInterval = null;
+    }
     document.querySelector('.container').style.display = 'none';
     document.getElementById('main-landing').style.display = 'flex';
 }
@@ -559,175 +686,195 @@ function openModal(seatNum, info) {
     document.getElementById('guidanceModal').style.display = 'flex';
 }
 function closeModal() { document.getElementById('guidanceModal').style.display = 'none'; }
-
 function submitForm() {
-    // 1. 학번을 먼저 가져옵니다 (큐 검사용)
-    const studentId = document.getElementById('form_id').value;
-
-    // 2. 현재 큐(대기열)에 동일한 학생의 데이터가 전송 대기 중인지 확인
-    const isAlreadyInQueue = requestQueue.some(item => item.studentId === studentId);
-    if (isAlreadyInQueue) {
-        alert("⏳ 현재 이 학생의 기록이 전송 중입니다. 잠시만 기다려주세요.");
-        closeModal();
-        return; // 중단 (새로운 reqId 생성 방지)
-    }
-
-    // 3. 더블클릭 방지 로직 (버튼 비활성화)
-    const submitBtn = document.querySelector('.btn-submit');
-    if (submitBtn && submitBtn.disabled) return;   // 이미 누른 상태면 무시
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerText = "처리 중...";
-    }
-
-    // 4. 입력 폼 데이터 가져오기
     const note = document.getElementById('form_note').value;
     let type = "";
     document.getElementsByName('guidance_type').forEach(r => { if (r.checked) type = r.value; });
+    if (!type) { alert("유형 선택 필요"); return; }
 
-    if (!type) {
-        alert("유형 선택 필요");
-        // 폼을 닫지 않고 버튼만 다시 활성화해줍니다.
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerText = "입력 완료";
-        }
-        return;
-    }
-
-    // 5. 요청 고유 ID 생성 (중복 기록 완전 차단용)
-    const uniqueReqId = Date.now() + "_" + Math.random().toString(36).substring(2, 9);
-
-    // 6. 페이로드(전송 데이터) 구성
     const payload = {
         location: document.getElementById('form_location').value,
         seat: document.getElementById('form_seat').value,
         classNum: document.getElementById('form_class').value,
-        studentId: studentId,  // 위에서 가져온 변수 사용
+        studentId: document.getElementById('form_id').value,
         name: document.getElementById('form_name').value,
-        type: type,
-        note: note,
-        user: currentUser,
-        reqId: uniqueReqId      // 서버 캐시 비교용 ID
+        type: type, note: note, user: currentUser
     };
-
-    // 7. 큐에 추가 (자동 전송 시작)
     addToQueue(payload);
-
-    // 8. 0.3초 뒤 모달 닫기 및 버튼 상태 복구
-    setTimeout(() => {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerText = "입력 완료";
-        }
-        closeModal();
-    }, 300);
+    closeModal();
 }
-
 function addToQueue(p) { requestQueue.push(p); processQueue(); }
 
 async function processQueue() {
     if (isProcessing || requestQueue.length === 0) return;
-    isProcessing = true;
 
+    isProcessing = true;
     const payload = requestQueue[0];
 
-    // 상태 메시지 표시
-    if (typeof updateStatus === 'function') {
-        updateStatus("전송 중...", "blue");
-    }
+    updateStatus("당일 누적 기록 확인 중...", "blue");
 
     try {
-        const targetUrl = (typeof SCRIPT_URL !== 'undefined') ? SCRIPT_URL : SCRIPTURL;
+        // 브라우저의 한국 현지 날짜/시간을 DB에 명시적으로 저장
+        const now = new Date();
 
-        const response = await fetch(targetUrl, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
-        });
+        const recordDate = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, '0'),
+            String(now.getDate()).padStart(2, '0')
+        ].join('-');
 
-        const result = await response.json();
+        const recordTime = [
+            String(now.getHours()).padStart(2, '0'),
+            String(now.getMinutes()).padStart(2, '0'),
+            String(now.getSeconds()).padStart(2, '0')
+        ].join(':');
 
-        // ----------------------------------------------------
-        // 1. [로그용] 전체 메시지 (기존 필터링 유지)
-        // ----------------------------------------------------
-        let alertMsg = result.message || "";
-        alertMsg = alertMsg.replace(/(수면(?:주의)?\s*[12]회(?:,\s*)?|,\s*수면(?:주의)?\s*[12]회)/g, '').trim();
-        alertMsg = alertMsg.replace(/^,\s*|\s*,$/g, '');
+        const studentId = String(payload.studentId || '').trim();
+        const rawType = String(payload.type || '').trim();
 
-        if (payload.type === '야간자습 미확인' && (!alertMsg || alertMsg === "")) {
-            alertMsg = "야간자습 미확인";
+        // GAS normalizeType()와 동일한 지도유형 정규화
+        let currentType = rawType;
+        if (currentType.includes('전자기기')) {
+            currentType = '전자기기 위반';
+        } else if (currentType.includes('수업참여')) {
+            currentType = '수업참여';
+        } else if (currentType === '정숙주의') {
+            currentType = '정숙주의';
+        } else if (currentType === '수면주의') {
+            currentType = '수면주의';
         }
 
-        // ----------------------------------------------------
-        // 2. [팝업용] 현재 항목만 추출 (NEW!)
-        // ----------------------------------------------------
-        let popupMsg = result.message || "";
+        // 1. 오늘 이 학생의 기존 감독기록만 조회
+        const { data: todayRecords, error: selectError } = await supabaseClient
+            .from('supervisor_records')
+            .select('guidance_type')
+            .eq('student_id', studentId)
+            .eq('record_date', recordDate);
 
-        if (popupMsg && popupMsg !== "") {
-            // 콤마로 분리해서 배열로 만듦 ["수면 3회", "전자기기 1회"]
-            const parts = popupMsg.split(',').map(s => s.trim());
+        if (selectError) throw selectError;
 
-            // 현재 입력한 타입(payload.type)과 일치하는 부분만 찾음
-            // 예: "전자기기 위반" -> "전자기기"로 검색
-            const keyword = payload.type.replace("주의", "").replace(" 위반", "").trim();
+        // 2. 기존 기록 + 지금 입력한 유형을 합산
+        const counts = {
+            sleep: 0,
+            device: 0,
+            quiet: 0,
+            participation: 0,
+            nightUnconfirmed: 0
+        };
 
-            const relevantPart = parts.find(p => p.includes(keyword));
+        const allTypes = [
+            ...(todayRecords || []).map(record => String(record.guidance_type || '').trim()),
+            currentType
+        ];
 
-            if (relevantPart) {
-                popupMsg = relevantPart; // 찾았으면 그것만 표시 ("전자기기 위반 2회")
-            } else {
-                // 못 찾았으면(기타 등등) 그냥 전체 표시하되, 너무 길면 잘림 방지
-                popupMsg = result.message;
+        for (const type of allTypes) {
+            if (type === '수면주의') {
+                counts.sleep++;
+            } else if (type.includes('전자기기')) {
+                counts.device++;
+            } else if (type === '정숙주의') {
+                counts.quiet++;
+            } else if (type.includes('수업참여')) {
+                counts.participation++;
+            } else if (type === '야간자습 미확인') {
+                counts.nightUnconfirmed++;
             }
-        } else {
-            popupMsg = payload.type; // 서버 메시지 없으면 그냥 타입 표시
         }
-        // ----------------------------------------------------
 
-        // 하단 로그 추가
-        if (alertMsg && alertMsg !== "") {
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        // 3. 현재 입력한 지도유형 기준의 경고 문구 생성
+        let alertText = '';
 
-            localSessionLogs.push({
-                time: timeStr,
-                location: payload.location,
-                seat: payload.seat,
-                classNum: payload.classNum,
-                studentId: payload.studentId,
-                name: payload.name,
-                alertText: alertMsg
+        if (currentType === '수면주의' && counts.sleep >= 3) {
+            alertText = `수면주의 ${counts.sleep}회`;
+        } else if (
+            currentType === '야간자습 미확인' &&
+            counts.nightUnconfirmed >= 1
+        ) {
+            alertText = `야간자습 미확인 ${counts.nightUnconfirmed}회`;
+        } else if (currentType === '전자기기 위반' && counts.device >= 1) {
+            alertText = `전자기기 위반 ${counts.device}회`;
+        } else if (currentType === '정숙주의' && counts.quiet >= 1) {
+            alertText = `정숙주의 ${counts.quiet}회`;
+        } else if (currentType === '수업참여' && counts.participation >= 1) {
+            alertText = `수업참여 ${counts.participation}회`;
+        } else if (rawType === '기타') {
+            const noteText = String(payload.note || '').trim() || '내용 없음';
+            alertText = `기타(${noteText})`;
+        }
+
+        updateStatus("Supabase에 기록 저장 중...", "blue");
+
+        // 4. 누적값과 경고 문구를 포함하여 신규 기록 저장
+        const { data: savedRecord, error: insertError } = await supabaseClient
+            .from('supervisor_records')
+            .insert({
+                record_date: recordDate,
+                record_time: recordTime,
+                study_room: String(payload.location || '').trim(),
+                seat_number: String(payload.seat || '').trim(),
+                class_name: String(payload.classNum || '').trim(),
+                student_id: studentId,
+                student_name: String(payload.name || '').trim(),
+                guidance_type: rawType,
+                note: String(payload.note || '').trim(),
+                sleep_count: counts.sleep,
+                device_count: counts.device,
+                quiet_count: counts.quiet,
+                participation_count: counts.participation,
+                manager_name: String(payload.user || '').trim(),
+                alert_text: alertText
+            })
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+
+        console.log('[감독기록 저장 완료]', savedRecord);
+        // 저장 직후: DB에 실제로 저장된 경고 기록을 알림 데이터에도 반영
+        if (savedRecord.alert_text) {
+            alertRows.push({
+                id: savedRecord.id,
+                time: String(savedRecord.record_time || '').slice(0, 5),
+                location: savedRecord.study_room || '',
+                seat: String(savedRecord.seat_number || '').trim(),
+                classNum: savedRecord.class_name || '',
+                studentId: savedRecord.student_id || '',
+                name: savedRecord.student_name || '',
+                note: String(savedRecord.note || '').trim(),
+                alertText: savedRecord.alert_text,
+                isNewSession: true
             });
-
-            if (typeof renderAlertsForActiveTab === 'function') {
-                renderAlertsForActiveTab();
-            }
         }
 
-        // 성공 알림 팝업 (깔끔하게 현재 건만!)
-        alert(`✅ 기록되었습니다!\n\n학생: ${payload.name}\n내용: ${popupMsg}`);
+        renderAlertsForActiveTab();
+
+        const popupText = alertText || rawType;
+
+        alert(
+            `✅ 기록되었습니다!\n\n` +
+            `학생: ${payload.name}\n` +
+            `내용: ${popupText}`
+        );
 
         requestQueue.shift();
+        updateStatus("Supabase 저장 완료", "green");
 
-        if (typeof updateStatus === 'function') {
-            updateStatus("전송 완료", "green");
+    } catch (error) {
+        console.error('[감독기록 저장 실패]', error);
+
+        updateStatus(`저장 실패: ${error.message}`, "red");
+
+        alert(
+            `❌ 기록 저장에 실패했습니다.\n\n` +
+            `${error.message}\n\n` +
+            `콘솔의 [감독기록 저장 실패] 오류를 확인해주세요.`
+        );
+    } finally {
+        isProcessing = false;
+
+        if (requestQueue.length > 0) {
+            setTimeout(processQueue, 1500);
         }
-
-        setTimeout(() => {
-            isProcessing = false;
-            if (requestQueue.length > 0) processQueue();
-        }, 1500);
-
-    } catch (e) {
-        console.error(e);
-        if (typeof updateStatus === 'function') {
-            updateStatus("전송 실패", "red");
-        }
-        setTimeout(() => {
-            isProcessing = false;
-            processQueue();
-        }, 3000);
     }
 }
 

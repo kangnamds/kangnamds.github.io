@@ -262,11 +262,18 @@
 
 <body class="bg-slate-50 text-slate-800 font-sans">
 
-    <!-- ▼ 설정 영역: 배포된 GAS 웹 앱 URL 입력 ▼ -->
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbzCfzBoSCraE8ctS3PNVNnFgkSpdOEkOBCgW-95b_rjvxWEzuMaZPWpHwHEpxhGzPGI/exec"; 
+        const SUPABASE_URL = 'https://cdugpffigeboqqlxkvzr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkdWdwZmZpZ2Vib3FxbHhrdnpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjI2NjIsImV4cCI6MjA5MTE5ODY2Mn0.tTHORlm0EwXTD8u_PAULRZ-lLFMVzNR5QodXY_dmPTM';
+
+        const supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
     </script>
-    <!-- ▲ 설정 영역 끝 ▲ -->
 
     <!-- 상단 헤더 -->
     <header class="bg-indigo-700 text-white shadow-lg sticky top-0 z-30">
@@ -636,8 +643,7 @@
         let currentRecord = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            // [복구됨] 오늘 날짜 구하기 (YYYY-MM-DD 형식)
-            // 한국 시간(KST) 기준 날짜를 정확히 얻기 위해 오프셋 보정
+            // 오늘 날짜 구하기 (YYYY-MM-DD 형식)
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000; // ms 단위
             const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
@@ -650,52 +656,115 @@
             fetchData();
         });
 
-        // 1. 데이터 가져오기 (날짜 기반 로딩)
-        // 1. 데이터 가져오기 (날짜 기반 로딩 - 수정됨)
-        async function fetchData(forceReload = false) {
-            if (!API_URL.includes("script.google.com")) {
-                alert("API_URL을 설정해주세요!");
-                return;
-            }
+        // 감독기록 데이터 가져오기
+        function mapSupervisorRecord(row) {
+            return {
+                id: row.id,
 
+                date: row.record_date || '',
+                time: String(row.record_time || '').slice(0, 8),
+
+                location: row.study_room || '',
+                seat: row.seat_number || '',
+
+                classNum: row.class_name || '',
+                studentId: row.student_id || '',
+                name: row.student_name || '',
+
+                type: row.guidance_type || '',
+                note: row.note || '',
+
+                sleepCount: Number(row.sleep_count || 0),
+                deviceCount: Number(row.device_count || 0),
+                quietCount: Number(row.quiet_count || 0),
+                participationCount: Number(row.participation_count || 0),
+
+                manager: row.manager_name || '',
+                alertText: row.alert_text || '',
+
+                consultation: row.consultation || '',
+                teacher: row.homeroom_teacher || ''
+            };
+        }
+
+
+        async function fetchData(forceReload = false) {
             const loader = document.getElementById('loader');
             const tbody = document.getElementById('tableBody');
-
-            // 화면의 날짜 필터 값 가져오기
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
 
+            if (!startDate || !endDate) {
+                alert('조회 시작일과 종료일을 선택해주세요.');
+                return;
+            }
+
+            if (startDate > endDate) {
+                alert('시작일은 종료일보다 늦을 수 없습니다.');
+                return;
+            }
+
             loader.classList.remove('hidden');
-            if (forceReload) tbody.innerHTML = '';
+
+            if (forceReload) {
+                tbody.innerHTML = '';
+            }
 
             try {
-                console.log(`🔄 데이터 요청: ${startDate} ~ ${endDate}`);
+                console.log('📡 Supabase 감독기록 조회:', startDate, '~', endDate);
 
-                // ★ 안전한 URL 파라미터 조립 방식
-                const targetUrl = new URL(API_URL);
-                targetUrl.searchParams.append('startDate', startDate);
-                targetUrl.searchParams.append('endDate', endDate);
+                const { data, error } = await supabaseClient
+                    .from('supervisor_records')
+                    .select(`
+                        id,
+                        record_date,
+                        record_time,
+                        study_room,
+                        seat_number,
+                        class_name,
+                        student_id,
+                        student_name,
+                        guidance_type,
+                        note,
+                        sleep_count,
+                        device_count,
+                        quiet_count,
+                        participation_count,
+                        manager_name,
+                        alert_text,
+                        consultation,
+                        homeroom_teacher
+                    `)
+                    .gte('record_date', startDate)
+                    .lte('record_date', endDate)
+                    .order('record_date', { ascending: false })
+                    .order('record_time', { ascending: false });
 
-                // fetch 요청 
-                const response = await fetch(targetUrl.toString());
-
-                // HTTP 상태 코드 확인 (200 OK인지)
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                if (error) {
+                    throw error;
                 }
 
-                const data = await response.json();
+                rawData = (data || []).map(mapSupervisorRecord);
 
-                rawData = data;
+                console.log(`✅ 감독기록 ${rawData.length}건 로드 완료`);
 
-                // 화면 그리기
                 initFilters(rawData);
                 renderDashboard();
                 updateLastSyncTime();
 
             } catch (error) {
-                console.error("데이터 로드 실패:", error);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold">데이터를 불러오지 못했습니다. 너무 넓은 기간을 선택했거나 네트워크 에러입니다.</td></tr>';
+                console.error('❌ Supabase 감독기록 로드 실패:', error);
+
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-10 text-red-500 font-bold">
+                        데이터를 불러오지 못했습니다.<br>
+                        <span class="text-xs font-normal text-gray-400">
+                            ${error.message || 'Supabase 연결 또는 권한 설정을 확인해주세요.'}
+                        </span>
+                        </td>
+                    </tr>
+                    `;
             } finally {
                 loader.classList.add('hidden');
             }
@@ -863,11 +932,16 @@
 
                 // 💡 체크박스 열 생성 (야간 모드일 때만)
                 let checkboxTd = '';
+
                 if (isNightFilterOn) {
                     checkboxTd = `
-                        <!-- 💡 여기에 checkbox-cell 추가 -->
                         <td class="checkbox-cell px-4 py-4 text-center border-r border-gray-50 w-10 cursor-pointer">
-                            <input type="checkbox" value="${row.rowIndex}" data-studentid="${row.studentId}" class="row-checkbox w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            value="${row.id}"
+                            data-studentid="${row.studentId}"
+                            class="row-checkbox w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                        >
                         </td>
                     `;
                 }
@@ -937,55 +1011,59 @@
             currentRecord = null;
         }
 
-        function saveConsultation(btnElement) {
+        async function saveConsultation(btnElement) {
             if (!currentRecord) return;
+
             const content = document.getElementById('consultContent').value.trim();
             const teacher = document.getElementById('consultTeacher').value.trim();
+
             if (!content || !teacher) {
-                alert("상담 내용과 담당 선생님 성함을 모두 입력해주세요.");
+                alert('상담 내용과 생활담임을 모두 입력해주세요.');
                 return;
             }
-            const payload = {
-                action: 'update',
-                rowIndex: currentRecord.rowIndex, // 💡 백엔드로 보낼 행 번호 추가
-                date: currentRecord.date,
-                time: currentRecord.time,
-                studentId: currentRecord.studentId,
-                consultation: content,
-                teacher: teacher
-            };
+
+            if (!currentRecord.id) {
+                alert('기록ID가 없어 저장할 수 없습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+
             const originalText = btnElement.innerHTML;
             btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
             btnElement.disabled = true;
 
-            fetch(API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
-                },
-                redirect: 'follow', // GAS 필수 옵션 (리다이렉트 허용)
-                body: JSON.stringify(payload)
-            })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.status === 'success') {
-                        currentRecord.consultation = content;
-                        currentRecord.teacher = teacher;
-                        renderDashboard();
-                        closeModal();
-                        alert("✅ 상담 내역이 저장되었습니다.");
-                    } else {
-                        alert("⚠️ 에러: " + result.message);
-                    }
-                })
-                .catch(error => {
-                    console.error("Fetch 에러:", error);
-                    alert("⚠️ 저장 중 오류가 발생했습니다. 브라우저 콘솔(F12)을 확인해주세요.");
-                })
-                .finally(() => {
-                    btnElement.innerHTML = originalText;
-                    btnElement.disabled = false;
-                });
+            try {
+                const { error } = await supabaseClient
+                    .from('supervisor_records')
+                    .update({
+                        consultation: content,
+                        homeroom_teacher: teacher
+                    })
+                    .eq('id', currentRecord.id);
+
+                if (error) {
+                    throw error;
+                }
+
+                currentRecord.consultation = content;
+                currentRecord.teacher = teacher;
+
+                renderDashboard();
+                closeModal();
+
+                alert('상담 기록이 저장되었습니다.');
+
+            } catch (error) {
+                console.error('❌ 상담 기록 저장 실패:', error);
+
+                alert(
+                    `상담 기록 저장에 실패했습니다.\n\n${error.message || 'Supabase 연결 또는 UPDATE 권한을 확인해주세요.'
+                    }`
+                );
+
+            } finally {
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+            }
         }
 
         function getTypeStyle(type) {
@@ -1022,61 +1100,63 @@
             checkboxes.forEach(cb => cb.checked = source.checked);
         }
 
-        // 💡 일괄 확인 버튼 보이기/숨기기 (renderDashboard() 함수 맨 밑에 이 한 줄 추가!)
-        // document.getElementById('bulkActionArea').style.display = document.getElementById('nightFilter').checked ? 'flex' : 'none';
-
         // 일괄 확인 처리 로직
-        function bulkVerify(btnElement) {
+        async function bulkVerify(btnElement) {
             const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+
             if (checkedBoxes.length === 0) {
-                alert("선택된 항목이 없습니다.");
+                alert('확인 처리할 학생을 선택해주세요.');
                 return;
             }
 
-            if (!confirm(`선택한 ${checkedBoxes.length}건을 일괄 확인 처리하시겠습니까?\n(상담내용에 '확인완료'가 기록됩니다)`)) return;
+            if (!confirm(`${checkedBoxes.length}명을 일괄 확인 처리하시겠습니까?`)) {
+                return;
+            }
 
-            // 체크된 항목들의 rowIndex와 studentId 수집
-            const targets = Array.from(checkedBoxes).map(cb => ({
-                rowIndex: cb.value,
-                studentId: cb.getAttribute('data-studentid')
-            }));
+            const recordIds = Array.from(checkedBoxes)
+                .map(cb => cb.value)
+                .filter(Boolean);
 
-            const payload = {
-                action: 'bulkVerify', // 💡 백엔드 분기용 핵심 액션
-                targets: targets,
-                consultation: '확인완료', // 적힐 내용
-                teacher: '일괄처리'      // 선생님 이름 칸에 적힐 내용 (원하시면 비워두셔도 됨)
-            };
+            if (recordIds.length !== checkedBoxes.length) {
+                alert('일부 기록ID를 찾을 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+                return;
+            }
 
             const originalText = btnElement.innerHTML;
             btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 처리 중...';
             btnElement.disabled = true;
 
-            // 백엔드로 전송
-            fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                redirect: 'follow',
-                body: JSON.stringify(payload)
-            })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.status === 'success') {
-                        alert(`✅ ${checkedBoxes.length}건이 성공적으로 확인 처리되었습니다.`);
-                        fetchData(true); // 데이터 갱신
-                    } else {
-                        alert("⚠️ " + result.message);
-                    }
-                })
-                .catch(error => {
-                    console.error(error);
-                    alert("⚠️ 일괄 처리 중 오류가 발생했습니다.");
-                })
-                .finally(() => {
-                    btnElement.innerHTML = originalText;
-                    btnElement.disabled = false;
-                    document.getElementById('selectAllCheckbox').checked = false;
-                });
+            try {
+                const { error } = await supabaseClient
+                    .from('supervisor_records')
+                    .update({
+                        consultation: '확인완료',
+                        homeroom_teacher: '일괄처리'
+                    })
+                    .in('id', recordIds);
+
+                if (error) {
+                    throw error;
+                }
+
+                alert(`${recordIds.length}명 확인 처리가 완료되었습니다.`);
+
+                document.getElementById('selectAllCheckbox').checked = false;
+
+                await fetchData(true);
+
+            } catch (error) {
+                console.error('❌ 일괄 확인 처리 실패:', error);
+
+                alert(
+                    `일괄 확인 처리에 실패했습니다.\n\n${error.message || 'Supabase 연결 또는 UPDATE 권한을 확인해주세요.'
+                    }`
+                );
+
+            } finally {
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+            }
         }
 
         document.getElementById('nav-quantum').classList.add('active');
