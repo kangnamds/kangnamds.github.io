@@ -415,6 +415,22 @@
                     </div>
                 </div>
 
+                <!-- 위치 -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">위치</label>
+
+                    <div class="relative">
+                        <select id="locationFilter"
+                            class="appearance-none border border-gray-300 rounded px-3 py-2 text-sm w-28 focus:ring-2 focus:ring-indigo-500 outline-none bg-white pr-8 cursor-pointer hover:border-indigo-300 transition"
+                            onchange="renderDashboard()">
+                            <option value="all">전체 위치</option>
+                        </select>
+
+                        <i
+                            class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none text-xs"></i>
+                    </div>
+                </div>
+
                 <!-- [신규] 지도유형 선택 -->
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">지도유형</label>
@@ -793,6 +809,27 @@
                     select.appendChild(opt);
                 });
             }
+            const locations = [...new Set(
+                data
+                    .map(record => String(record.location || '').trim())
+                    .filter(Boolean)
+            )].sort();
+
+            const locationSelect = document.getElementById('locationFilter');
+            const selectedLocation = locationSelect.value || 'all';
+
+            locationSelect.innerHTML = '<option value="all">전체 위치</option>';
+
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                option.innerText = location;
+                locationSelect.appendChild(option);
+            });
+
+            if ([...locationSelect.options].some(option => option.value === selectedLocation)) {
+                locationSelect.value = selectedLocation;
+            }
             // 2. [신규] 지도유형 목록 초기화
             // normalizeType 함수를 이용해 '전자기기 위반 (패드)' 같은 것도 '전자기기 위반'으로 통일해서 수집 가능
             // 여기서는 원본 데이터를 그대로 수집하되, 빈 값은 제외
@@ -813,6 +850,7 @@
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             const classVal = document.getElementById('classFilter').value;
+            const locationVal = document.getElementById('locationFilter').value;
             const typeVal = document.getElementById('typeFilter').value; // ★ 추가됨
             const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
 
@@ -822,6 +860,9 @@
             const filtered = rawData.filter(item => {
                 const isDateInRange = item.date >= startDate && item.date <= endDate;
                 const isClassMatch = classVal === 'All' || String(item.classNum) === classVal;
+                const isLocationMatch =
+                    locationVal === 'all' ||
+                    String(item.location || '').trim() === locationVal;
 
                 // ★ [신규] 유형 필터 로직
                 // '전체 유형'이거나, 데이터의 type이 선택된 값과 정확히 일치(또는 포함)하는지 확인
@@ -834,7 +875,7 @@
                 const isAlertMatch = alertOnly ? (item.alertText && String(item.alertText).trim() !== '') : true;
                 const isNightMatch = nightOnly ? (String(item.type).includes('야간') && (!item.consultation || String(item.consultation).trim() === '')) : true;
 
-                return isDateInRange && isClassMatch && isTypeMatch && isSearchMatch && isAlertMatch && isNightMatch;
+                return isDateInRange && isClassMatch && isLocationMatch && isTypeMatch && isSearchMatch && isAlertMatch && isNightMatch;
             });
 
             // 최신순 정렬 (내림차순) - 불규칙한 시간 포맷 완벽 대응
