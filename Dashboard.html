@@ -264,6 +264,8 @@
 
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Excel(.xlsx, .xls) 파일 읽기 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <script>
         const SUPABASE_URL = 'https://cdugpffigeboqqlxkvzr.supabase.co';
@@ -533,11 +535,24 @@
 
         <!-- 데이터 테이블 -->
         <!-- 💡 일괄 확인 버튼 (테이블 바로 위에 배치) -->
-        <div id="bulkActionArea" class="hidden mb-2 flex justify-end">
+        <div id="bulkActionArea" class="hidden mb-2 flex flex-wrap justify-end items-center gap-2">
+            <!-- 기존: 표에서 체크한 학생만 확인 처리 -->
             <button onclick="bulkVerify(this)"
                 class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow transition flex items-center gap-2">
-                <i class="fas fa-check-double"></i> 선택 일괄 확인
+                <i class="fas fa-check-double"></i>
+                선택 일괄 확인
             </button>
+
+            <!-- 신규: Excel A열 학번 기준 오늘 야간자습 미확인 일괄 처리 -->
+            <label for="nightExcelUpload"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded shadow transition flex items-center gap-2 cursor-pointer"
+                title="Excel 첫 번째 시트 A열의 학번을 기준으로 오늘 야간자습 미확인 기록을 확인 처리합니다.">
+                <i class="fas fa-file-excel"></i>
+                Excel 명단 업로드
+            </label>
+
+            <input id="nightExcelUpload" type="file" accept=".xlsx,.xls,.csv" class="hidden"
+                onchange="uploadNightAttendanceExcel(this)">
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
@@ -1197,6 +1212,233 @@
             } finally {
                 btnElement.innerHTML = originalText;
                 btnElement.disabled = false;
+            }
+        }
+
+        /**
+     * 브라우저 시간과 무관하게 KST 기준 오늘 날짜를 YYYY-MM-DD로 반환한다.
+     */
+        function getTodayKst_() {
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Seoul',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(new Date());
+        }
+
+
+        /**
+         * Excel 첫 번째 시트의 A열에서 학번 목록을 추출한다.
+         * 첫 행에 '학번' 같은 헤더가 있어도 숫자가 아니면 자동 제외된다.
+         */
+        async function extractStudentIdsFromExcel_(file) {
+            const buffer = await file.arrayBuffer();
+
+            const workbook = XLSX.read(buffer, {
+                type: 'array',
+                cellDates: false
+            });
+
+            const firstSheetName = workbook.SheetNames[0];
+
+            if (!firstSheetName) {
+                throw new Error('Excel 파일에 시트가 없습니다.');
+            }
+
+            const worksheet = workbook.Sheets[firstSheetName];
+
+            const rows = XLSX.utils.sheet_to_json(worksheet, {
+                header: 1,
+                defval: ''
+            });
+
+            const studentIds = rows
+                .map(row => {
+                    const value = row[0];
+
+                    if (value === null || value === undefined) {
+                        return '';
+                    }
+
+                    return String(value).trim();
+                })
+                .filter(value => value !== '');
+
+            return [...new Set(studentIds)];
+        }
+
+
+        /**
+         * 배열을 지정한 크기로 나눈다.
+         */
+        function chunkArray_(items, size) {
+            const chunks = [];
+
+            for (let index = 0; index < items.length; index += size) {
+                chunks.push(items.slice(index, index + size));
+            }
+
+            return chunks;
+        }
+
+
+        /**
+         * Excel 업로드:
+         * - 첫 번째 시트 A열 학번 추출
+         * - 오늘(KST) + 지도사항 '야간자습 미확인' 기록만 조회
+         * - Excel 학번과 일치하는 기록만 consultation='확인 완료' 처리
+         */
+        async function uploadNightAttendanceExcel(inputElement) {
+            const file = inputElement.files && inputElement.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            const originalInputValue = inputElement.value;
+
+            try {
+                if (!document.getElementById('nightFilter').checked) {
+                    alert('야간자습 미확인 토글을 켠 상태에서만 Excel 명단을 처리할 수 있습니다.');
+                    return;
+                }
+
+                const studentIds = await extractStudentIdsFromExcel_(file);
+
+                if (studentIds.length === 0) {
+                    throw new Error(
+                        'Excel 첫 번째 시트의 A열에서 학번을 찾지 못했습니다.\n' +
+                        'A열에 학번이 들어 있는지 확인하세요.'
+                    );
+                }
+
+                const today = getTodayKst_();
+
+                const confirmed = confirm(
+                    `[야간자습 미확인 일괄 확인]\n\n` +
+                    `파일: ${file.name}\n` +
+                    `Excel A열 학번: ${studentIds.length}명\n` +
+                    `처리 날짜: ${today}\n` +
+                    `처리 대상: 오늘 지도사항이 "야간자습 미확인"인 기록 중 Excel 학번 일치자\n\n` +
+                    `일치하는 기록의 상담내용을 "확인 완료"로 변경합니다.\n` +
+                    `계속할까요?`
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                const bulkArea = document.getElementById('bulkActionArea');
+                const buttons = bulkArea.querySelectorAll('button, label');
+
+                buttons.forEach(element => {
+                    element.classList.add('opacity-50', 'pointer-events-none');
+                });
+
+                const excelIdChunks = chunkArray_(studentIds, 200);
+                const matchedRecords = [];
+
+                /*
+                 * 학번 200개씩 조회:
+                 * - 오늘(KST)
+                 * - 지도사항 = 야간자습 미확인
+                 * - Excel A열 학번과 일치
+                 */
+                for (const studentIdChunk of excelIdChunks) {
+                    const { data, error } = await supabaseClient
+                        .from('supervisor_records')
+                        .select('id, student_id, student_name')
+                        .eq('record_date', today)
+                        .eq('guidance_type', '야간자습 미확인')
+                        .in('student_id', studentIdChunk);
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    matchedRecords.push(...(data || []));
+                }
+
+                const recordIds = [...new Set(
+                    matchedRecords
+                        .map(record => record.id)
+                        .filter(id => id !== null && id !== undefined)
+                )];
+
+                if (recordIds.length === 0) {
+                    alert(
+                        `처리할 기록이 없습니다.\n\n` +
+                        `날짜: ${today}\n` +
+                        `지도사항: 야간자습 미확인\n` +
+                        `Excel 학번: ${studentIds.length}명\n\n` +
+                        `오늘의 야간자습 미확인 기록과 Excel A열 학번이 일치하지 않습니다.`
+                    );
+
+                    return;
+                }
+
+                const finalConfirmed = confirm(
+                    `총 ${recordIds.length}건의 야간자습 미확인 기록을 찾았습니다.\n\n` +
+                    `상담내용을 "확인 완료"로 일괄 변경할까요?`
+                );
+
+                if (!finalConfirmed) {
+                    return;
+                }
+
+                /*
+                 * id 200개씩 UPDATE.
+                 * consultation 값이 생기므로 기존 야간자습 미확인 토글에서 제외된다.
+                 */
+                const recordIdChunks = chunkArray_(recordIds, 200);
+                let updatedCount = 0;
+
+                for (const recordIdChunk of recordIdChunks) {
+                    const { error } = await supabaseClient
+                        .from('supervisor_records')
+                        .update({
+                            consultation: '확인완료',
+                            homeroom_teacher: '엑셀업로드'
+                        })
+                        .in('id', recordIdChunk);
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    updatedCount += recordIdChunk.length;
+                }
+
+                alert(
+                    `Excel 명단 일괄 확인 처리가 완료되었습니다.\n\n` +
+                    `Excel 학번: ${studentIds.length}명\n` +
+                    `오늘 야간자습 미확인 일치 기록: ${recordIds.length}건\n` +
+                    `확인 처리 완료: ${updatedCount}건`
+                );
+
+                document.getElementById('selectAllCheckbox').checked = false;
+
+                // 현재 날짜 범위를 다시 불러오고, 야간 미확인 목록을 즉시 갱신
+                await fetchData(true);
+
+            } catch (error) {
+                console.error('Excel 야간자습 일괄 확인 오류:', error);
+
+                alert(
+                    `Excel 업로드 처리 중 오류가 발생했습니다.\n\n` +
+                    `${error.message || String(error)}`
+                );
+
+            } finally {
+                // 같은 파일도 다시 선택할 수 있게 input 값을 비운다.
+                inputElement.value = '';
+
+                const bulkArea = document.getElementById('bulkActionArea');
+
+                bulkArea.querySelectorAll('button, label').forEach(element => {
+                    element.classList.remove('opacity-50', 'pointer-events-none');
+                });
             }
         }
 
