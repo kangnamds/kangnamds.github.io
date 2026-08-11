@@ -229,16 +229,6 @@
       overflow: hidden;
     }
 
-    .list-info {
-      padding: 15px 25px;
-      text-align: right;
-      font-size: 0.9rem;
-      color: #6b7280;
-      border-bottom: 1px solid #f3f4f6;
-      background: #fff;
-      font-weight: 500;
-    }
-
     /* 헤더 */
     .list-header {
       display: grid;
@@ -465,6 +455,93 @@
       visibility: visible !important;
       transform: none !important;
     }
+
+    /* 전달내용 + 기록 수 한 줄 */
+    .delivery-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 25px;
+
+      /* 강조 */
+      background: #fff5f5;
+      border-bottom: 2px solid #fecaca;
+      box-shadow: inset 5px 0 0 #dc2626;
+
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* 전달내용 입력 영역 */
+    .delivery-message {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+    }
+
+    /* 전달내용 라벨 */
+    .delivery-message label {
+      flex: 0 0 auto;
+      color: #dc2626;
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      white-space: nowrap;
+    }
+
+    /* 전달내용 입력칸 */
+    .delivery-message input {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: 100%;
+      height: 48px;
+      padding: 9px 15px;
+
+      border: 2px solid #fca5a5;
+      border-radius: 10px;
+      outline: none;
+
+      color: #732fcc;
+      background: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    /* 입력 중일 때 */
+    .delivery-message input:focus {
+      border-color: #dc2626;
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.14);
+    }
+
+    /* 오른쪽 기록 수 */
+    #countInfo {
+      flex: 0 0 auto;
+      padding: 9px 14px;
+      border: 1px solid #fecaca;
+      border-radius: 999px;
+      color: #b91c1c;
+      background: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      .delivery-row {
+        min-width: 800px;
+      }
+
+      .delivery-message {
+        min-width: 0;
+      }
+    }
   </style>
 </head>
 
@@ -547,7 +624,14 @@
 
     <!-- 결과 리스트 -->
     <div class="list-container">
-      <div class="list-info" id="countInfo">기록 0건</div>
+      <div class="list-info delivery-row">
+        <div class="delivery-message">
+          <label for="deliveryMessage">전달내용 :</label>
+          <input type="text" id="deliveryMessage" placeholder="전달할 내용을 입력하세요" autocomplete="off">
+        </div>
+
+        <div id="countInfo">기록 0건</div>
+      </div>
 
       <!-- 헤더 -->
       <div class="list-header">
@@ -785,17 +869,22 @@
 
     function saveAsJPG(btn) {
       const captureArea = document.querySelector('.list-container');
-      if (!captureArea || searchHistory.length === 0) {
-        alert('저장할 목록이 없습니다.');
+
+      // 리스트 컨테이너를 못 찾은 경우만 중단
+      if (!captureArea) {
+        alert('저장할 화면 영역을 찾을 수 없습니다.');
         return;
       }
 
-      const saveBtn = btn;
-      const originalText = saveBtn.innerHTML;
-      saveBtn.innerHTML = '<span>저장 중...</span>';
-      saveBtn.disabled = true;
+      const originalText = btn.innerHTML;
 
+      btn.innerHTML = '<span>저장 중...</span>';
+      btn.disabled = true;
+
+      // 현재 포커스와 커서를 해제한 뒤 캡처
       document.querySelectorAll('input').forEach(input => input.blur());
+
+      // 캡처 시 리스트 등장 애니메이션/흐림 효과 제거
       captureArea.classList.add('capture-mode');
 
       setTimeout(() => {
@@ -803,26 +892,61 @@
           scale: Math.max(window.devicePixelRatio || 1, 2),
           backgroundColor: '#ffffff',
           useCORS: true,
-          logging: false
-        }).then(canvas => {
-          const image = canvas.toDataURL('image/jpeg', 1.0);
-          const link = document.createElement('a');
-          link.href = image;
+          logging: false,
 
-          const now = new Date();
-          const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-          const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+          onclone: function (clonedDocument) {
+            // 전달내용 및 상담시간 input의 현재 값을
+            // 복제된 캡처 화면에도 반영
+            const originalInputs = document.querySelectorAll(
+              '.list-container input'
+            );
 
-          link.download = `명단_${dateStr}_${timeStr}.jpg`;
-          link.click();
-        }).catch(err => {
-          console.error('캡처 실패:', err);
-          alert('이미지 저장에 실패했습니다.');
-        }).finally(() => {
-          captureArea.classList.remove('capture-mode');
-          saveBtn.innerHTML = originalText;
-          saveBtn.disabled = false;
-        });
+            const clonedInputs = clonedDocument.querySelectorAll(
+              '.list-container input'
+            );
+
+            originalInputs.forEach((input, index) => {
+              const clonedInput = clonedInputs[index];
+
+              if (clonedInput) {
+                clonedInput.value = input.value;
+                clonedInput.setAttribute('value', input.value);
+              }
+            });
+          }
+        })
+          .then(canvas => {
+            const image = canvas.toDataURL('image/jpeg', 1.0);
+
+            const link = document.createElement('a');
+            link.href = image;
+
+            const now = new Date();
+
+            const dateStr =
+              now.getFullYear() +
+              String(now.getMonth() + 1).padStart(2, '0') +
+              String(now.getDate()).padStart(2, '0');
+
+            const timeStr =
+              String(now.getHours()).padStart(2, '0') +
+              String(now.getMinutes()).padStart(2, '0');
+
+            link.download = `학생검색_${dateStr}_${timeStr}.jpg`;
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+          })
+          .catch(error => {
+            console.error('JPG 저장 실패:', error);
+            alert('이미지 저장에 실패했습니다. 콘솔(F12)을 확인하세요.');
+          })
+          .finally(() => {
+            captureArea.classList.remove('capture-mode');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+          });
       }, 150);
     }
   </script>
