@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1003,7 +1005,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="fw-bold m-0 text-dark">📊 누적 벌점 현황</h4>
                                 <button id="btnRefreshRank" class="dashboard-refresh-btn"
-                                    onclick="reloadHistoryWithAnimation()">
+                                    onclick="reloadHistoryWithAnimation('btnRefreshRank')">
                                     <i class="bi bi-arrow-repeat refresh-icon"></i>
                                     <span>새로고침</span>
                                 </button>
@@ -1127,8 +1129,8 @@
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="fw-bold m-0 text-dark">🕒 최근 입력 로그 <span class="text-muted small">(최근
                                         50건)</span></h4>
-                                <button class="btn btn-sm btn-mint-outline" onclick="reloadHistoryWithAnimation()"
-                                    id="btnRefreshRecent">
+                                <button class="btn btn-sm btn-mint-outline"
+                                    onclick="reloadHistoryWithAnimation('btnRefreshRecent')" id="btnRefreshRecent">
                                     <i class="bi bi-arrow-clockwise refresh-icon"></i> 새로고침
                                 </button>
                             </div>
@@ -1162,10 +1164,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ============================================
-        // [설정] 배포된 웹 앱 URL을 여기에 넣으세요
-        const GAS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFjCVgOOCvqTWS5P45kMuf3y_ivhN3x7pInFdFIlLtiT7UQbsomTWlQkQaK3t6Ff2l/exec';
-        // ============================================
+        const SUPABASE_URL = 'https://cdugpffigeboqqlxkvzr.supabase.co';
+
+        const SUPABASE_ANON_KEY =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkdWdwZmZpZ2Vib3FxbHhrdnpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjI2NjIsImV4cCI6MjA5MTE5ODY2Mn0.tTHORlm0EwXTD8u_PAULRZ-lLFMVzNR5QodXY_dmPTM';
+
+        const supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
 
         const QUICK_BUTTONS = [
             { label: '지각(1점)', item: '지각', score: 1 },
@@ -1178,7 +1185,6 @@
         let STUDENT_DB = {};
         let RULE_DB = [];
         let MULTI_QUEUE = [];
-        let HISTORY_DB = []; // 전체 기록 저장소
         let isDataReady = false;
 
         // [변경됨] 탭 전환 함수 (기존 switchTab 함수를 이것으로 교체하세요)
@@ -1212,74 +1218,142 @@
             }
         }
 
-        window.onload = function () {
+        window.onload = async function () {
             renderQuickButtons();
+
             const savedWriter = localStorage.getItem('penalty_writer');
             if (savedWriter) {
                 document.getElementById('s_writer').value = savedWriter;
                 document.getElementById('m_writer').value = savedWriter;
             }
 
-            // 1. 벌점 항목(Rules) 로드
-            fetch(`${GAS_SCRIPT_URL}?action=getRules`)
-                .then(res => res.json())
-                .then(data => {
-                    RULE_DB = data;
-                    initDatalist();
-                });
+            try {
+                // 1. 학생 마스터와 벌점 규정 로드
+                await Promise.all([
+                    loadStudentsFromSupabase(),
+                    loadRulesFromSupabase()
+                ]);
 
-            // 2. 학생 명부(Students) 로드
-            fetch(`${GAS_SCRIPT_URL}?action=getStudents`)
-                .then(res => res.json())
-                .then(data => {
-                    STUDENT_DB = data;
-                    isDataReady = true;
-                    checkAllDataLoaded();
+                // 2. 벌점 전체 기록 로드
+                await reloadHistory();
 
-                    // [★추가됨] 반 필터 생성 (랭킹 탭용)
-                    initClassFilter();
-                });
+            } catch (error) {
+                console.error('Supabase 초기 로드 실패:', error);
 
-            // 3. 전체 기록(History) 로드
-            reloadHistory();
+                const badge = document.getElementById('statusBadge');
+                if (badge) {
+                    badge.innerText = '데이터 로드 실패';
+                    badge.style.background = '#fee2e2';
+                    badge.style.color = '#b91c1c';
+                }
+            }
         };
 
 
         function checkAllDataLoaded() {
-            if (isDataReady && HISTORY_DB.length > 0) {
-                const badge = document.getElementById('statusBadge');
-                badge.innerText = "준비 완료";
-                badge.style.background = "rgba(255,255,255,0.9)";
-                badge.style.color = "#667eea";
-                badge.style.fontWeight = "bold";
+            if (!isDataReady) return;
+
+            const badge = document.getElementById('statusBadge');
+
+            if (badge) {
+                badge.innerText = '준비 완료';
+                badge.style.background = 'rgba(255,255,255,0.9)';
+                badge.style.color = '#667eea';
+                badge.style.fontWeight = 'bold';
             }
         }
 
-        function reloadHistory() {
+        async function loadStudentsFromSupabase() {
+            const { data, error } = await supabaseClient
+                .from('students')
+                .select('student_id, class_name, name, study_room, seat_number');
+
+            if (error) throw error;
+
+            STUDENT_DB = {};
+
+            data.forEach(student => {
+                const id = String(student.student_id).trim();
+
+                if (!id) return;
+
+                STUDENT_DB[id] = {
+                    class: student.class_name || '',
+                    name: student.name || '',
+                    quantum: student.study_room || '',
+                    seat: student.seat_number || ''
+                };
+            });
+
+            isDataReady = true;
+            initClassFilter();
+            checkAllDataLoaded();
+        }
+
+
+        async function loadRulesFromSupabase() {
+            const { data, error } = await supabaseClient
+                .from('penalty_rules')
+                .select('item, score, min_score, max_score, is_active')
+                .eq('is_active', true)
+                .order('id', { ascending: true });
+
+            if (error) throw error;
+
+            RULE_DB = data.map(rule => ({
+                item: rule.item,
+                score: rule.score ?? '',
+                minScore: rule.min_score,
+                maxScore: rule.max_score
+            }));
+
+            initDatalist();
+        }
+
+        async function reloadHistory() {
             const status = document.getElementById('searchStatus');
-            status.innerText = "동기화 중...";
 
-            fetch(`${GAS_SCRIPT_URL}?action=getAllHistory`)
-                .then(res => res.json())
-                .then(data => {
-                    HISTORY_DB = data;
-                    status.innerText = `기록 ${data.length}건`;
-                    checkAllDataLoaded();
+            if (status) {
+                status.innerText = '동기화 중...';
+            }
 
-                    const keyword = document.getElementById('searchKeyword').value.trim();
-                    if (keyword) doSearchLocal();
+            try {
+                const keyword = document.getElementById('searchKeyword').value.trim();
 
-                    // [추가된 부분] 랭킹 탭 갱신
-                    if (document.getElementById('ranking') && document.getElementById('ranking').style.display === 'block') {
-                        renderRanking();
-                    }
+                // 검색 중이면 현재 검색 학생만 다시 조회
+                if (keyword) {
+                    await doSearchLocal();
+                }
 
-                    // [추가된 부분] 최근 로그 탭 갱신
-                    if (document.getElementById('recent') && document.getElementById('recent').style.display === 'block') {
-                        renderRecentLogs();
-                    }
-                })
-                .catch(err => status.innerText = "동기화 실패");
+                // 랭킹 탭이 열려 있으면 요약 View만 다시 조회
+                if (
+                    document.getElementById('ranking') &&
+                    document.getElementById('ranking').style.display === 'block'
+                ) {
+                    await renderRanking();
+                }
+
+                // 최근 로그 탭이 열려 있으면 최근 50건만 다시 조회
+                if (
+                    document.getElementById('recent') &&
+                    document.getElementById('recent').style.display === 'block'
+                ) {
+                    await renderRecentLogs();
+                }
+
+                if (status && !keyword) {
+                    status.innerText = '동기화 완료';
+                }
+
+            } catch (error) {
+                console.error('화면 동기화 실패:', error);
+
+                if (status) {
+                    status.innerText = '동기화 실패';
+                }
+
+                throw error;
+            }
         }
 
 
@@ -1325,49 +1399,92 @@
             if (type === '경고') {
                 scoreInput.value = '';
                 scoreInput.disabled = true;
-                scoreInput.placeholder = "점수 없음";
-                scoreInput.style.backgroundColor = "#e9ecef";
+                scoreInput.placeholder = '점수 없음';
+                scoreInput.style.backgroundColor = '#e9ecef';
+
+                scoreInput.removeAttribute('min');
+                scoreInput.removeAttribute('max');
+
             } else {
                 scoreInput.disabled = false;
-                scoreInput.placeholder = "";
-                scoreInput.style.backgroundColor = "white";
+                scoreInput.placeholder = '';
+                scoreInput.style.backgroundColor = 'white';
+
+                scoreInput.removeAttribute('min');
+                scoreInput.removeAttribute('max');
             }
         }
 
         function matchScore(val, prefix) {
-            val = val.trim(); // 공백 제거
+            val = val.trim();
+
             const scoreInput = document.getElementById(prefix + 'score');
 
-            // 1. 입력값이 없으면 점수 초기화하고 종료
+            // 항목을 지우면 점수·범위 설정도 초기화
             if (!val) {
                 scoreInput.value = '';
+                scoreInput.placeholder = '';
+                scoreInput.removeAttribute('min');
+                scoreInput.removeAttribute('max');
                 return;
             }
 
-            // 2. 경고 모드인지 확인 (경고면 점수 세팅 안 함)
+            // 개별 입력에서 경고를 선택한 상태면 점수를 자동 입력하지 않음
             if (prefix === 's_') {
                 const type = document.getElementById('s_type').value;
-                if (type === '경고') return;
+
+                if (type === '경고') {
+                    scoreInput.value = '';
+                    scoreInput.disabled = true;
+                    scoreInput.placeholder = '점수 없음';
+                    return;
+                }
             }
 
-            // 3. 정확히 일치하는 항목 찾기 (우선순위 1)
-            let rule = RULE_DB.find(x => x.item === val);
+            // 항목 정확 일치 우선
+            let rule = RULE_DB.find(rule => rule.item === val);
 
-            // 4. 만약 정확한 일치가 없다면? 
-            // 사용자가 "떠듦"이라고 쳤는데 항목이 "떠듦(소란)"인 경우를 위해, 
-            // 입력된 텍스트가 항목 이름에 '포함'되는지 확인해서 첫 번째 것 매칭 (편의 기능)
+            // 부분 일치 보조 검색
             if (!rule) {
-                rule = RULE_DB.find(x => x.item.includes(val));
+                rule = RULE_DB.find(rule => rule.item.includes(val));
             }
 
-            // 5. 찾았으면 점수 입력
-            if (rule) {
+            // 규정을 못 찾으면 사용자가 직접 점수를 입력
+            if (!rule) {
+                scoreInput.value = '';
+                scoreInput.placeholder = '점수 직접 입력';
+                scoreInput.removeAttribute('min');
+                scoreInput.removeAttribute('max');
+                return;
+            }
+
+            const minScore = rule.minScore;
+            const maxScore = rule.maxScore;
+
+            // 범위 규정: 예) 1~30점
+            if (
+                minScore !== null &&
+                minScore !== undefined &&
+                maxScore !== null &&
+                maxScore !== undefined
+            ) {
+                scoreInput.value = '';
+                scoreInput.min = minScore;
+                scoreInput.max = maxScore;
+                scoreInput.placeholder = `${minScore}~${maxScore}점 직접 입력`;
+                scoreInput.focus();
+                return;
+            }
+
+            // 고정 점수 규정: 예) 지각 1점
+            scoreInput.removeAttribute('min');
+            scoreInput.removeAttribute('max');
+            scoreInput.placeholder = '';
+
+            if (rule.score !== '' && rule.score !== null && rule.score !== undefined) {
                 scoreInput.value = rule.score;
             } else {
-                // 항목에 없는 내용을 쓰면 점수를 일단 비워둠 (수동 입력을 유도)
-                // 사용자가 직접 점수를 수정할 수도 있으므로, 기존 값이 틀렸다고 강제로 지우지는 않음
-                // 다만, 새로운 항목을 타이핑 중이라면 헷갈리지 않게 두는 것이 좋음.
-                // 여기서는 '확실히 매칭될 때만' 점수를 바꿉니다.
+                scoreInput.value = '';
             }
         }
 
@@ -1395,32 +1512,85 @@
         }
         function removeQueue(i) { MULTI_QUEUE.splice(i, 1); renderQueue(); }
 
-        // [수정됨] 알림창(Alert) 제거 버전
-        function processSubmit(data, btn) {
+        async function processSubmit(data, btn) {
             const originalText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = "저장 중...";
 
-            return fetch(GAS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.status === 'success') {
-                        // alert(res.message);  <-- 이 줄을 삭제했습니다! (이제 멈추지 않음)
-                        return true;
-                    }
-                    else {
-                        alert("오류: " + res.message); // 에러는 여전히 알려줘야 함
+            btn.disabled = true;
+            btn.innerText = '저장 중...';
+
+            try {
+                // 개별 입력 객체 / 일괄 입력 배열 모두 처리
+                const records = Array.isArray(data) ? data : [data];
+
+                const payload = records.map(record => ({
+                    student_id: String(record.id).trim(),
+                    class_name: record.class || '',
+                    student_name: record.name || '',
+                    item: String(record.item || '').trim(),
+                    score_type: record.type || '벌점',
+                    score: Number(record.score) || 0,
+                    writer: String(record.writer || '').trim(),
+                    note: String(record.note || '').trim()
+                }));
+
+                // 최소 입력값 검증
+                const invalidRecord = payload.find(record =>
+                    !record.student_id ||
+                    !record.item ||
+                    !record.writer ||
+                    !['벌점', '상점', '경고'].includes(record.score_type)
+                );
+
+                if (invalidRecord) {
+                    throw new Error('학번, 사유, 작성자, 구분을 확인해 주세요.');
+                }
+
+                const outOfRangeRecord = payload.find(record => {
+                    const rule = RULE_DB.find(rule => rule.item === record.item);
+
+                    if (
+                        !rule ||
+                        rule.minScore === null ||
+                        rule.minScore === undefined ||
+                        rule.maxScore === null ||
+                        rule.maxScore === undefined
+                    ) {
                         return false;
                     }
-                })
-                .catch(err => {
-                    alert("서버 통신 오류");
-                    return false;
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                    btn.innerText = originalText;
+
+                    return (
+                        record.score < Number(rule.minScore) ||
+                        record.score > Number(rule.maxScore)
+                    );
                 });
+
+                if (outOfRangeRecord) {
+                    const rule = RULE_DB.find(rule => rule.item === outOfRangeRecord.item);
+
+                    throw new Error(
+                        `"${outOfRangeRecord.item}" 항목은 ` +
+                        `${rule.minScore}~${rule.maxScore}점 범위에서 입력해야 합니다.`
+                    );
+                }
+
+                const { error } = await supabaseClient
+                    .from('penalty_logs')
+                    .insert(payload);
+
+                if (error) throw error;
+
+                return true;
+
+            } catch (error) {
+                console.error('벌점 저장 실패:', error);
+                alert(`저장 실패: ${error.message || error}`);
+
+                return false;
+
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
         }
 
 
@@ -1524,109 +1694,253 @@
             document.getElementById('searchKeyword').focus();
         }
 
-        function doSearchLocal() {
+        async function doSearchLocal() {
             const keyword = document.getElementById('searchKeyword').value.trim();
             const tbody = document.getElementById('searchResultBody');
             const infoBanner = document.getElementById('searchStudentInfo');
+            const status = document.getElementById('searchStatus');
 
             if (!keyword) {
                 clearSearch();
                 return;
             }
 
-            // 1. 학생 정보 매칭 및 배너(인포 영역) 표시
-            if (isDataReady) {
+            try {
+                // 1. 현재 마스터(STUDENT_DB)에서 학번 또는 이름으로 학생 찾기
                 let matched = [];
-                if (STUDENT_DB[keyword]) matched.push({ id: keyword, ...STUDENT_DB[keyword] });
-                else { for (let k in STUDENT_DB) if (STUDENT_DB[k].name.includes(keyword)) matched.push({ id: k, ...STUDENT_DB[k] }); }
 
-                if (matched.length > 0) {
-                    let html = '';
-                    matched.forEach(s => {
-                        html += `<div class="info-banner"><span class="info-label">반</span><span class="info-value">${s.class}</span><span class="info-label">이름</span><span class="info-value">${s.name}</span><span class="info-label">학번</span><span class="info-value">${s.id}</span><span class="info-label">위치</span><span class="info-value">${s.quantum || '-'} / ${s.seat || '-'}</span></div>`;
+                if (STUDENT_DB[keyword]) {
+                    matched.push({
+                        id: keyword,
+                        ...STUDENT_DB[keyword]
                     });
 
-                    // [추가된 부분] 매칭된 학생이 딱 1명일 때만 '보고서 출력' 버튼 추가
-                    if (matched.length === 1) {
-                        currentSearchStudentId = matched[0].id; // 전역 변수에 학번 저장
-                        html += `
-                <div class="d-flex justify-content-end mt-2">
-                    <button class="btn btn-danger btn-sm" onclick="generatePrintReport()">
-                        <i class="bi bi-printer-fill me-1"></i> 벌점 보고서 인쇄 (PDF 저장)
-                    </button>
-                </div>`;
-                    } else {
-                        currentSearchStudentId = null; // 여러 명이면 초기화
-                    }
-
-                    infoBanner.innerHTML = html;
                 } else {
-                    infoBanner.innerHTML = '';
-                    currentSearchStudentId = null; // 매칭 없을 때 초기화
+                    for (const id in STUDENT_DB) {
+                        if (STUDENT_DB[id].name.includes(keyword)) {
+                            matched.push({
+                                id,
+                                ...STUDENT_DB[id]
+                            });
+                        }
+                    }
                 }
-            }
 
-            // 2. 벌점 내역 검색 및 테이블 생성
-            const results = HISTORY_DB
-                .filter(r => STUDENT_DB[r.id])
-                .filter(r => r.id.includes(keyword) || r.name.includes(keyword));
+                // 마스터에 없는 학번은 검색 결과에 표시하지 않음
+                if (matched.length === 0) {
+                    infoBanner.innerHTML = '';
+                    currentSearchStudentId = null;
 
-            if (results.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">검색 결과가 없습니다.</td></tr>';
-                document.getElementById('searchStatus').innerText = "결과 0건";
-            } else {
+                    tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        마스터 시트에 등록된 학생을 찾을 수 없습니다.
+                    </td>
+                </tr>
+            `;
+
+                    status.innerText = '결과 0건';
+                    return;
+                }
+
+                // 2. 학생 정보 배너 표시
+                let bannerHtml = '';
+
+                matched.forEach(student => {
+                    bannerHtml += `
+                <div class="info-banner">
+                    <span class="info-label">반</span>
+                    <span class="info-value">${student.class}</span>
+
+                    <span class="info-label">이름</span>
+                    <span class="info-value">${student.name}</span>
+
+                    <span class="info-label">학번</span>
+                    <span class="info-value">${student.id}</span>
+
+                    <span class="info-label">위치</span>
+                    <span class="info-value">
+                        ${student.quantum || '-'} / ${student.seat || '-'}
+                    </span>
+                </div>
+            `;
+                });
+
+                // 학생 한 명일 때만 인쇄 버튼 표시
+                if (matched.length === 1) {
+                    currentSearchStudentId = matched[0].id;
+
+                    bannerHtml += `
+                <div class="d-flex justify-content-end mt-2">
+                    <button
+                        class="btn btn-danger btn-sm"
+                        onclick="generatePrintReport()">
+                        <i class="bi bi-printer-fill me-1"></i>
+                        벌점 보고서 인쇄 (PDF 저장)
+                    </button>
+                </div>
+            `;
+                } else {
+                    currentSearchStudentId = null;
+                }
+
+                infoBanner.innerHTML = bannerHtml;
+
+                // 3. 현재 마스터에 있는 매칭 학생의 벌점기록만 Supabase에서 조회
+                const studentIds = matched.map(student => student.id);
+
+                const { data, error } = await supabaseClient
+                    .from('penalty_logs_with_total')
+                    .select(`
+                id,
+                student_id,
+                class_name,
+                student_name,
+                occurred_at,
+                item,
+                score_type,
+                score,
+                writer,
+                cumulative_penalty,
+                note
+            `)
+                    .in('student_id', studentIds)
+                    .order('occurred_at', { ascending: false })
+                    .order('id', { ascending: false });
+
+                if (error) throw error;
+
+                const results = data || [];
+
+                // 4. 결과가 없을 때
+                if (results.length === 0) {
+                    tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        벌점 기록이 없습니다.
+                    </td>
+                </tr>
+            `;
+
+                    status.innerText = '결과 0건';
+                    return;
+                }
+
+                // 5. 검색 결과 테이블 그리기
                 let html = '';
-                results.forEach(r => {
+
+                results.forEach(record => {
                     let dateStr = '-';
-                    if (r.date) {
-                        const d = new Date(r.date);
+
+                    if (record.occurred_at) {
+                        const d = new Date(record.occurred_at);
+
                         if (!isNaN(d)) {
                             const month = d.getMonth() + 1;
                             const day = d.getDate();
                             const week = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+
                             dateStr = `${month}/${day}(${week})`;
-                        } else {
-                            dateStr = r.date.substring(5, 10);
                         }
                     }
 
                     let scoreDisplay = '';
-                    const scoreNum = Number(r.score);
-                    if (r.score == 0 || r.score === '0') {
-                        scoreDisplay = '<span class="badge bg-warning text-dark">경고</span>';
-                    } else if (scoreNum >= 10) {
-                        scoreDisplay = `<span class="text-danger fw-black" style="font-weight:900; text-decoration:underline;">${r.score}점</span>`;
+
+                    if (record.score_type === '경고' || Number(record.score) === 0) {
+                        scoreDisplay = `
+                    <span class="badge bg-warning text-dark">
+                        경고
+                    </span>
+                `;
+                    } else if (Number(record.score) >= 10) {
+                        scoreDisplay = `
+                    <span class="text-danger fw-black"
+                        style="font-weight:900; text-decoration:underline;">
+                        ${record.score}점
+                    </span>
+                `;
                     } else {
-                        scoreDisplay = `<span class="text-danger fw-bold">${r.score}점</span>`;
+                        scoreDisplay = `
+                    <span class="text-danger fw-bold">
+                        ${record.score}점
+                    </span>
+                `;
                     }
 
-                    let totalDisplay = '-';
-                    const totalNum = Number(r.total);
-                    if (r.total && !isNaN(totalNum)) {
-                        if (totalNum >= 50) totalDisplay = `<span class="badge rounded-pill" style="background-color: #8B0000; color: white;">${r.total}</span>`;
-                        else if (totalNum >= 40) totalDisplay = `<span class="badge rounded-pill" style="background-color: #FF9999; color: #5a0000;">${r.total}</span>`;
-                        else if (totalNum >= 30) totalDisplay = `<span class="badge rounded-pill bg-primary">${r.total}</span>`;
-                        else if (totalNum >= 20) totalDisplay = `<span class="badge rounded-pill bg-warning text-dark">${r.total}</span>`;
-                        else totalDisplay = `<span class="text-muted fw-bold">${r.total}</span>`;
-                    }
+                    const total = Number(record.cumulative_penalty) || 0;
 
-                    let rowClass = "";
-                    if (r.item && (r.item.includes("퇴소") || r.item.includes("제적") || r.item.includes("강제"))) {
-                        rowClass = "table-danger";
+                    let totalDisplay = `
+                <span class="text-muted fw-bold">
+                    ${total}
+                </span>
+            `;
+
+                    if (total >= 50) {
+                        totalDisplay = `
+                    <span class="badge rounded-pill"
+                        style="background-color:#8B0000; color:white;">
+                        ${total}
+                    </span>
+                `;
+                    } else if (total >= 40) {
+                        totalDisplay = `
+                    <span class="badge rounded-pill"
+                        style="background-color:#FF9999; color:#5a0000;">
+                        ${total}
+                    </span>
+                `;
+                    } else if (total >= 30) {
+                        totalDisplay = `
+                    <span class="badge rounded-pill bg-primary">
+                        ${total}
+                    </span>
+                `;
+                    } else if (total >= 20) {
+                        totalDisplay = `
+                    <span class="badge rounded-pill bg-warning text-dark">
+                        ${total}
+                    </span>
+                `;
                     }
 
                     html += `
-                <tr class="${rowClass}">
+                <tr>
                     <td>${dateStr}</td>
-                    <td class="fw-bold text-wrap text-break">${r.item}</td>
+
+                    <td class="fw-bold text-wrap text-break">
+                        ${record.item || '-'}
+                    </td>
+
                     <td>${scoreDisplay}</td>
+
                     <td>${totalDisplay}</td>
-                    <td>${r.writer || '-'}</td>
-                    <td class="text-muted small text-wrap text-break">${r.note || '-'}</td>
-                </tr>`;
+
+                    <td>${record.writer || '-'}</td>
+
+                    <td class="text-muted small text-wrap text-break">
+                        ${record.note || '-'}
+                    </td>
+                </tr>
+            `;
                 });
+
                 tbody.innerHTML = html;
-                document.getElementById('searchStatus').innerText = `총 ${results.length}건`;
+                status.innerText = `총 ${results.length}건`;
+
+            } catch (error) {
+                console.error('학생 벌점 이력 조회 실패:', error);
+
+                infoBanner.innerHTML = '';
+
+                tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5 text-danger">
+                    검색 결과를 불러오지 못했습니다.
+                </td>
+            </tr>
+        `;
+
+                status.innerText = '조회 실패';
             }
         }
 
@@ -1639,7 +1953,9 @@
             for (let id in STUDENT_DB) {
                 if (STUDENT_DB[id].class) classes.add(STUDENT_DB[id].class);
             }
-            const sortedClasses = Array.from(classes).sort((a, b) => a - b);
+            const sortedClasses = Array.from(classes).sort((a, b) =>
+                String(a).localeCompare(String(b), 'ko', { numeric: true })
+            );
 
             const select = document.getElementById('rankFilterClass');
             select.innerHTML = '<option value="all">전체 반</option>';
@@ -1649,105 +1965,154 @@
         }
 
         // 2. 랭킹 화면 그리기 (누적 점수 열 기준)
-        function renderRanking() {
+        async function renderRanking() {
             const tbody = document.getElementById('rankingBody');
             const classFilter = document.getElementById('rankFilterClass').value;
             const scoreFilter = document.getElementById('rankFilterScore').value;
 
-            if (!HISTORY_DB || HISTORY_DB.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-muted">데이터가 없습니다.</td></tr>';
-                return;
-            }
+            tbody.innerHTML = `
+        <tr>
+            <td colspan="3" class="text-center py-5 text-muted">
+                데이터를 불러오는 중...
+            </td>
+        </tr>
+    `;
 
-            // [수정됨] 학생별 최신 상태 집계 (날짜 비교 방식)
-            const studentStatus = {};
+            try {
+                let query = supabaseClient
+                    .from('student_penalty_summary')
+                    .select(`
+                student_id,
+                class_name,
+                student_name,
+                cumulative_penalty,
+                last_recorded_at
+            `)
+                    .gt('cumulative_penalty', 0)
+                    .order('cumulative_penalty', { ascending: false })
+                    .order('last_recorded_at', { ascending: false });
 
-            HISTORY_DB.forEach(r => {
-                if (!STUDENT_DB[r.id]) return;
-                // 1. 아직 저장된 기록이 없으면 저장
-                if (!studentStatus[r.id]) {
-                    studentStatus[r.id] = r;
-                } else {
-                    // 2. 이미 기록이 있으면 날짜를 비교
-                    const savedDate = new Date(studentStatus[r.id].date);
-                    const currDate = new Date(r.date);
-
-                    // 현재 데이터 날짜가 저장된 것보다 미래라면 덮어쓰기 (갱신)
-                    if (currDate > savedDate) {
-                        studentStatus[r.id] = r;
-                    }
-                    // 만약 날짜가 같다면? (같은 날 여러 번 벌점)
-                    // 보통 시트 아래쪽이 최신이므로, 인덱스가 뒤인 놈으로 덮어쓰는 게 맞음.
-                    // 하지만 DB 배열 순서를 모른다면... 일단 덮어쓰는 걸로(Last Update Wins)
-                    else if (currDate.getTime() === savedDate.getTime()) {
-                        // 여기서는 그냥 덮어씁니다. (DB가 시간순이면 최신이 남고, 역순이면 과거가 남을 위험이 있음)
-                        // 안전장치: DB 배열 인덱스를 믿지 말고 그냥 덮어쓰기 (대부분의 경우 맞음)
-                        studentStatus[r.id] = r;
-                    }
-                }
-            });
-
-            let list = Object.values(studentStatus);
-            list = list.filter(item => STUDENT_DB[item.id]);
-
-            // 정렬 (점수 내림차순)
-            list.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
-
-            // 필터링
-            list = list.filter(item => {
-                const s = STUDENT_DB[item.id] || {};
-                const sClass = s.class || item.class;
-                const total = Number(item.total) || 0;
-
-                if (classFilter !== 'all' && String(sClass) !== String(classFilter)) return false;
-                if (scoreFilter !== 'all' && total < Number(scoreFilter)) return false;
-                if (total <= 0) return false;
-
-                return true;
-            });
-
-            document.getElementById('rankCount').innerText = list.length;
-
-            // 테이블 그리기
-            if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-muted">조건에 맞는 학생이 없습니다.</td></tr>';
-                return;
-            }
-
-            let html = '';
-            list.forEach((item, index) => {
-                const s = STUDENT_DB[item.id] || { name: item.name, class: item.class };
-                const rank = index + 1;
-
-                let badgeClass = 'rank-other';
-                if (rank === 1) badgeClass = 'rank-1';
-                else if (rank === 2) badgeClass = 'rank-2';
-                else if (rank === 3) badgeClass = 'rank-3';
-
-                // total 값이 없으면 '-' 표시
-                let totalDisplay = '-';
-                const totalNum = Number(item.total);
-                if (item.total && !isNaN(totalNum)) {
-                    if (totalNum >= 50) totalDisplay = `<span class="badge rounded-pill" style="background-color: #8B0000; color: white; font-size: 1.1em; padding: 8px 12px;">${item.total}</span>`;
-                    else if (totalNum >= 40) totalDisplay = `<span class="badge rounded-pill" style="background-color: #FF9999; color: #5a0000; font-size: 1.1em; padding: 8px 12px;">${item.total}</span>`;
-                    else if (totalNum >= 30) totalDisplay = `<span class="badge rounded-pill bg-primary" style="font-size: 1.1em; padding: 8px 12px;">${item.total}</span>`;
-                    else if (totalNum >= 20) totalDisplay = `<span class="badge rounded-pill bg-warning text-dark" style="font-size: 1.1em; padding: 8px 12px;">${item.total}</span>`;
-                    else totalDisplay = `<span class="text-muted fw-bold" style="font-size: 1.1em;">${item.total}</span>`;
+                if (classFilter !== 'all') {
+                    query = query.eq('class_name', classFilter);
                 }
 
-                html += `
-        <tr class="rank-row" onclick="goToDetail('${item.id}')">
-            <td class="text-center"><span class="rank-badge ${badgeClass}">${rank}</span></td>
-            <td>
-                <div class="fw-bold text-dark" style="font-size:1.05em;">${s.name}</div>
-                <div class="small text-muted">${s.class}반 | ${item.id}</div>
-            </td>
-            <td class="text-center">
-                ${totalDisplay}
-            </td>
-        </tr>`;
-            });
-            tbody.innerHTML = html;
+                if (scoreFilter !== 'all') {
+                    query = query.gte(
+                        'cumulative_penalty',
+                        Number(scoreFilter)
+                    );
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                const list = data || [];
+
+                document.getElementById('rankCount').innerText = list.length;
+
+                if (list.length === 0) {
+                    tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center py-5 text-muted">
+                        조건에 맞는 학생이 없습니다.
+                    </td>
+                </tr>
+            `;
+                    return;
+                }
+
+                let html = '';
+
+                list.forEach((student, index) => {
+                    const rank = index + 1;
+                    const total = Number(student.cumulative_penalty) || 0;
+
+                    let badgeClass = 'rank-other';
+
+                    if (rank === 1) badgeClass = 'rank-1';
+                    else if (rank === 2) badgeClass = 'rank-2';
+                    else if (rank === 3) badgeClass = 'rank-3';
+
+                    let totalDisplay = `
+                <span class="text-muted fw-bold" style="font-size: 1.1em;">
+                    ${total}
+                </span>
+            `;
+
+                    if (total >= 50) {
+                        totalDisplay = `
+                    <span class="badge rounded-pill"
+                        style="background-color:#8B0000; color:white; font-size:1.1em; padding:8px 12px;">
+                        ${total}
+                    </span>
+                `;
+                    } else if (total >= 40) {
+                        totalDisplay = `
+                    <span class="badge rounded-pill"
+                        style="background-color:#FF9999; color:#5a0000; font-size:1.1em; padding:8px 12px;">
+                        ${total}
+                    </span>
+                `;
+                    } else if (total >= 30) {
+                        totalDisplay = `
+                    <span class="badge rounded-pill bg-primary"
+                        style="font-size:1.1em; padding:8px 12px;">
+                        ${total}
+                    </span>
+                `;
+                    } else if (total >= 20) {
+                        totalDisplay = `
+                    <span class="badge rounded-pill bg-warning text-dark"
+                        style="font-size:1.1em; padding:8px 12px;">
+                        ${total}
+                    </span>
+                `;
+                    }
+
+                    html += `
+                <tr class="rank-row"
+                    onclick="goToDetail('${student.student_id}')">
+
+                    <td class="text-center">
+                        <span class="rank-badge ${badgeClass}">
+                            ${rank}
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="fw-bold text-dark" style="font-size:1.05em;">
+                            ${student.student_name || '-'}
+                        </div>
+
+                        <div class="small text-muted">
+                            ${student.class_name || '-'}반 |
+                            ${student.student_id}
+                        </div>
+                    </td>
+
+                    <td class="text-center">
+                        ${totalDisplay}
+                    </td>
+                </tr>
+            `;
+                });
+
+                tbody.innerHTML = html;
+
+            } catch (error) {
+                console.error('랭킹 조회 실패:', error);
+
+                document.getElementById('rankCount').innerText = '0';
+
+                tbody.innerHTML = `
+            <tr>
+                <td colspan="3" class="text-center py-5 text-danger">
+                    랭킹 데이터를 불러오지 못했습니다.
+                </td>
+            </tr>
+        `;
+            }
         }
 
         // 3. 상세 이동 (랭킹 클릭 시)
@@ -1758,27 +2123,39 @@
         }
 
         /* [추가] 새로고침 버튼 애니메이션 (아이콘 회전) */
-        function reloadHistoryWithAnimation() {
-            const btn = document.getElementById('btnRefreshRank');
-            const icon = btn.querySelector('i');
+        async function reloadHistoryWithAnimation(buttonId) {
+            const btn = document.getElementById(buttonId);
 
-            // 1. 회전 클래스 추가 & 버튼 비활성화
-            icon.classList.add('spin-anim');
+            if (!btn) {
+                await reloadHistory();
+                return;
+            }
+
+            const icon = btn.querySelector('i');
+            const span = btn.querySelector('span');
+
+            if (icon) icon.classList.add('spin-anim');
+
             btn.disabled = true;
 
-            // 텍스트 변경 (선택사항)
-            const span = btn.querySelector('span');
-            if (span) span.innerText = "동기화 중...";
+            if (span) {
+                span.innerText = '동기화 중...';
+            }
 
-            // 2. 데이터 새로고침 실행
-            reloadHistory();
+            try {
+                await reloadHistory();
 
-            // 3. 1초 뒤 원상복구 (시각적 피드백)
-            setTimeout(() => {
-                icon.classList.remove('spin-anim');
-                btn.disabled = false;
-                if (span) span.innerText = "새로고침";
-            }, 1000);
+            } finally {
+                setTimeout(() => {
+                    if (icon) icon.classList.remove('spin-anim');
+
+                    btn.disabled = false;
+
+                    if (span) {
+                        span.innerText = '새로고침';
+                    }
+                }, 500);
+            }
         }
 
         /* =========================================
@@ -1786,76 +2163,141 @@
        ========================================= */
         let highlightedIds = []; // 방금 입력한 학번 저장용 배열
 
-        function renderRecentLogs() {
+        async function renderRecentLogs() {
             const tbody = document.getElementById('recentLogBody');
-            if (!HISTORY_DB || HISTORY_DB.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">데이터가 없습니다.</td></tr>';
-                return;
-            }
 
-            // 1. 원본 배열 복사 후 날짜(date) 기준으로 확실하게 내림차순 정렬 (최신이 0번 인덱스로)
-            let list = [...HISTORY_DB].sort((a, b) => {
-                const dateA = new Date(a.date).getTime() || 0;
-                const dateB = new Date(b.date).getTime() || 0;
-                return dateB - dateA; // 큰 값(최신)이 앞으로 오도록
-            });
+            tbody.innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+                데이터를 불러오는 중...
+            </td>
+        </tr>
+    `;
 
-            // 2. 상위 50개만 자르기
-            list = list.slice(0, 50);
-            list = list.filter(item => STUDENT_DB[item.id]);
+            try {
+                const { data, error } = await supabaseClient
+                    .from('penalty_logs_with_total')
+                    .select(`
+                id,
+                student_id,
+                class_name,
+                student_name,
+                occurred_at,
+                item,
+                score_type,
+                score,
+                writer,
+                note
+            `)
+                    .order('occurred_at', { ascending: false })
+                    .order('id', { ascending: false })
+                    .limit(50);
 
-            let html = '';
-            list.forEach(item => {
-                const s = STUDENT_DB[item.id] || { name: item.name, class: item.class };
+                if (error) throw error;
 
-                // ★ String()으로 감싸서 무조건 문자열로 비교하도록 수정 (중요!)
-                const isHighlight = highlightedIds.map(String).includes(String(item.id)) ? 'background-color: #d1fae5; border-left: 4px solid #10b981;' : '';
+                const list = data || [];
 
-                // 날짜 포맷팅 (YYYY-MM-DD HH:mm)
-                let dateStr = '-';
-                if (item.date) {
-                    const d = new Date(item.date);
-                    if (!isNaN(d)) {
-                        // 한국 시간에 맞게 포맷팅 (원하는 형태로 수정 가능)
-                        const yy = String(d.getFullYear()).slice(2);
-                        const mm = String(d.getMonth() + 1).padStart(2, '0');
-                        const dd = String(d.getDate()).padStart(2, '0');
-                        const hh = String(d.getHours()).padStart(2, '0');
-                        const min = String(d.getMinutes()).padStart(2, '0');
-                        dateStr = `${yy}-${mm}-${dd} ${hh}:${min}`;
-                    } else {
-                        dateStr = String(item.date).replace('T', ' ').substring(0, 16);
-                    }
+                if (list.length === 0) {
+                    tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        데이터가 없습니다.
+                    </td>
+                </tr>
+            `;
+                    return;
                 }
 
-                html += `
-        <tr style="${isHighlight} transition: background-color 2s ease;">
-            <td class="text-muted small">${dateStr}</td>
-            <td>
-                <div class="fw-bold text-dark" style="font-size:1.05em;">${s.name}</div>
-                <div class="small text-muted">${s.class}반 | ${item.id}</div>
-            </td>
-            <td class="fw-bold text-dark">${item.item}</td>
-            <td class="text-center">
-                <span class="badge bg-danger" style="font-size: 1em;">${item.score}점</span>
-            </td>
-            <td class="text-center">${item.writer || '-'}</td>
-            <td class="text-muted small">${item.note || '-'}</td>
-        </tr>`;
-            });
+                let html = '';
 
-            tbody.innerHTML = html;
+                list.forEach(item => {
+                    const isHighlight = highlightedIds
+                        .map(String)
+                        .includes(String(item.student_id))
+                        ? 'background-color:#d1fae5; border-left:4px solid #10b981;'
+                        : '';
 
-            // ★ 5초(5000ms) 뒤 하이라이트 제거 (데이터 로딩 딜레이를 고려하여 넉넉하게)
-            if (highlightedIds.length > 0) {
-                setTimeout(() => {
-                    highlightedIds = [];
-                    const rows = tbody.querySelectorAll('tr');
-                    rows.forEach(row => {
-                        row.style.backgroundColor = '';
-                        row.style.borderLeft = ''; // 테두리도 원상복구
-                    });
-                }, 5000); // 2500 -> 5000으로 증가
+                    let dateStr = '-';
+
+                    if (item.occurred_at) {
+                        const d = new Date(item.occurred_at);
+
+                        if (!isNaN(d)) {
+                            const yy = String(d.getFullYear()).slice(2);
+                            const mm = String(d.getMonth() + 1).padStart(2, '0');
+                            const dd = String(d.getDate()).padStart(2, '0');
+                            const hh = String(d.getHours()).padStart(2, '0');
+                            const min = String(d.getMinutes()).padStart(2, '0');
+
+                            dateStr = `${yy}-${mm}-${dd} ${hh}:${min}`;
+                        }
+                    }
+
+                    const scoreDisplay = item.score_type === '경고'
+                        ? `<span class="badge bg-warning text-dark" style="font-size:1em;">경고</span>`
+                        : `<span class="badge bg-danger" style="font-size:1em;">${item.score}점</span>`;
+
+                    html += `
+                <tr style="${isHighlight} transition:background-color 2s ease;">
+                    <td class="text-muted small">
+                        ${dateStr}
+                    </td>
+
+                    <td>
+                        <div class="fw-bold text-dark" style="font-size:1.05em;">
+                            ${item.student_name || '-'}
+                        </div>
+
+                        <div class="small text-muted">
+                            ${item.class_name || '-'}반 |
+                            ${item.student_id}
+                        </div>
+                    </td>
+
+                    <td class="fw-bold text-dark">
+                        ${item.item || '-'}
+                    </td>
+
+                    <td class="text-center">
+                        ${scoreDisplay}
+                    </td>
+
+                    <td class="text-center">
+                        ${item.writer || '-'}
+                    </td>
+
+                    <td class="text-muted small">
+                        ${item.note || '-'}
+                    </td>
+                </tr>
+            `;
+                });
+
+                tbody.innerHTML = html;
+
+                if (highlightedIds.length > 0) {
+                    setTimeout(() => {
+                        highlightedIds = [];
+
+                        const rows = tbody.querySelectorAll('tr');
+
+                        rows.forEach(row => {
+                            row.style.backgroundColor = '';
+                            row.style.borderLeft = '';
+                        });
+                    }, 5000);
+                }
+
+            } catch (error) {
+                console.error('최근 로그 조회 실패:', error);
+
+                tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5 text-danger">
+                    최근 로그를 불러오지 못했습니다.
+                </td>
+            </tr>
+        `;
             }
         }
 
@@ -1864,76 +2306,104 @@
        ========================================= */
         let currentSearchStudentId = null; // 현재 조회된 학생 학번 저장
 
-        function generatePrintReport() {
+        async function generatePrintReport() {
             if (!currentSearchStudentId) {
-                alert("조회된 학생이 없습니다.");
+                alert('조회된 학생이 없습니다.');
                 return;
             }
 
             const student = STUDENT_DB[currentSearchStudentId];
+
             if (!student) {
-                alert("학생 정보를 찾을 수 없습니다.");
+                alert('현재 마스터에서 학생 정보를 찾을 수 없습니다.');
                 return;
             }
 
-            // 해당 학생의 모든 벌점 내역 추출
-            const records = HISTORY_DB.filter(h => String(h.id) === String(currentSearchStudentId));
+            try {
+                const { data, error } = await supabaseClient
+                    .from('penalty_logs_with_total')
+                    .select(`
+                id,
+                student_id,
+                occurred_at,
+                item,
+                score_type,
+                score,
+                writer,
+                note,
+                cumulative_penalty
+            `)
+                    .eq('student_id', currentSearchStudentId)
+                    .order('occurred_at', { ascending: true })
+                    .order('id', { ascending: true });
 
-            if (records.length === 0) {
-                alert("벌점 내역이 없습니다.");
-                return;
-            }
+                if (error) throw error;
 
-            // 날짜순 정렬 (오래된 것부터)
-            records.sort((a, b) => {
-                const dateA = new Date(a.date).getTime() || 0;
-                const dateB = new Date(b.date).getTime() || 0;
-                return dateA - dateB;
-            });
+                const records = data || [];
 
-            // 총 누적 점수 계산
-            const totalScore = records.reduce((sum, r) => sum + (parseInt(r.score) || 0), 0);
-
-            // 발급일
-            const today = new Date().toLocaleDateString('ko-KR');
-
-            // 템플릿에 데이터 채우기
-            document.getElementById('print_issueDate').innerText = today;
-            document.getElementById('print_name').innerText = student.name;
-            document.getElementById('print_studentId').innerText = student.id || currentSearchStudentId;
-            document.getElementById('print_class').innerText = student.class + '반';
-            document.getElementById('print_totalScore').innerText = totalScore + '점';
-
-            // 벌점 내역 테이블 생성
-            const tbody = document.getElementById('print_penaltyBody');
-            tbody.innerHTML = '';
-
-            records.forEach((r, idx) => {
-                let dateStr = '-';
-                if (r.date) {
-                    const d = new Date(r.date);
-                    if (!isNaN(d)) {
-                        const yy = d.getFullYear();
-                        const mm = String(d.getMonth() + 1).padStart(2, '0');
-                        const dd = String(d.getDate()).padStart(2, '0');
-                        dateStr = `${yy}-${mm}-${dd}`;
-                    }
+                if (records.length === 0) {
+                    alert('벌점 내역이 없습니다.');
+                    return;
                 }
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-            <td class="td-no">${idx + 1}</td>
-            <td class="td-date">${dateStr}</td>
-            <td class="td-item">${r.item || '-'}</td>
-            <td class="td-score">${r.score}점</td>
-            <td class="td-writer">${r.writer || '-'}</td>
-            <td class="td-note">${r.note || '-'}</td>
-        `;
-                tbody.appendChild(tr);
-            });
+                // 마지막 기록의 누적벌점 = 현재 최종 누적벌점
+                const totalScore = Number(
+                    records[records.length - 1].cumulative_penalty
+                ) || 0;
 
-            // 인쇄 창 열기
-            window.print();
+                const today = new Date().toLocaleDateString('ko-KR');
+
+                document.getElementById('print_issueDate').innerText = today;
+                document.getElementById('print_name').innerText = student.name;
+                document.getElementById('print_studentId').innerText =
+                    currentSearchStudentId;
+                document.getElementById('print_class').innerText =
+                    `${student.class}반`;
+                document.getElementById('print_totalScore').innerText =
+                    `${totalScore}점`;
+
+                const tbody = document.getElementById('print_penaltyBody');
+                tbody.innerHTML = '';
+
+                records.forEach((record, index) => {
+                    let dateStr = '-';
+
+                    if (record.occurred_at) {
+                        const d = new Date(record.occurred_at);
+
+                        if (!isNaN(d)) {
+                            const yy = d.getFullYear();
+                            const mm = String(d.getMonth() + 1).padStart(2, '0');
+                            const dd = String(d.getDate()).padStart(2, '0');
+
+                            dateStr = `${yy}-${mm}-${dd}`;
+                        }
+                    }
+
+                    const scoreDisplay = record.score_type === '경고'
+                        ? '경고'
+                        : `${record.score}점`;
+
+                    const tr = document.createElement('tr');
+
+                    tr.innerHTML = `
+                <td class="td-no">${index + 1}</td>
+                <td class="td-date">${dateStr}</td>
+                <td class="td-item">${record.item || '-'}</td>
+                <td class="td-score">${scoreDisplay}</td>
+                <td class="td-writer">${record.writer || '-'}</td>
+                <td class="td-note">${record.note || '-'}</td>
+            `;
+
+                    tbody.appendChild(tr);
+                });
+
+                window.print();
+
+            } catch (error) {
+                console.error('벌점 보고서 생성 실패:', error);
+                alert(`보고서 생성 실패: ${error.message || error}`);
+            }
         }
 
 
