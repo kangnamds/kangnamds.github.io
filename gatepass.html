@@ -862,10 +862,26 @@
         </div>
       </div>
 
+      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
       <script>
         // ★ 여기에 본인의 배포된 Apps Script 웹 앱 URL을 넣으세요.
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxN6WVrApk7aNtvYiHKFNTFRNEVtMyRjy-3oVa579zPzZwrLDxbZ34_vfA_o2MP1BdP/exec';
+
+        // ==================== Supabase 연결 ====================
+        // 정기조퇴(gatepass) 및 학생 마스터(students) 전용
+
+        const SUPABASE_URL = 'https://cdugpffigeboqqlxkvzr.supabase.co';
+
+        // Supabase Dashboard → Project Settings → API Keys에서
+        // "Publishable key" 값을 붙여넣으세요.
+        // service_role 키는 절대 넣으면 안 됩니다.
+        const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkdWdwZmZpZ2Vib3FxbHhrdnpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjI2NjIsImV4cCI6MjA5MTE5ODY2Mn0.tTHORlm0EwXTD8u_PAULRZ-lLFMVzNR5QodXY_dmPTM';
+
+        const db = window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_PUBLISHABLE_KEY
+        );
 
         // [캐시 객체] 탭 이동 시 데이터를 재활용하기 위함
         const cachedData = { '학생증 미소지': null, '조퇴': null, '외출': null, '정기조퇴': null };
@@ -908,14 +924,37 @@
         };
 
         async function loadClassesList() {
+          const select = document.getElementById('regClassFilter');
+
           try {
-            const response = await fetch(`${GAS_URL}?action=getClasses`);
-            const classes = await response.json();
-            const select = document.getElementById('regClassFilter');
-            classes.forEach(c => {
-              select.innerHTML += `<option value="${c}">${c}반</option>`;
+            const { data, error } = await db
+              .from('students')
+              .select('class_name')
+              .not('class_name', 'is', null)
+              .order('class_name', { ascending: true });
+
+            if (error) throw error;
+
+            // 중복 제거 및 빈값 제외
+            const classes = [...new Set(
+              data
+                .map(student => String(student.class_name || '').trim())
+                .filter(className => className !== '')
+            )];
+
+            // "전체 반" 옵션은 유지하고 나머지만 새로 구성
+            select.innerHTML = '<option value="all">전체 반</option>';
+
+            classes.forEach(className => {
+              select.innerHTML += `
+        <option value="${className}">${className}반</option>
+      `;
             });
-          } catch (e) { console.log('반 목록 로드 실패'); }
+
+          } catch (error) {
+            console.error('반 목록 로드 실패:', error);
+            alert(`반 목록을 불러오지 못했습니다.\n${error.message}`);
+          }
         }
 
         // 테이블 내부에 로딩 스피너 표시 함수
@@ -1031,34 +1070,75 @@
         }
 
         // [완벽 통합] 정기조퇴 렌더링 함수 (만료 표시 + 관리 버튼)
-        // (※ 기존에 파일 안에 renderRegularTable이 2개 있었다면 둘 다 지우고 이것 하나만 쓰세요!)
+        function escapeHtml(value) {
+          return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+
+        // 정기조퇴 데이터 1건을 id로 찾는 공통 함수
+        function getRegularLeaveRowById(id) {
+          const rows = cachedData['정기조퇴'] || [];
+
+          return rows.find(row => Number(row[7]) === Number(id));
+        }
+
+
+        // [안전한 렌더링] 정기조퇴 현황 테이블
         function renderRegularTable(data) {
           const tbody = document.getElementById('reg-view-body');
-          document.getElementById('searchResultCount').innerText = `검색 결과: ${data.length}건`;
+
+          document.getElementById('searchResultCount').innerText =
+            `검색 결과: ${data.length}건`;
 
           if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">일치하는 정기조퇴 데이터가 없습니다.</td></tr>`;
+            tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-5 text-muted">
+          일치하는 정기조퇴 데이터가 없습니다.
+        </td>
+      </tr>
+    `;
             return;
           }
 
           let html = '';
+
+          // data는 최신순으로 받아오지만, 기존 화면 순서를 유지하기 위해 역순 출력
           [...data].reverse().forEach(row => {
+            const id = Number(row[7]);
+
+            // 혹시 id가 없거나 잘못된 레코드라면 버튼 오류 방지
+            if (!Number.isFinite(id)) return;
+
+            const className = String(row[0] || '').trim();
+            const studentId = String(row[1] || '').trim();
+            const studentName = String(row[2] || '').trim();
+            const period = String(row[3] || '').trim();
+            const days = String(row[4] || '').trim();
+            const reason = String(row[6] || '').trim();
+
             let timeVal = String(row[5] || '').trim();
+
             if (timeVal.includes(':')) {
               const parts = timeVal.split(':');
-              if (parts.length >= 2) timeVal = `${parts[0].trim().padStart(2, '0')}:${parts[1].trim()}`;
+
+              if (parts.length >= 2) {
+                timeVal = `${parts[0].trim().padStart(2, '0')}:${parts[1].trim()}`;
+              }
             }
 
-            const rowIndex = row[7];
-
             let isExpired = false;
-            let badgeHtml = row[3] || '-';
+            let periodHtml = escapeHtml(period || '-');
             let rowClass = '';
 
-            // 만료 여부 날짜(Date) 기반 완벽 체크
-            const periodStr = String(row[3] || '');
-            if (periodStr.includes('~')) {
-              const endDateStr = periodStr.split('~')[1].trim();
+            // 기간 종료일 기준 만료 여부 판정
+            if (period.includes('~')) {
+              const endDateStr = period.split('~')[1].trim();
 
               if (/^\d{4}-\d{2}-\d{2}$/.test(endDateStr)) {
                 const endDate = new Date(endDateStr);
@@ -1070,29 +1150,138 @@
                 if (endDate < today) {
                   isExpired = true;
                   rowClass = 'bg-light text-muted';
-                  badgeHtml = `<span class="badge bg-danger mb-1 shadow-sm">만료됨</span><br><span style="text-decoration: line-through; opacity: 0.6;">${row[3]}</span>`;
+
+                  periodHtml = `
+            <span class="badge bg-danger mb-1 shadow-sm">만료됨</span><br>
+            <span style="text-decoration: line-through; opacity: 0.6;">
+              ${escapeHtml(period)}
+            </span>
+          `;
                 }
               }
             }
 
-            html += `<tr class="${rowClass}">
-        <td class="${isExpired ? '' : 'text-muted'}">${row[0] || '-'}</td>
-        <td class="${isExpired ? '' : 'text-muted'}">${row[1] || '-'}</td>
-        <td class="${isExpired ? '' : 'fw-bold text-dark'}">${row[2] || '-'}</td>
-        <td class="text-nowrap text-center">${badgeHtml}</td>
-        <td class="${isExpired ? '' : 'fw-bold text-primary'}">${row[4] || '-'}</td>
-        <td class="${isExpired ? '' : 'text-muted'}">${timeVal || '-'}</td>
-        <td class="small ${isExpired ? '' : 'text-muted'}">${row[6] || '-'}</td>
+            html += `
+      <tr class="${rowClass}">
+        <td class="${isExpired ? '' : 'text-muted'}">
+          ${escapeHtml(className || '-')}
+        </td>
+
+        <td class="${isExpired ? '' : 'text-muted'}">
+          ${escapeHtml(studentId || '-')}
+        </td>
+
+        <td class="${isExpired ? '' : 'fw-bold text-dark'}">
+          ${escapeHtml(studentName || '-')}
+        </td>
+
+        <td class="text-nowrap text-center">
+          ${periodHtml}
+        </td>
+
+        <td class="${isExpired ? '' : 'fw-bold text-primary'}">
+          ${escapeHtml(days || '-')}
+        </td>
+
+        <td class="${isExpired ? '' : 'text-muted'}">
+          ${escapeHtml(timeVal || '-')}
+        </td>
+
+        <td class="small ${isExpired ? '' : 'text-muted'}">
+          ${escapeHtml(reason || '-')}
+        </td>
+
         <td class="text-center" style="vertical-align: middle;">
           <div class="d-flex justify-content-center gap-1">
-            <button class="btn btn-manage btn-extend" style="border-color: #0d6efd; color: #0d6efd;" onclick="extendRegularLeave('${row[0]}', '${row[1]}', '${row[2]}', '${row[4]}', '${timeVal}', '${row[6]}')">연장</button>
-            <button class="btn btn-manage" onclick="editRegularLeave(${rowIndex}, '${row[0]}', '${row[1]}', '${row[2]}', '${row[3]}', '${row[4]}', '${timeVal}', '${row[6]}')">수정</button>
-            <button class="btn btn-manage btn-delete" onclick="deleteRegularLeaveRow(${rowIndex}, '${row[2]}')">삭제</button>
+            <button
+              type="button"
+              class="btn btn-manage btn-extend"
+              style="border-color: #0d6efd; color: #0d6efd;"
+              onclick="extendRegularLeaveById(${id})"
+            >
+              연장
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-manage"
+              onclick="editRegularLeaveById(${id})"
+            >
+              수정
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-manage btn-delete"
+              onclick="deleteRegularLeaveById(${id})"
+            >
+              삭제
+            </button>
           </div>
         </td>
-      </tr>`;
+      </tr>
+    `;
           });
+
           tbody.innerHTML = html;
+        }
+
+        // 수정 버튼 클릭 시: id로 원본 데이터를 찾아 기존 수정 함수 호출
+        function editRegularLeaveById(id) {
+          const row = getRegularLeaveRowById(id);
+
+          if (!row) {
+            alert('수정할 정기조퇴 데이터를 찾지 못했습니다. 새로고침 후 다시 시도해주세요.');
+            return;
+          }
+
+          editRegularLeave(
+            row[7], // gatepass.id
+            row[0], // class_name
+            row[1], // student_id
+            row[2], // student_name
+            row[3], // period
+            row[4], // day_of_week
+            row[5], // leave_time
+            row[6]  // reason
+          );
+        }
+
+
+        // 연장 버튼 클릭 시: id로 원본 데이터를 찾아 기존 연장 함수 호출
+        function extendRegularLeaveById(id) {
+          const row = getRegularLeaveRowById(id);
+
+          if (!row) {
+            alert('연장할 정기조퇴 데이터를 찾지 못했습니다. 새로고침 후 다시 시도해주세요.');
+            return;
+          }
+
+          extendRegularLeave(
+            row[0], // class_name
+            row[1], // student_id
+            row[2], // student_name
+            row[3], // period
+            row[4], // day_of_week
+            row[5], // leave_time
+            row[6]  // reason
+          );
+        }
+
+
+        // 삭제 버튼 클릭 시: id로 원본 데이터를 찾아 기존 삭제 함수 호출
+        function deleteRegularLeaveById(id) {
+          const row = getRegularLeaveRowById(id);
+
+          if (!row) {
+            alert('삭제할 정기조퇴 데이터를 찾지 못했습니다. 새로고침 후 다시 시도해주세요.');
+            return;
+          }
+
+          deleteRegularLeaveRow(
+            row[7], // gatepass.id
+            row[2]  // student_name
+          );
         }
 
         // 데이터 로드 및 갱신 함수들
@@ -1210,13 +1399,64 @@
             applyFilters();
             return;
           }
-          showTableLoading('reg-view-body', 7);
+
+          // 화면 테이블은 8개 열이므로 8로 지정
+          showTableLoading('reg-view-body', 8);
+
           try {
-            const response = await fetch(`${GAS_URL}?action=getRegularLeaveData`);
-            cachedData['정기조퇴'] = await response.json();
+            const { data, error } = await db
+              .from('gatepass')
+              .select(`
+        id,
+        class_name,
+        student_id,
+        student_name,
+        period,
+        day_of_week,
+        leave_time,
+        reason,
+        created_at
+      `)
+              .order('id', { ascending: false });
+
+            if (error) throw error;
+
+            /*
+              기존 화면 렌더링 코드는 배열 인덱스를 사용합니다.
+        
+              [0] 반
+              [1] 학번
+              [2] 이름
+              [3] 기간
+              [4] 요일
+              [5] 시간
+              [6] 사유
+              [7] 수정/삭제용 ID
+            */
+            cachedData['정기조퇴'] = data.map(item => [
+              item.class_name,
+              item.student_id,
+              item.student_name,
+              item.period,
+              item.day_of_week,
+              item.leave_time,
+              item.reason,
+              item.id
+            ]);
+
             applyFilters();
+
           } catch (error) {
-            document.getElementById('reg-view-body').innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">데이터 연동 오류.</td></tr>`;
+            console.error('정기조퇴 조회 오류:', error);
+
+            document.getElementById('reg-view-body').innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-5 text-danger">
+          정기조퇴 데이터를 불러오지 못했습니다.<br>
+          <small>${error.message}</small>
+        </td>
+      </tr>
+    `;
           }
         }
 
@@ -1275,159 +1515,245 @@
         // [수정된 디버깅용 프론트엔드 검색 함수]
         async function autofillStudent() {
           const studentId = document.getElementById('reg-id').value.trim();
+
           if (!studentId) {
-            console.log("학번 입력값이 비어있습니다.");
+            document.getElementById('reg-ban').value = '';
+            document.getElementById('reg-name').value = '';
             return;
           }
 
-          console.log("----------------------------------------");
-          console.log("1. 검색 시작! 입력된 학번:", studentId);
-
-          document.getElementById('reg-ban').value = '검색 중...';
-          document.getElementById('reg-name').value = '검색 중...';
+          // 이전 검색 결과를 우선 비움
+          document.getElementById('reg-ban').value = '';
+          document.getElementById('reg-name').value = '';
 
           try {
-            const url = `${GAS_URL}?action=searchMaster&studentId=${encodeURIComponent(studentId)}`;
-            console.log("2. 요청 URL:", url);
+            const { data: student, error } = await db
+              .from('students')
+              .select('student_id, class_name, name')
+              .eq('student_id', studentId)
+              .maybeSingle();
 
-            const response = await fetch(url);
-            console.log("3. HTTP 응답 상태:", response.status, response.statusText);
+            if (error) throw error;
 
-            const student = await response.json();
-            console.log("4. 서버에서 넘어온 최종 데이터(JSON):", student);
-
-            if (student && student.error) {
-              console.error("5. 백엔드 에러 발생:", student.error);
-              alert('백엔드 에러 발생: ' + student.error);
-              document.getElementById('reg-ban').value = '';
-              document.getElementById('reg-name').value = '';
+            if (!student) {
+              alert(`${studentId} 학번의 학생을 찾을 수 없습니다.`);
               return;
             }
 
-            if (student && student.name) {
-              console.log("5. 매칭 성공! 학생 이름:", student.name);
-              document.getElementById('reg-ban').value = student.ban;
-              document.getElementById('reg-name').value = student.name;
-              document.getElementById('reg-start').focus();
-            } else {
-              console.warn("5. 매칭 실패! 서버 데이터가 비어있음");
-              alert(`학번 [${studentId}]를 마스터 데이터에서 찾을 수 없습니다.`);
-              document.getElementById('reg-ban').value = '';
-              document.getElementById('reg-name').value = '';
-            }
-          } catch (e) {
-            console.error("Fetch 통신 에러 발생:", e);
-            alert(`통신 오류 발생: ${e.message}\n(F12를 눌러 콘솔을 확인하세요)`);
-            document.getElementById('reg-ban').value = '';
-            document.getElementById('reg-name').value = '';
+            document.getElementById('reg-ban').value = student.class_name ?? '';
+            document.getElementById('reg-name').value = student.name ?? '';
+
+            // 학번을 찾으면 기간 시작일 입력칸으로 포커스 이동
+            document.getElementById('reg-start').focus();
+
+          } catch (error) {
+            console.error('학생 정보 조회 실패:', error);
+            alert(`학생 정보 조회 중 오류가 발생했습니다.\n${error.message}`);
           }
         }
 
         // [수정] 정기조퇴 데이터 등록 (최종 클렌징 추가)
         async function submitRegularLeave() {
-          // ★ 0. 저장 직전에 모든 입력칸을 강제로 한 번 더 포맷팅 돌리기
+          // 0. 저장 직전 날짜·시간 형식 정리
           const startInput = document.getElementById('reg-start');
           const endInput = document.getElementById('reg-end');
           const timeInput = document.getElementById('reg-time-input');
 
-          // 강제 포맷팅 (알림창 띄우지 않기 위해 두 번째 인자(nextElemId)를 비워둠)
           formatShortDate(startInput);
           formatShortDate(endInput);
           formatShortTime(timeInput);
 
-          // 1. 요일 체크박스 값 수집
-          const checkboxes = document.querySelectorAll('#day-checkboxes input[type="checkbox"]:checked');
-          const selectedDays = Array.from(checkboxes).map(cb => cb.value).join(', ');
+          // 1. 선택한 요일 수집
+          const checkboxes = document.querySelectorAll(
+            '#day-checkboxes input[type="checkbox"]:checked'
+          );
 
-          // 2. 기간 조립
+          const selectedDays = Array.from(checkboxes)
+            .map(cb => cb.value)
+            .join(', ');
+
+          // 2. 기간 문자열 구성
           const startDate = startInput.value.trim();
           const endDate = endInput.value.trim();
-          const periodStr = (startDate && endDate) ? `${startDate} ~ ${endDate}` : startDate || endDate;
+          const periodStr = (startDate && endDate)
+            ? `${startDate} ~ ${endDate}`
+            : startDate || endDate;
 
-          // 3. 페이로드 생성
+          // 3. 화면 입력값 구성
           const payload = {
-            ban: document.getElementById('reg-ban').value,
-            studentId: document.getElementById('reg-id').value,
-            name: document.getElementById('reg-name').value,
+            className: document.getElementById('reg-ban').value.trim(),
+            studentId: document.getElementById('reg-id').value.trim(),
+            studentName: document.getElementById('reg-name').value.trim(),
             period: periodStr,
             dayOfWeek: selectedDays,
-            time: timeInput.value,
-            reason: document.getElementById('reg-reason').value
+            leaveTime: timeInput.value.trim(),
+            reason: document.getElementById('reg-reason').value.trim()
           };
 
-          // 4. 유효성 검사 (포맷팅 실패로 4자리 숫자가 그대로 남았는지도 검사)
-          if (!payload.studentId || !payload.name || payload.name === '검색 중...') return alert("학번을 검색하여 학생 정보를 확인해주세요.");
+          // 4. 유효성 검사
+          if (!payload.studentId || !payload.studentName) {
+            alert('학번을 검색하여 학생 정보를 확인해주세요.');
+            return;
+          }
 
-          // 포맷팅이 안 되고 '0401' 처럼 남아있으면 반려
-          if (!startDate || !startDate.includes('-')) return alert("시작일을 MMDD(4자리) 또는 YYYY-MM-DD 형식으로 정확히 입력해주세요.");
-          if (!endDate || !endDate.includes('-')) return alert("종료일을 MMDD(4자리) 또는 YYYY-MM-DD 형식으로 정확히 입력해주세요.");
+          if (!payload.className) {
+            alert('학생의 반 정보를 확인해주세요.');
+            return;
+          }
 
-          if (!payload.dayOfWeek) return alert("요일을 하나 이상 선택해주세요.");
+          if (!startDate || !startDate.includes('-')) {
+            alert('시작일을 MMDD 또는 YYYY-MM-DD 형식으로 입력해주세요.');
+            startInput.focus();
+            return;
+          }
 
-          if (!payload.time || !payload.time.includes(':')) return alert("조퇴 시간을 HHMM(4자리) 또는 HH:MM 형식으로 정확히 입력해주세요.");
+          if (!endDate || !endDate.includes('-')) {
+            alert('종료일을 MMDD 또는 YYYY-MM-DD 형식으로 입력해주세요.');
+            endInput.focus();
+            return;
+          }
 
-          // 5. 서버 전송 로직
+          if (!payload.dayOfWeek) {
+            alert('요일을 하나 이상 선택해주세요.');
+            return;
+          }
+
+          if (!payload.leaveTime || !payload.leaveTime.includes(':')) {
+            alert('조퇴 시간을 HHMM 또는 HH:MM 형식으로 입력해주세요.');
+            timeInput.focus();
+            return;
+          }
+
+          // 수정 모드라면 Supabase gatepass.id가 들어 있습니다.
+          const editId = document.getElementById('edit-row-index').value;
+
           const btn = document.querySelector('#regForm button.btn-primary');
           const originalBtnText = btn.innerHTML;
+
           btn.disabled = true;
-          btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 처리 중...';
+          btn.innerHTML = `
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    처리 중...
+  `;
 
-          const editRowIndex = document.getElementById('edit-row-index').value;
-          const actionType = editRowIndex ? 'updateRegularLeave' : 'saveRegularLeave';
-          const requestBody = { action: actionType, payload: payload };
-
-          if (editRowIndex) requestBody.rowIndex = editRowIndex;
+          // Supabase DB 컬럼명에 맞춘 데이터
+          const dbPayload = {
+            class_name: payload.className,
+            student_id: payload.studentId,
+            student_name: payload.studentName,
+            period: payload.period,
+            day_of_week: payload.dayOfWeek,
+            leave_time: payload.leaveTime,
+            reason: payload.reason,
+          };
 
           try {
-            const response = await fetch(GAS_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify(requestBody)
-            });
-            const result = await response.json();
+            let error;
 
-            alert(result.message);
+            if (editId) {
+              // 수정: 기존 id의 레코드만 변경
+              const { error: updateError } = await db
+                .from('gatepass')
+                .update(dbPayload)
+                .eq('id', Number(editId));
 
-            if (result.success) {
-              document.getElementById('regForm').reset();
-              document.getElementById('edit-row-index').value = '';
-              document.querySelector('#reg-input h4').innerText = "정기조퇴 등록";
-              document.querySelector('#regForm button.btn-primary').innerHTML = '<i class="bi bi-check2-circle"></i> 정기조퇴 등록하기';
-              cachedData['정기조퇴'] = null;
+              error = updateError;
+
+              if (!error) {
+                alert('정기조퇴 기록이 수정되었습니다.');
+              }
+
+            } else {
+              // 신규 등록: created_at은 DB 기본값(now()) 사용
+              delete dbPayload.updated_at;
+
+              const { error: insertError } = await db
+                .from('gatepass')
+                .insert([dbPayload]);
+
+              error = insertError;
+
+              if (!error) {
+                alert('정기조퇴가 정상적으로 등록되었습니다.');
+              }
             }
-          } catch (e) {
-            alert("처리 중 오류가 발생했습니다.");
+
+            if (error) throw error;
+
+            // 저장 성공 후 등록 폼 초기화
+            document.getElementById('regForm').reset();
+            document.getElementById('edit-row-index').value = '';
+
+            document.querySelector('#reg-input h4').innerText = '정기조퇴 등록';
+            btn.innerHTML = '<i class="bi bi-check2-circle"></i> 정기조퇴 등록하기';
+
+            // 다음 정기조퇴 현황 진입 시 Supabase에서 다시 읽기
+            cachedData['정기조퇴'] = null;
+
+          } catch (error) {
+            console.error('정기조퇴 저장 오류:', error);
+
+            alert(
+              `저장 중 오류가 발생했습니다.\n\n` +
+              `${error.message || 'Supabase 연결 또는 권한을 확인해주세요.'}`
+            );
+
           } finally {
             btn.disabled = false;
-            if (document.getElementById('edit-row-index').value === '') {
-              btn.innerHTML = '<i class="bi bi-check2-circle"></i> 정기조퇴 등록하기';
+
+            // 실패했을 때 현재 모드에 맞는 버튼명 복원
+            const stillEditing = document.getElementById('edit-row-index').value;
+
+            if (stillEditing) {
+              btn.innerHTML = '<i class="bi bi-pencil-square"></i> 정기조퇴 수정완료';
             } else {
-              btn.innerHTML = originalBtnText;
+              btn.innerHTML = '<i class="bi bi-check2-circle"></i> 정기조퇴 등록하기';
             }
           }
         }
 
         // [삭제 기능]
-        async function deleteRegularLeaveRow(rowIndex, studentName) {
-          if (!confirm(`${studentName} 학생의 정기조퇴 기록을 삭제하시겠습니까?`)) return;
+        async function deleteRegularLeaveRow(id, studentName) {
+          const confirmed = confirm(
+            `${studentName} 학생의 정기조퇴 기록을 삭제하시겠습니까?\n\n삭제 후 복구할 수 없습니다.`
+          );
 
-          // 테이블에 로딩 표시
-          document.getElementById('reg-view-body').innerHTML = `<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-danger spinner-border-sm"></div> 삭제 중...</td></tr>`;
+          if (!confirmed) return;
+
+          document.getElementById('reg-view-body').innerHTML = `
+    <tr>
+      <td colspan="8" class="text-center py-4">
+        <div class="spinner-border text-danger spinner-border-sm"></div>
+        삭제 중...
+      </td>
+    </tr>
+  `;
 
           try {
-            const response = await fetch(GAS_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({ action: 'deleteRegularLeave', rowIndex: rowIndex })
-            });
-            const result = await response.json();
-            alert(result.message);
+            const { error } = await db
+              .from('gatepass')
+              .delete()
+              .eq('id', Number(id));
 
-            // 캐시 초기화 후 재로드
+            if (error) throw error;
+
+            alert('삭제되었습니다.');
+
+            // 캐시를 비우고 Supabase에서 최신 데이터 재조회
             cachedData['정기조퇴'] = null;
-            loadRegularLeave();
-          } catch (e) {
-            alert("삭제 중 오류가 발생했습니다.");
+            await loadRegularLeave();
+
+          } catch (error) {
+            console.error('정기조퇴 삭제 오류:', error);
+
+            alert(
+              `삭제 중 오류가 발생했습니다.\n\n` +
+              `${error.message || 'Supabase 권한을 확인해주세요.'}`
+            );
+
+            // 오류 시에도 기존 목록 다시 호출
+            cachedData['정기조퇴'] = null;
+            await loadRegularLeave();
           }
         }
 
@@ -1473,44 +1799,179 @@
           document.getElementById('reg-reason').value = reason || '';
         }
 
-        // [신규] 연장(복제 후 신규 등록) 기능
-        function extendRegularLeave(ban, studentId, name, days, time, reason) {
-          if (!confirm(`[${name}] 학생의 조퇴 정보를 바탕으로 다음 달 연장을 진행하시겠습니까?\n(기간만 새로 입력하시면 됩니다)`)) return;
+        // YYYY-MM-DD 문자열을 로컬 Date 객체로 변환
+        function parseYmd(dateString) {
+          const match = String(dateString || '')
+            .trim()
+            .match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
-          // 1. 등록 탭으로 전환
-          switchTab('reg-input');
+          if (!match) return null;
 
-          // 2. 폼을 "신규 등록" 상태로 확실히 초기화 
-          // (이전에 수정 버튼을 눌러서 '수정 모드' 였을 수 있으므로 리셋)
-          document.getElementById('edit-row-index').value = '';
-          document.querySelector('#reg-input h4').innerText = "정기조퇴 등록 (연장)";
-          document.querySelector('#regForm button.btn-primary').innerHTML = '<i class="bi bi-check2-circle"></i> 연장 등록하기';
+          const year = Number(match[1]);
+          const month = Number(match[2]) - 1;
+          const day = Number(match[3]);
 
-          // 3. 학생 기본 정보 세팅
-          document.getElementById('reg-id').value = studentId;
-          document.getElementById('reg-ban').value = ban;
-          document.getElementById('reg-name').value = name;
+          const date = new Date(year, month, day);
 
-          // 4. 기간은 비워둠 (새로운 한 달을 입력해야 하므로)
-          document.getElementById('reg-start').value = '';
-          document.getElementById('reg-end').value = '';
-
-          // 5. 요일(체크박스) 복원
-          document.querySelectorAll('#day-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
-          if (days) {
-            document.querySelectorAll('#day-checkboxes input[type="checkbox"]').forEach(cb => {
-              if (days.includes(cb.value)) cb.checked = true;
-            });
+          // 2026-02-31처럼 실제 없는 날짜를 걸러냄
+          if (
+            date.getFullYear() !== year ||
+            date.getMonth() !== month ||
+            date.getDate() !== day
+          ) {
+            return null;
           }
 
-          // 6. 시간 및 사유 복원
-          document.getElementById('reg-time-input').value = time;
-          document.getElementById('reg-reason').value = reason || '';
+          return date;
+        }
 
-          // 7. 커서를 바로 '시작일' 입력칸에 위치시킴 (업무 속도 극대화)
-          setTimeout(() => {
-            document.getElementById('reg-start').focus();
-          }, 100);
+
+        // Date 객체를 YYYY-MM-DD 형태로 변환
+        function formatYmd(date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+
+          return `${year}-${month}-${day}`;
+        }
+
+
+        // 월말 보정이 포함된 "N개월 후" 계산
+        // 예: 2026-01-31 + 1개월 → 2026-02-28
+        function addMonthsClamped(date, months) {
+          const originalDay = date.getDate();
+
+          // 우선 해당 달의 1일로 이동해서 월 넘침을 막음
+          const result = new Date(date.getFullYear(), date.getMonth() + months, 1);
+
+          // 이동한 달의 마지막 날짜
+          const lastDayOfTargetMonth = new Date(
+            result.getFullYear(),
+            result.getMonth() + 1,
+            0
+          ).getDate();
+
+          // 기존 일자와 해당 월 마지막 일자 중 작은 값 사용
+          result.setDate(Math.min(originalDay, lastDayOfTargetMonth));
+
+          return result;
+        }
+
+
+        // 기존 기간을 정확히 한 달 뒤 기간으로 이동
+        function getNextMonthPeriod(period) {
+          const parts = String(period || '')
+            .split('~')
+            .map(value => value.trim());
+
+          if (parts.length !== 2) return null;
+
+          const startDate = parseYmd(parts[0]);
+          const endDate = parseYmd(parts[1]);
+
+          if (!startDate || !endDate) return null;
+
+          const nextStartDate = addMonthsClamped(startDate, 1);
+          const nextEndDate = addMonthsClamped(endDate, 1);
+
+          return {
+            startDate: formatYmd(nextStartDate),
+            endDate: formatYmd(nextEndDate),
+            period: `${formatYmd(nextStartDate)} ~ ${formatYmd(nextEndDate)}`
+          };
+        }
+
+
+        // 정기조퇴 다음 달 자동 연장 등록
+        async function extendRegularLeave(
+          className,
+          studentId,
+          studentName,
+          currentPeriod,
+          dayOfWeek,
+          leaveTime,
+          reason
+        ) {
+          // 1. 기존 기간을 기준으로 다음 달 기간 계산
+          const nextPeriodInfo = getNextMonthPeriod(currentPeriod);
+
+          if (!nextPeriodInfo) {
+            alert(
+              '기존 기간 형식을 읽을 수 없습니다.\n\n' +
+              `현재 기간: ${currentPeriod}\n\n` +
+              '기간은 "YYYY-MM-DD ~ YYYY-MM-DD" 형식이어야 합니다.'
+            );
+            return;
+          }
+
+          // 2. 같은 학생·같은 기간·같은 요일·같은 시간의 중복 등록 방지
+          const currentRows = cachedData['정기조퇴'] || [];
+
+          const alreadyExists = currentRows.some(row => {
+            return (
+              String(row[1]).trim() === String(studentId).trim() &&
+              String(row[3]).trim() === nextPeriodInfo.period &&
+              String(row[4]).trim() === String(dayOfWeek).trim() &&
+              String(row[5]).trim() === String(leaveTime).trim()
+            );
+          });
+
+          if (alreadyExists) {
+            alert(
+              `[${studentName}] 학생의 다음 달 정기조퇴 기록이 이미 존재합니다.\n\n` +
+              `기간: ${nextPeriodInfo.period}\n` +
+              `요일: ${dayOfWeek}\n` +
+              `시간: ${leaveTime}`
+            );
+            return;
+          }
+
+          // 3. 확인창: 예 → 즉시 등록 / 아니오 → 아무 작업 없음
+          const confirmed = confirm(
+            `[${studentName}] 학생의 정기조퇴를 다음 달로 연장하시겠습니까?\n\n` +
+            `현재 기간: ${currentPeriod}\n` +
+            `연장 기간: ${nextPeriodInfo.period}\n` +
+            `요일: ${dayOfWeek}\n` +
+            `시간: ${leaveTime}\n` +
+            `사유: ${reason || '-'}`
+          );
+
+          if (!confirmed) return;
+
+          // 4. Supabase에 다음 달 기록 즉시 등록
+          try {
+            const { error } = await db
+              .from('gatepass')
+              .insert([{
+                class_name: String(className || '').trim(),
+                student_id: String(studentId || '').trim(),
+                student_name: String(studentName || '').trim(),
+                period: nextPeriodInfo.period,
+                day_of_week: String(dayOfWeek || '').trim(),
+                leave_time: String(leaveTime || '').trim(),
+                reason: String(reason || '').trim()
+              }]);
+
+            if (error) throw error;
+
+            alert(
+              '다음 달 정기조퇴가 등록되었습니다.\n\n' +
+              `${studentName}\n` +
+              `${nextPeriodInfo.period}`
+            );
+
+            // 목록 캐시를 비운 뒤 Supabase 최신 데이터 재조회
+            cachedData['정기조퇴'] = null;
+            await loadRegularLeave();
+
+          } catch (error) {
+            console.error('정기조퇴 연장 등록 오류:', error);
+
+            alert(
+              `다음 달 연장 등록 중 오류가 발생했습니다.\n\n` +
+              `${error.message || 'Supabase 연결 또는 권한을 확인해주세요.'}`
+            );
+          }
         }
       </script>
 </body>
