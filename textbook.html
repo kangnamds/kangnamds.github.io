@@ -1065,6 +1065,24 @@
       font-weight: 700;
     }
 
+    .restock-request-button[data-requested="false"] {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .restock-request-button[data-requested="false"]:hover {
+      background: #8f1c13;
+    }
+
+    .restock-request-button[data-requested="true"] {
+      background: #fdb022;
+      color: #172033;
+    }
+
+    .restock-request-button[data-requested="true"]:hover {
+      background: #f79009;
+    }
+
     .restock-not-requested {
       color: var(--muted);
       font-size: 13px;
