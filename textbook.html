@@ -7,6 +7,7 @@
   <title>교재 재고 관리</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     /* ============================================================
@@ -812,16 +813,17 @@
       color: var(--green);
     }
 
-    .expiration-scheduled {
+    .expiration-stock-in {
       background: #e8efff;
       color: #175cd3;
     }
 
-    .expiration-past {
+    .expiration-scheduled {
       background: var(--orange-bg);
       color: var(--orange);
     }
 
+    .expiration-past,
     .expiration-expired {
       background: var(--red-bg);
       color: var(--red);
@@ -1230,6 +1232,299 @@
         align-items: stretch;
         flex-direction: column;
       }
+
+      /* 모바일(720px 이하) 테이블 가로 스크롤 제거 · 핵심 열 압축 표시 */
+      .table-wrap {
+        overflow-x: visible;
+      }
+
+      table {
+        min-width: 0;
+        table-layout: fixed;
+        font-size: 13px;
+      }
+
+      th,
+      td {
+        padding: 9px 6px;
+        vertical-align: top;
+        white-space: normal;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+      }
+
+      .mobile-subline {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 1.35;
+      }
+
+      .textbook-cover-cell {
+        width: 48px;
+        gap: 4px;
+      }
+
+      .textbook-cover-cell .textbook-cover-button {
+        width: 48px;
+        min-height: 24px;
+        padding: 2px 3px;
+        font-size: 11px;
+      }
+
+      .textbook-cover-view-button,
+      .inventory-cover-view-button,
+      .inventory-cover-thumbnail,
+      .inventory-cover-empty {
+        width: 44px;
+        height: 58px;
+        min-height: 58px;
+      }
+
+      /* 1. 교재 관리 (#textbook-manage-list): 표지(1) | 교재명(5) | 상태(8) | 관리(9) */
+      #textbook-manage-list td:nth-child(5) {
+        color: var(--ink);
+      }
+
+      table:has(#textbook-manage-list) :is(th, td):nth-child(2),
+      table:has(#textbook-manage-list) :is(th, td):nth-child(3),
+      table:has(#textbook-manage-list) :is(th, td):nth-child(4),
+      table:has(#textbook-manage-list) :is(th, td):nth-child(6),
+      table:has(#textbook-manage-list) :is(th, td):nth-child(7) {
+        display: none;
+      }
+
+      table:has(#textbook-manage-list) :is(th, td):nth-child(1) { width: 58px; }
+      table:has(#textbook-manage-list) :is(th, td):nth-child(8) { width: 74px; text-align: center; }
+      table:has(#textbook-manage-list) :is(th, td):nth-child(9) { width: 64px; text-align: center; }
+
+      /* 2. 재고 관리 (#inventory-search-list): 표지(1) | 교재명(5) | 전체 재고(8) | 관리(9) */
+      table:has(#inventory-search-list) :is(th, td):nth-child(2),
+      table:has(#inventory-search-list) :is(th, td):nth-child(3),
+      table:has(#inventory-search-list) :is(th, td):nth-child(4),
+      table:has(#inventory-search-list) :is(th, td):nth-child(6),
+      table:has(#inventory-search-list) :is(th, td):nth-child(7) {
+        display: none;
+      }
+
+      table:has(#inventory-search-list) :is(th, td):nth-child(1) { width: 54px; }
+      table:has(#inventory-search-list) :is(th, td):nth-child(8) { width: 76px; text-align: center; }
+      table:has(#inventory-search-list) :is(th, td):nth-child(9) { width: 76px; text-align: center; }
+
+      /* 3. 재고 부족 교재 (#low-stock-textbook-list): 표지(1) | 교재명(5) | 전체 재고(7) | 관리(11) */
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(2),
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(3),
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(4),
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(6),
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(8),
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(9),
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(10) {
+        display: none;
+      }
+
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(1) { width: 54px; }
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(7) { width: 76px; text-align: center; }
+      table:has(#low-stock-textbook-list) :is(th, td):nth-child(11) { width: 88px; }
+
+      /* 4. 사용만료일 설정 / 처리 교재 (#expiration-scheduled-list, #expired-textbook-list): 표지(1) | 교재명(5) | 전체 재고(7) | 관리(10) */
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(2),
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(3),
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(4),
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(6),
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(8),
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(9) {
+        display: none;
+      }
+
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(1) { width: 54px; }
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(7) { width: 76px; text-align: center; }
+      table:has(#expiration-scheduled-list, #expired-textbook-list) :is(th, td):nth-child(10) { width: 88px; text-align: center; }
+
+      /* 5. 재고 이력 교재 검색 (#history-textbook-list): 교재명(4) | 현재 전체 재고(6) | 이력(7) */
+      table:has(#history-textbook-list) :is(th, td):nth-child(1),
+      table:has(#history-textbook-list) :is(th, td):nth-child(2),
+      table:has(#history-textbook-list) :is(th, td):nth-child(3),
+      table:has(#history-textbook-list) :is(th, td):nth-child(5) {
+        display: none;
+      }
+
+      table:has(#history-textbook-list) :is(th, td):nth-child(6) { width: 80px; text-align: center; }
+      table:has(#history-textbook-list) :is(th, td):nth-child(7) { width: 76px; text-align: center; }
+
+      /* 6. 선택 교재 재고 이력 상세 (#history-list): 처리 시각/위치/메모(1) | 유형(2) | 재고 증감(6) | 전체 재고(7) */
+      table:has(#history-list) :is(th, td):nth-child(3),
+      table:has(#history-list) :is(th, td):nth-child(4),
+      table:has(#history-list) :is(th, td):nth-child(5),
+      table:has(#history-list) :is(th, td):nth-child(8) {
+        display: none;
+      }
+
+      table:has(#history-list) :is(th, td):nth-child(2) { width: 78px; text-align: center; }
+      table:has(#history-list) :is(th, td):nth-child(6) { width: 64px; text-align: right; }
+      table:has(#history-list) :is(th, td):nth-child(7) { width: 64px; text-align: right; }
+
+      .inspection-action-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      td .small-button {
+        width: 100%;
+        padding: 6px 6px;
+        font-size: 12px;
+      }
+
+      /* 모바일(720px 이하)에서는 엑셀 일괄 업로드 UI 및 일부 탭 숨김 (교재 관리, 재고 관리만 표시) */
+      .desktop-bulk-upload,
+      .tab-button[data-tab="locations"],
+      .tab-button[data-tab="inspection"],
+      .tab-button[data-tab="history"] {
+        display: none !important;
+      }
+    }
+
+    /* 접이식 카드 (새 교재 등록, 새 재고 위치 등록) */
+    .collapsible-card {
+      padding: 0;
+    }
+
+    .collapsible-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 22px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+
+    .collapsible-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .collapsible-summary h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .collapsible-toggle-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      background: #eef2f6;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .collapsible-toggle-hint::after {
+      content: "펼치기 ▾";
+    }
+
+    details[open] > .collapsible-summary {
+      border-bottom: 1px solid var(--line);
+    }
+
+    details[open] > .collapsible-summary .collapsible-toggle-hint {
+      background: #e8efff;
+      color: var(--blue);
+    }
+
+    details[open] > .collapsible-summary .collapsible-toggle-hint::after {
+      content: "접기 ▴";
+    }
+
+    .collapsible-body {
+      padding: 20px 24px 24px;
+    }
+
+    /* 엑셀 일괄 업로드 미리보기 스타일 */
+    .bulk-upload-panel {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .bulk-preview-summary {
+      margin: 0 0 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .bulk-preview-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      max-height: 420px;
+      overflow-y: auto;
+      background: #fff;
+    }
+
+    .bulk-preview-header,
+    .bulk-preview-item {
+      display: grid;
+      grid-template-columns: 36px 80px 104px 86px 76px minmax(180px, 1.3fr) minmax(140px, 1fr) 78px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .bulk-preview-header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--soft);
+      color: #475467;
+      font-weight: 700;
+    }
+
+    .bulk-preview-item:last-child {
+      border-bottom: 0;
+    }
+
+    .bulk-preview-item.is-duplicate {
+      background: #f8fafc;
+      color: var(--muted);
+    }
+
+    .bulk-preview-item input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .bulk-preview-item input[type="text"] {
+      min-height: 34px;
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+
+    .bulk-raw-title {
+      color: var(--muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (min-width: 721px) {
+      .mobile-subline {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -1309,48 +1604,70 @@
 
     <!-- 교재 관리 탭 -->
     <section id="tab-textbooks" class="tab-panel active">
-      <section class="card">
-        <h2>새 교재 등록</h2>
+      <section class="card collapsible-card">
+        <details id="new-textbook-details">
+          <summary class="collapsible-summary">
+            <h2>+ 새 교재 등록</h2>
+            <span class="collapsible-toggle-hint"></span>
+          </summary>
 
-        <form id="textbook-form">
-          <div class="grid">
-            <div>
-              <label for="department">학과</label>
-              <input id="department" name="department" placeholder="예: 수학" required />
-            </div>
+          <div class="collapsible-body">
+            <form id="textbook-form">
+              <div class="grid">
+                <div>
+                  <label for="department">학과</label>
+                  <input id="department" name="department" placeholder="예: 수학" required />
+                </div>
 
-            <div>
-              <label for="subject">과목</label>
-              <input id="subject" name="subject" placeholder="예: 미적분" required />
-            </div>
+                <div>
+                  <label for="subject">과목</label>
+                  <input id="subject" name="subject" placeholder="예: 미적분" required />
+                </div>
 
-            <div>
-              <label for="instructor-name">강사명</label>
-              <input id="instructor-name" name="instructor_name" placeholder="예: 김강사" required />
-            </div>
+                <div>
+                  <label for="instructor-name">강사명</label>
+                  <input id="instructor-name" name="instructor_name" placeholder="예: 김강사" required />
+                </div>
 
-            <div>
-              <label for="textbook-name">교재명</label>
-              <input id="textbook-name" name="textbook_name" placeholder="예: 미적분 실전개념" required />
-            </div>
+                <div>
+                  <label for="textbook-name">교재명</label>
+                  <input id="textbook-name" name="textbook_name" placeholder="예: 미적분 실전개념" required />
+                </div>
 
-            <div class="full textbook-form-footer">
-              <div class="textbook-date-field">
-                <label for="lecture-date">강의일</label>
+                <div class="full actions" style="margin-top: 4px;">
+                  <input id="bulk-excel-file" type="file" accept=".xlsx" hidden />
+                  <button id="bulk-excel-select-button" class="success-button desktop-bulk-upload" type="button">
+                    엑셀 일괄 업로드 (.xlsx)
+                  </button>
 
-                <input id="lecture-date" name="lecture_date" type="date" required />
+                  <button id="textbook-save-button" type="submit">
+                    교재 등록
+                  </button>
+                </div>
               </div>
 
-              <div class="textbook-submit-field">
-                <button id="textbook-save-button" type="submit">
-                  교재 등록
+              <p id="textbook-form-status" class="status" aria-live="polite"></p>
+            </form>
+
+            <div id="bulk-upload-panel" class="bulk-upload-panel desktop-bulk-upload" hidden>
+              <p id="bulk-preview-summary" class="bulk-preview-summary"></p>
+
+              <ul id="bulk-preview-list" class="bulk-preview-list"></ul>
+
+              <div class="actions">
+                <button id="bulk-upload-cancel-button" class="secondary" type="button">
+                  취소
+                </button>
+
+                <button id="bulk-upload-submit-button" class="success-button" type="button">
+                  선택 교재 일괄 등록
                 </button>
               </div>
+
+              <p id="bulk-upload-status" class="status" aria-live="polite"></p>
             </div>
           </div>
-
-          <p id="textbook-form-status" class="status" aria-live="polite"></p>
-        </form>
+        </details>
       </section>
 
       <section class="card">
@@ -1387,7 +1704,7 @@
                 <th>학과</th>
                 <th>과목</th>
                 <th>교재명</th>
-                <th>강의일</th>
+                <th>배부일</th>
                 <th>사용만료일</th>
                 <th>상태</th>
                 <th>관리</th>
@@ -1395,16 +1712,17 @@
             </thead>
 
             <tbody id="textbook-manage-list"></tbody>
-            <input id="textbook-cover-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-            <div id="textbook-cover-preview-area" hidden>
-              <p id="textbook-cover-selected-name"></p>
-              <img id="textbook-cover-preview" alt="선택한 교재 표지 미리보기">
-              <p id="textbook-cover-file-status" aria-live="polite"></p>
-              <button id="textbook-cover-upload-button" type="button" disabled>
-                표지 업로드
-              </button>
-            </div>
           </table>
+        </div>
+
+        <input id="textbook-cover-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        <div id="textbook-cover-preview-area" hidden>
+          <p id="textbook-cover-selected-name"></p>
+          <img id="textbook-cover-preview" alt="선택한 교재 표지 미리보기">
+          <p id="textbook-cover-file-status" aria-live="polite"></p>
+          <button id="textbook-cover-upload-button" type="button" disabled>
+            표지 업로드
+          </button>
         </div>
 
         <p id="textbook-list-status" class="status" aria-live="polite"></p>
@@ -1413,40 +1731,47 @@
 
     <!-- 재고 위치 관리 탭 -->
     <section id="tab-locations" class="tab-panel">
-      <section class="card">
-        <h2>새 재고 위치 등록</h2>
+      <section class="card collapsible-card">
+        <details id="new-location-details">
+          <summary class="collapsible-summary">
+            <h2>+ 새 재고 위치 등록</h2>
+            <span class="collapsible-toggle-hint"></span>
+          </summary>
 
-        <p class="notice">
-          실제 교재 수량을 세는 창고, 책장, 랙만 등록하세요.
-          교재판매실은 수시 배부 장소이므로 재고 위치로 등록하지 않습니다.
-        </p>
+          <div class="collapsible-body">
+            <p class="notice">
+              실제 교재 수량을 세는 창고, 책장, 랙만 등록하세요.
+              교재판매실은 수시 배부 장소이므로 재고 위치로 등록하지 않습니다.
+            </p>
 
-        <form id="location-form">
-          <div class="grid" style="margin-top: 18px;">
-            <div>
-              <label for="location-name">재고 위치</label>
-              <input id="location-name" placeholder="예: 본관 창고" required />
-            </div>
+            <form id="location-form">
+              <div class="grid" style="margin-top: 18px;">
+                <div>
+                  <label for="location-name">재고 위치</label>
+                  <input id="location-name" placeholder="예: 본관 창고" required />
+                </div>
 
-            <div>
-              <label for="sub-location-name">세부 위치</label>
-              <input id="sub-location-name" placeholder="예: A구역 2번 랙" required />
-            </div>
+                <div>
+                  <label for="sub-location-name">세부 위치</label>
+                  <input id="sub-location-name" placeholder="예: A구역 2번 랙" required />
+                </div>
 
-            <div class="full">
-              <label for="location-sort-order">표시 순서</label>
-              <input id="location-sort-order" type="number" min="0" step="1" value="0" required />
-            </div>
+                <div class="full">
+                  <label for="location-sort-order">표시 순서</label>
+                  <input id="location-sort-order" type="number" min="0" step="1" value="0" required />
+                </div>
+              </div>
+
+              <div class="actions">
+                <button id="location-save-button" type="submit">
+                  위치 등록
+                </button>
+              </div>
+
+              <p id="location-form-status" class="status" aria-live="polite"></p>
+            </form>
           </div>
-
-          <div class="actions">
-            <button id="location-save-button" type="submit">
-              위치 등록
-            </button>
-          </div>
-
-          <p id="location-form-status" class="status" aria-live="polite"></p>
-        </form>
+        </details>
       </section>
 
       <section class="card">
@@ -1515,7 +1840,7 @@
                 <th>학과</th>
                 <th>과목</th>
                 <th>교재명</th>
-                <th>강의일</th>
+                <th>배부일</th>
                 <th>상태</th>
                 <th>전체 재고</th>
                 <th>관리</th>
@@ -1573,7 +1898,7 @@
                 <th>학과</th>
                 <th>과목</th>
                 <th>교재명</th>
-                <th>강의일</th>
+                <th>배부일</th>
                 <th>전체 재고</th>
                 <th>사용만료일</th>
                 <th>상태</th>
@@ -1618,7 +1943,7 @@
                 <th>학과</th>
                 <th>과목</th>
                 <th>교재명</th>
-                <th>강의일</th>
+                <th>배부일</th>
                 <th>전체 재고</th>
                 <th>사용만료일</th>
                 <th>상태</th>
@@ -1662,7 +1987,7 @@
                 <th>학과</th>
                 <th>과목</th>
                 <th>교재명</th>
-                <th>강의일</th>
+                <th>배부일</th>
                 <th>전체 재고</th>
                 <th>사용만료일</th>
                 <th>처리 시각</th>
@@ -1700,7 +2025,7 @@
                   <th>학과</th>
                   <th>과목</th>
                   <th>교재명</th>
-                  <th>강의일</th>
+                  <th>배부일</th>
                   <th>현재 전체 재고</th>
                   <th>이력</th>
                 </tr>
@@ -1949,8 +2274,8 @@
           </div>
 
           <div class="full">
-            <label for="edit-lecture-date">강의일</label>
-            <input id="edit-lecture-date" type="date" required />
+            <label for="edit-lecture-date">배부일</label>
+            <input id="edit-lecture-date" type="date" />
           </div>
 
         </div>
@@ -2039,11 +2364,16 @@
 
       <form id="initial-stock-form">
         <div class="grid" style="margin-top: 18px;">
-          <div class="full">
+          <div>
             <label for="initial-stock-location-select">재고 위치</label>
             <select id="initial-stock-location-select" required>
               <option value="">재고 위치를 선택하세요</option>
             </select>
+          </div>
+
+          <div>
+            <label for="initial-stock-lecture-date">배부일</label>
+            <input id="initial-stock-lecture-date" type="date" required />
           </div>
 
           <div>
@@ -2378,7 +2708,7 @@
       return `${year}-${month}-${day}`;
     }
 
-    function getExpirationInfo(textbook) {
+    function getExpirationInfo(textbook, hasInventory = true) {
       const today = getTodayYmd();
 
       if (textbook.is_expired) {
@@ -2402,6 +2732,13 @@
         return {
           label: '만료 예정',
           className: 'expiration-scheduled'
+        };
+      }
+
+      if (!hasInventory) {
+        return {
+          label: '입고',
+          className: 'expiration-stock-in'
         };
       }
 
@@ -2632,6 +2969,19 @@
       });
     });
 
+    /* 화면 폭이 720px 이하로 좁아질 때 숨김 탭이 활성화되어 있으면 교재 관리 탭으로 자동 전환 */
+    const mobileTabMediaQuery = window.matchMedia('(max-width: 720px)');
+    function enforceMobileVisibleTab(e) {
+      if (!e.matches) return;
+      const activeButton = document.querySelector('.tab-button.active');
+      const activeTab = activeButton?.dataset.tab;
+      if (activeTab && activeTab !== 'textbooks' && activeTab !== 'inventory') {
+        switchTab('textbooks');
+        refreshTabForGlobalFilter('textbooks');
+      }
+    }
+    mobileTabMediaQuery.addEventListener('change', enforceMobileVisibleTab);
+
     $('#global-instructor-search-button').addEventListener(
       'click',
       () => {
@@ -2711,7 +3061,8 @@
           expired_at,
           expiration_memo,
           restock_requested_at,
-          cover_image_path
+          cover_image_path,
+          textbook_inventory(id)
         `);
 
       if (keyword) {
@@ -2765,7 +3116,10 @@
 
       list.innerHTML = data.map((textbook) => {
         const expirationInfo =
-          getExpirationInfo(textbook);
+          getExpirationInfo(
+            textbook,
+            Boolean(textbook.textbook_inventory?.length)
+          );
 
         const expirationDateText =
           textbook.expiration_date
@@ -2790,6 +3144,7 @@
                           src="${escapeHtml(getTextbookCoverUrl(textbook.cover_image_path))}"
                           alt=""
                           loading="lazy"
+                          onerror="this.closest('button').outerHTML='<span class=&quot;inventory-cover-empty&quot;>표지 없음</span>'"
                         >
                       </button>
                       <button
@@ -2817,7 +3172,15 @@
             <td>${escapeHtml(textbook.instructor_name)}</td>
             <td>${escapeHtml(textbook.department)}</td>
             <td>${escapeHtml(textbook.subject)}</td>
-            <td>${escapeHtml(textbook.textbook_name)}</td>
+            <td>
+              <strong>${escapeHtml(textbook.textbook_name)}</strong>
+              <span class="mobile-subline">
+                ${escapeHtml(textbook.instructor_name)} · ${escapeHtml(textbook.department)} · ${escapeHtml(textbook.subject)}
+              </span>
+              <span class="mobile-subline">
+                배부 ${formatKoreanDate(textbook.lecture_date)} · 만료 ${expirationDateText}
+              </span>
+            </td>
             <td>${formatKoreanDate(textbook.lecture_date)}</td>
             <td>${expirationDateText}</td>
             <td>
@@ -2835,7 +3198,7 @@
                   data-subject="${escapeHtml(textbook.subject)}"
                   data-instructor="${escapeHtml(textbook.instructor_name)}"
                   data-name="${escapeHtml(textbook.textbook_name)}"
-                  data-date="${textbook.lecture_date}"
+                  data-date="${textbook.lecture_date || ''}"
                 >
                   수정
                 </button>
@@ -2866,8 +3229,7 @@
         department: formData.get('department').trim(),
         subject: formData.get('subject').trim(),
         instructor_name: formData.get('instructor_name').trim(),
-        textbook_name: formData.get('textbook_name').trim(),
-        lecture_date: formData.get('lecture_date')
+        textbook_name: formData.get('textbook_name').trim()
       };
 
       const button = $('#textbook-save-button');
@@ -2884,7 +3246,7 @@
 
       if (error) {
         const message = error.code === '23505'
-          ? '같은 학과·과목·강사명·교재명·강의일 조합이 이미 등록되어 있습니다.'
+          ? '같은 학과·과목·강사명·교재명 조합이 이미 등록되어 있습니다.'
           : `교재 등록에 실패했습니다: ${error.message}`;
 
         setStatus(status, message, 'error');
@@ -2895,6 +3257,474 @@
 
       setStatus(status, '교재를 등록했습니다.', 'success');
 
+      await loadTextbookManageList();
+    });
+
+    /* 엑셀(.xlsx) 일괄 업로드 · 신청제목 자동 정규화 · 중복 제외 */
+    let bulkUploadItems = [];
+
+    function normalizeTextbookTitle(rawTitle, instructorName = '', department = '', subject = '') {
+      let s = String(rawTitle || '').trim();
+      if (!s) return '';
+
+      // 1. 앞쪽 대괄호 말머리 제거 ([내지], [재종용], [조재훈T] 등)
+      s = s.replace(/^(?:\[[^\]]*\]\s*)+/g, '');
+
+      // 2. 앞쪽 날짜 패턴 제거 (2026-09-16, 260212_ 등)
+      s = s.replace(/^(?:20\d{2}[-._]\d{2}[-._]\d{2}|\d{6})[\s_-]*/g, '');
+
+      // 3. 앞쪽 강사명/학과/과목명 접두어 제거 (오타 1글자 차이 예: 고연숭- 포함)
+      const inst = String(instructorName || '').trim();
+      const dept = String(department || '').trim();
+      const subj = String(subject || '').trim();
+
+      for (let i = 0; i < 3; i++) {
+        let changed = false;
+
+        if (inst) {
+          const escapedInst = inst.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const instRegex = new RegExp(`^${escapedInst}T?(?:\\s*[-_.]\\s*|\\s+)`, 'i');
+          if (instRegex.test(s)) {
+            s = s.replace(instRegex, '');
+            changed = true;
+          } else if (inst.length >= 2) {
+            const prefix = inst.slice(0, -1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const typoRegex = new RegExp(`^${prefix}[가-힣]T?\\s*[-_]\\s*`, 'i');
+            if (typoRegex.test(s)) {
+              s = s.replace(typoRegex, '');
+              changed = true;
+            }
+          } else if (s.startsWith(`${inst}T`)) {
+            s = s.slice(inst.length + 1).replace(/^[\s\-_.]+/, '');
+            changed = true;
+          }
+        }
+
+        for (const word of [dept, subj]) {
+          if (!word || word === '-') continue;
+          const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const wordRegex = new RegExp(`^${escapedWord}\\s*[-_]\\s*`, 'i');
+          if (wordRegex.test(s)) {
+            s = s.replace(wordRegex, '');
+            changed = true;
+          }
+        }
+
+        if (/^재종\s*[-_]?\s*/.test(s)) {
+          s = s.replace(/^재종\s*[-_]?\s*/, '');
+          changed = true;
+        }
+
+        if (!changed) break;
+      }
+
+      // 4. 중간·뒤쪽 인쇄/검수 메모 및 파일 중복 번호 제거
+      s = s.replace(/\s+OL\s*\[\d+-\d+\]\s*$/i, '');
+      s = s.replace(/\(([^)]*)\)/g, (match, inner) => {
+        const cleaned = inner
+          .split(',')
+          .map((part) => part.trim())
+          .filter((part) => !/^(최종본|최종|수정본|수정|검수완료|주석제거|\d{6}|\d{8})$/.test(part));
+        return cleaned.length ? `(${cleaned.join(', ')})` : '';
+      });
+
+      s = s.replace(/(?:\s+|\s*[-_]\s*)(?:20\d{6}|\d{6}(?:_\d{6})?|\d{4})(?=\s|$|[-_])/g, '');
+      s = s.replace(/\s+\(\d+\)\s*$/g, '');
+      s = s.replace(/(?:[\s_-]+|^)(?:내지최종|최종본|최종|수정본|수정|검수완료|merged|기존뒷표지반영|재종|내지)(?=\s|$|[-_(])/gi, '');
+      s = s.replace(/(?:[\s_-]+)(?:A4|A5|B5)(?=\s|$|[-_])/gi, '');
+      s = s.replace(/(?:[\s_-]+)(?:[pP]\.?\s*\d+|\d+\s*(?:pg|쪽|p))$/g, '');
+      s = s.replace(/\s*-\s*\d{2,3}\s*$/g, '');
+
+      // 5. 구분자·공백·표기 통일
+      s = s.replace(/[_]+/g, ' ');
+      s = s.replace(/-+/g, (match, offset, str) => {
+        const prev = str[offset - 1] || '';
+        const next = str[offset + match.length] || '';
+        if (/\d/.test(prev) && /\d/.test(next)) return '-';
+        return ' ';
+      });
+      s = s.replace(/\.\s+(?=VOL)/gi, ' ');
+      s = s.replace(/(\d+)회차/g, '$1회');
+      s = s.replace(/미니\s+씨파/g, '미니씨파');
+      s = s.replace(/풀\s+씨파/g, '풀씨파');
+      s = s.replace(/대수능대비/g, '대수능 대비 ');
+      s = s.replace(/푸쉬업\s*(\d+)\s*단어장/g, '푸쉬업 $1권 단어장');
+      s = s.replace(/푸쉬업(\d+권)/g, '푸쉬업 $1');
+      s = s.replace(/부록(\d+)/g, '부록 $1');
+      s = s.replace(/\s+/g, ' ').trim();
+
+      return s || String(rawTitle || '').trim();
+    }
+
+    function getTextbookCompareKey(department, subject, instructorName, textbookName) {
+      const clean = (v) => String(v || '').toLowerCase().replace(/[\s\-_.,!()[\]]+/g, '');
+      return `${clean(department)}|${clean(subject)}|${clean(instructorName)}|${clean(textbookName)}`;
+    }
+
+    function inferDepartmentAndSubject(rawDept, rawSubj, rawClassName, instructorName) {
+      let dept = String(rawDept || '').trim();
+      let subj = String(rawSubj || '').trim();
+      if (subj === '-') subj = '';
+
+      if (!subj && rawClassName) {
+        let classPart = String(rawClassName).trim().replace(/^\([^)]*\)\s*/, '');
+        if (classPart.includes('-')) {
+          classPart = classPart.split('-')[0].trim();
+        } else if (instructorName && classPart.includes(instructorName)) {
+          classPart = classPart.split(instructorName)[0].trim();
+        }
+        if (/확통/.test(classPart)) classPart = '확률과통계';
+        subj = classPart;
+      }
+
+      if (!dept && subj) {
+        if (/국어|독서|문학|언어|매체|화법|작문/.test(subj)) dept = '국어';
+        else if (/수학|미적|확통|확률|통계|기하/.test(subj)) dept = '수학';
+        else if (/영어/.test(subj)) dept = '영어';
+        else if (/논술/.test(subj)) dept = '논술';
+        else if (/물리|화학|생명|지구|과학|사회|윤리|지리|역사|정치|경제|문화|탐구/.test(subj)) dept = '탐구';
+        else dept = subj;
+      }
+
+      if (!subj && dept) {
+        subj = dept;
+      }
+
+      return { department: dept, subject: subj };
+    }
+
+    function renderBulkPreviewList() {
+      const list = $('#bulk-preview-list');
+      const summary = $('#bulk-preview-summary');
+      const submitButton = $('#bulk-upload-submit-button');
+
+      const selectedCount = bulkUploadItems.filter((item) => item.checked).length;
+      const duplicateCount = bulkUploadItems.filter((item) => item.isDuplicate).length;
+
+      summary.textContent =
+        `추출된 고유 교재 ${bulkUploadItems.length}건 · 신규 등록 선택 ${selectedCount}건` +
+        (duplicateCount > 0 ? ` (기등록 중복 ${duplicateCount}건 자동 제외)` : '');
+
+      submitButton.disabled = selectedCount === 0;
+      submitButton.textContent = `선택 교재 ${selectedCount}건 일괄 등록`;
+
+      const headerHtml = `
+        <li class="bulk-preview-header">
+          <span>선택</span>
+          <span>학과</span>
+          <span>과목</span>
+          <span>강사명</span>
+          <span>원고idx</span>
+          <span>정규화 교재명 (수정 가능)</span>
+          <span>원본 신청제목</span>
+          <span>상태</span>
+        </li>
+      `;
+
+      const rowsHtml = bulkUploadItems.map((item, idx) => `
+        <li class="bulk-preview-item ${item.isDuplicate ? 'is-duplicate' : ''}" data-index="${idx}">
+          <input
+            type="checkbox"
+            class="bulk-item-checkbox"
+            data-index="${idx}"
+            ${item.checked ? 'checked' : ''}
+          />
+          <input
+            type="text"
+            class="bulk-item-dept"
+            data-index="${idx}"
+            value="${escapeHtml(item.department)}"
+          />
+          <input
+            type="text"
+            class="bulk-item-subj"
+            data-index="${idx}"
+            value="${escapeHtml(item.subject)}"
+          />
+          <span>${escapeHtml(item.instructor_name)}</span>
+          <span style="color: var(--muted); font-size: 12px;">${escapeHtml(item.manuscript_idx || '-')}</span>
+          <input
+            type="text"
+            class="bulk-item-name"
+            data-index="${idx}"
+            value="${escapeHtml(item.textbook_name)}"
+          />
+          <span class="bulk-raw-title" title="${escapeHtml(item.raw_title)}">
+            ${escapeHtml(item.raw_title)}
+          </span>
+          <span>
+            <span class="expiration-status ${item.isDuplicate ? 'expiration-scheduled' : 'expiration-stock-in'}">
+              ${item.isDuplicate ? '기등록' : '신규'}
+            </span>
+          </span>
+        </li>
+      `).join('');
+
+      list.innerHTML = headerHtml + rowsHtml;
+    }
+
+    $('#bulk-excel-select-button').addEventListener('click', () => {
+      const input = $('#bulk-excel-file');
+      input.value = '';
+      input.click();
+    });
+
+    $('#bulk-excel-file').addEventListener('change', async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const status = $('#bulk-upload-status');
+      const panel = $('#bulk-upload-panel');
+
+      if (!window.XLSX) {
+        setStatus($('#textbook-form-status'), '엑셀 처리 라이브러리를 불러오지 못했습니다.', 'error');
+        return;
+      }
+
+      setStatus($('#textbook-form-status'), '엑셀 파일을 분석하고 있습니다.');
+
+      try {
+        const buffer = await file.arrayBuffer();
+        const workbook = window.XLSX.read(buffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[firstSheetName];
+        const rawRows = window.XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+        if (!rawRows || rawRows.length < 2) {
+          setStatus($('#textbook-form-status'), '엑셀 파일에 데이터가 없습니다.', 'error');
+          return;
+        }
+
+        // 헤더 행 찾기 (강사명, 신청제목/교재명이 포함된 첫 행)
+        let headerRowIndex = 0;
+        for (let i = 0; i < Math.min(10, rawRows.length); i++) {
+          const normalizedCells = rawRows[i].map((c) => String(c || '').replace(/\s+/g, ''));
+          if (
+            normalizedCells.includes('강사명') &&
+            (normalizedCells.includes('신청제목') || normalizedCells.includes('교재명'))
+          ) {
+            headerRowIndex = i;
+            break;
+          }
+        }
+
+        const headers = rawRows[headerRowIndex].map((h) => String(h || '').replace(/\s+/g, ''));
+        const colIdx = {
+          department: headers.findIndex((h) => h === '학과'),
+          subject: headers.findIndex((h) => h === '과목명' || h === '과목'),
+          instructor: headers.findIndex((h) => h === '강사명'),
+          title: headers.findIndex((h) => h === '신청제목' || h === '교재명'),
+          manuscriptIdx: headers.findIndex((h) => h.toLowerCase() === '원고idx'),
+          className: headers.findIndex((h) => h === '반이름')
+        };
+
+        if (colIdx.instructor === -1 || colIdx.title === -1) {
+          setStatus(
+            $('#textbook-form-status'),
+            '엑셀 파일에서 필수 열(강사명, 신청제목)을 찾을 수 없습니다.',
+            'error'
+          );
+          return;
+        }
+
+        const { data: existingTextbooks, error: fetchError } = await supabaseClient
+          .from('textbooks')
+          .select('department, subject, instructor_name, textbook_name, manuscript_idx');
+
+        if (fetchError) throw fetchError;
+
+        const cleanStr = (v) => String(v || '').toLowerCase().replace(/[\s\-_.,!()[\]]+/g, '');
+
+        const existingKeys = new Set();
+        const existingManuscriptKeys = new Set();
+        const existingInstructorTitleKeys = new Set();
+
+        (existingTextbooks || []).forEach((t) => {
+          existingKeys.add(
+            getTextbookCompareKey(t.department, t.subject, t.instructor_name, t.textbook_name)
+          );
+          const normDbTitle = normalizeTextbookTitle(
+            t.textbook_name,
+            t.instructor_name,
+            t.department,
+            t.subject
+          );
+          existingInstructorTitleKeys.add(`${cleanStr(t.instructor_name)}|${cleanStr(normDbTitle)}`);
+
+          if (t.manuscript_idx && String(t.manuscript_idx).trim()) {
+            existingManuscriptKeys.add(
+              `${cleanStr(t.instructor_name)}|ms:${String(t.manuscript_idx).trim()}`
+            );
+          }
+        });
+
+        const extractedMap = new Map();
+        const seenManuscriptIds = new Set();
+
+        for (let r = headerRowIndex + 1; r < rawRows.length; r++) {
+          const row = rawRows[r];
+          if (!row || row.length === 0) continue;
+
+          const instructorName = String(row[colIdx.instructor] || '').trim();
+          const rawTitle = String(row[colIdx.title] || '').trim();
+
+          // 빈 행이나 강사명이 없는 메모 행(예: 교판실 선생님 모의고사) 자동 건너뛰기
+          if (!instructorName || !rawTitle) continue;
+
+          const rawDept = colIdx.department !== -1 ? row[colIdx.department] : '';
+          const rawSubj = colIdx.subject !== -1 ? row[colIdx.subject] : '';
+          const rawClass = colIdx.className !== -1 ? row[colIdx.className] : '';
+          const manuscriptIdx = colIdx.manuscriptIdx !== -1
+            ? String(row[colIdx.manuscriptIdx] || '').trim()
+            : '';
+
+          const { department, subject } = inferDepartmentAndSubject(
+            rawDept,
+            rawSubj,
+            rawClass,
+            instructorName
+          );
+
+          const normalizedTitle = normalizeTextbookTitle(
+            rawTitle,
+            instructorName,
+            department,
+            subject
+          );
+
+          if (!department || !subject || !normalizedTitle) continue;
+
+          // 1) 원고idx가 있으면 강사명+원고idx로 파일 내 중복 1차 통합, 없으면 정규화된 제목으로 통합
+          const compareKey = getTextbookCompareKey(department, subject, instructorName, normalizedTitle);
+          const instructorTitleKey = `${cleanStr(instructorName)}|${cleanStr(normalizedTitle)}`;
+          const manuscriptKey = manuscriptIdx
+            ? `${cleanStr(instructorName)}|ms:${manuscriptIdx}`
+            : '';
+
+          if (manuscriptKey && seenManuscriptIds.has(manuscriptKey)) {
+            continue;
+          }
+          if (extractedMap.has(compareKey) || extractedMap.has(instructorTitleKey)) {
+            continue;
+          }
+
+          if (manuscriptKey) {
+            seenManuscriptIds.add(manuscriptKey);
+          }
+
+          // 2) DB 기등록 비교: 원고idx가 일치하거나, 저장된 원고idx가 없을 때 정규화된 신청제목이 일치하면 기등록 처리
+          const isDuplicate =
+            (manuscriptKey && existingManuscriptKeys.has(manuscriptKey)) ||
+            existingKeys.has(compareKey) ||
+            existingInstructorTitleKeys.has(instructorTitleKey);
+
+          extractedMap.set(instructorTitleKey, {
+            department,
+            subject,
+            instructor_name: instructorName,
+            textbook_name: normalizedTitle,
+            manuscript_idx: manuscriptIdx || null,
+            raw_title: rawTitle,
+            isDuplicate,
+            checked: !isDuplicate
+          });
+        }
+
+        bulkUploadItems = Array.from(extractedMap.values());
+
+        if (bulkUploadItems.length === 0) {
+          setStatus($('#textbook-form-status'), '추출할 수 있는 유효한 교재 행이 없습니다.', 'error');
+          panel.hidden = true;
+          return;
+        }
+
+        setStatus($('#textbook-form-status'));
+        setStatus(status);
+        panel.hidden = false;
+        renderBulkPreviewList();
+      } catch (err) {
+        console.error(err);
+        setStatus($('#textbook-form-status'), `엑셀 파일 처리 실패: ${err.message}`, 'error');
+      }
+    });
+
+    $('#bulk-preview-list').addEventListener('input', (event) => {
+      const target = event.target;
+      const idx = Number(target.dataset.index);
+      if (Number.isNaN(idx) || !bulkUploadItems[idx]) return;
+
+      if (target.classList.contains('bulk-item-checkbox')) {
+        bulkUploadItems[idx].checked = target.checked;
+        renderBulkPreviewList();
+      } else if (target.classList.contains('bulk-item-dept')) {
+        bulkUploadItems[idx].department = target.value.trim();
+      } else if (target.classList.contains('bulk-item-subj')) {
+        bulkUploadItems[idx].subject = target.value.trim();
+      } else if (target.classList.contains('bulk-item-name')) {
+        bulkUploadItems[idx].textbook_name = target.value.trim();
+      }
+    });
+
+    $('#bulk-upload-cancel-button').addEventListener('click', () => {
+      bulkUploadItems = [];
+      $('#bulk-upload-panel').hidden = true;
+      $('#bulk-excel-file').value = '';
+      setStatus($('#bulk-upload-status'));
+    });
+
+    $('#bulk-upload-submit-button').addEventListener('click', async () => {
+      const selected = bulkUploadItems.filter(
+        (item) => item.checked && item.department && item.subject && item.instructor_name && item.textbook_name
+      );
+
+      const status = $('#bulk-upload-status');
+      const submitButton = $('#bulk-upload-submit-button');
+
+      if (selected.length === 0) {
+        setStatus(status, '등록할 교재를 1건 이상 선택하세요.', 'error');
+        return;
+      }
+
+      submitButton.disabled = true;
+      setStatus(status, `${selected.length}건의 교재를 일괄 등록하고 있습니다.`);
+
+      let insertedCount = 0;
+      let skippedCount = 0;
+
+      for (const item of selected) {
+        const { error } = await supabaseClient
+          .from('textbooks')
+          .insert({
+            department: item.department,
+            subject: item.subject,
+            instructor_name: item.instructor_name,
+            textbook_name: item.textbook_name,
+            manuscript_idx: item.manuscript_idx || null
+          });
+
+        if (error) {
+          if (error.code === '23505') {
+            skippedCount++;
+          } else {
+            submitButton.disabled = false;
+            setStatus(status, `등록 중 오류가 발생했습니다 (${item.textbook_name}): ${error.message}`, 'error');
+            return;
+          }
+        } else {
+          insertedCount++;
+        }
+      }
+
+      submitButton.disabled = false;
+      bulkUploadItems = [];
+      $('#bulk-upload-panel').hidden = true;
+      $('#bulk-excel-file').value = '';
+
+      const resultMsg = skippedCount > 0
+        ? `엑셀 일괄 등록 완료: ${insertedCount}건 등록 (중복 ${skippedCount}건 제외)`
+        : `엑셀 일괄 등록 완료: 총 ${insertedCount}건의 교재를 등록했습니다.`;
+
+      setStatus($('#textbook-form-status'), resultMsg, 'success');
       await loadTextbookManageList();
     });
 
@@ -3013,11 +3843,6 @@
           return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          status.textContent = '5MB 이하의 사진을 선택해 주세요.';
-          return;
-        }
-
         preview.src = URL.createObjectURL(file);
         preview.hidden = false;
         status.textContent = '사진을 선택했습니다. 아직 업로드되지 않았습니다.';
@@ -3094,11 +3919,8 @@
           return;
         }
 
-        if (
-          !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
-          file.size > 5 * 1024 * 1024
-        ) {
-          status.textContent = 'JPG·PNG·WebP 형식의 5MB 이하 사진만 등록할 수 있습니다.';
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+          status.textContent = 'JPG, PNG, WebP 사진만 등록할 수 있습니다.';
           uploadButton.disabled = true;
           return;
         }
@@ -3166,7 +3988,7 @@
         subject: $('#edit-subject').value.trim(),
         instructor_name: $('#edit-instructor-name').value.trim(),
         textbook_name: $('#edit-textbook-name').value.trim(),
-        lecture_date: $('#edit-lecture-date').value
+        lecture_date: $('#edit-lecture-date').value || null
       };
 
       const button = $('#edit-textbook-save-button');
@@ -3185,7 +4007,7 @@
 
       if (error) {
         const message = error.code === '23505'
-          ? '같은 학과·과목·강사명·교재명·강의일 조합이 이미 등록되어 있습니다.'
+          ? '같은 학과·과목·강사명·교재명·배부일 조합이 이미 등록되어 있습니다.'
           : `교재 수정에 실패했습니다: ${error.message}`;
 
         setStatus(status, message, 'error');
@@ -3659,7 +4481,10 @@
         const total = totalMap.get(textbook.id) || 0;
 
         const expirationInfo =
-          getExpirationInfo(textbook);
+          getExpirationInfo(
+            textbook,
+            totalMap.has(textbook.id)
+          );
 
         return `
           <tr>
@@ -3677,6 +4502,7 @@
                 src="${escapeHtml(getTextbookCoverUrl(textbook.cover_image_path))}"
                 alt=""
                 loading="lazy"
+                onerror="this.closest('button').outerHTML='<span class=&quot;inventory-cover-empty&quot;>표지 없음</span>'"
               >
             </button>`
             : '<span class="inventory-cover-empty">표지 없음</span>'
@@ -3685,7 +4511,15 @@
             <td>${escapeHtml(textbook.instructor_name)}</td>
             <td>${escapeHtml(textbook.department)}</td>
             <td>${escapeHtml(textbook.subject)}</td>
-            <td>${escapeHtml(textbook.textbook_name)}</td>
+            <td>
+              <strong>${escapeHtml(textbook.textbook_name)}</strong>
+              <span class="mobile-subline">
+                ${escapeHtml(textbook.instructor_name)} · ${escapeHtml(textbook.department)} · ${escapeHtml(textbook.subject)}
+              </span>
+              <span class="mobile-subline">
+                배부 ${formatKoreanDate(textbook.lecture_date)}
+              </span>
+            </td>
             <td>${formatKoreanDate(textbook.lecture_date)}</td>
 
             <td>
@@ -3697,7 +4531,12 @@
             </td>
 
             <td class="${total > 0 ? 'stock-positive' : 'stock-zero'}">
-              ${formatQuantity(total)}
+              ${totalMap.has(textbook.id) ? formatQuantity(total) : '배부 전'}
+              <span class="mobile-subline">
+                <span class="expiration-status ${expirationInfo.className}">
+                  ${expirationInfo.label}
+                </span>
+              </span>
             </td>
             <td>
               <button
@@ -3708,7 +4547,7 @@
                 data-subject="${escapeHtml(textbook.subject)}"
                 data-instructor="${escapeHtml(textbook.instructor_name)}"
                 data-name="${escapeHtml(textbook.textbook_name)}"
-                data-date="${textbook.lecture_date}"
+                data-date="${textbook.lecture_date || ''}"
               >
                 재고 관리
               </button>
@@ -3752,7 +4591,10 @@
 
       listElement.innerHTML = textbooks.map((textbook) => {
         const expirationInfo =
-          getExpirationInfo(textbook);
+          getExpirationInfo(
+            textbook,
+            totalMap.has(textbook.id)
+          );
 
         const total = totalMap.get(textbook.id) || 0;
 
@@ -3770,23 +4612,46 @@
           <tr>
             <td>
               ${textbook.cover_image_path
-            ? `<img
-                      class="inventory-cover-thumbnail"
-                      src="${escapeHtml(getTextbookCoverUrl(textbook.cover_image_path))}"
-                      alt="${escapeHtml(textbook.textbook_name)} 표지"
-                      loading="lazy"
-                    >`
+            ? `<button
+                      class="inventory-cover-view-button textbook-cover-view-button"
+                      type="button"
+                      data-path="${escapeHtml(textbook.cover_image_path)}"
+                      data-name="${escapeHtml(textbook.textbook_name)}"
+                      aria-label="${escapeHtml(textbook.textbook_name)} 표지 크게 보기"
+                    >
+                      <img
+                        class="inventory-cover-thumbnail"
+                        src="${escapeHtml(getTextbookCoverUrl(textbook.cover_image_path))}"
+                        alt=""
+                        loading="lazy"
+                        onerror="this.closest('button').outerHTML='<span class=&quot;inventory-cover-empty&quot;>표지 없음</span>'"
+                      >
+                    </button>`
             : '<span class="inventory-cover-empty">표지 없음</span>'
           }
             </td>
             <td>${escapeHtml(textbook.instructor_name)}</td>
             <td>${escapeHtml(textbook.department)}</td>
             <td>${escapeHtml(textbook.subject)}</td>
-            <td>${escapeHtml(textbook.textbook_name)}</td>
+            <td>
+              <strong>${escapeHtml(textbook.textbook_name)}</strong>
+              <span class="mobile-subline">
+                ${escapeHtml(textbook.instructor_name)} · ${escapeHtml(textbook.department)} · ${escapeHtml(textbook.subject)}
+              </span>
+              <span class="mobile-subline">
+                배부 ${formatKoreanDate(textbook.lecture_date)} · 만료 ${expirationDateText}
+              </span>
+              ${showExpiredAt ? `<span class="mobile-subline">처리 ${expiredAtText}</span>` : ''}
+            </td>
             <td>${formatKoreanDate(textbook.lecture_date)}</td>
 
             <td class="${total > 0 ? 'stock-positive' : 'stock-zero'}">
-              ${formatQuantity(total)}
+              ${totalMap.has(textbook.id) ? formatQuantity(total) : '배부 전'}
+              <span class="mobile-subline">
+                <span class="expiration-status ${expirationInfo.className}">
+                  ${expirationInfo.label}
+                </span>
+              </span>
             </td>
 
             <td>${expirationDateText}</td>
@@ -3899,6 +4764,7 @@
                   src="${escapeHtml(getTextbookCoverUrl(textbook.cover_image_path))}"
                   alt=""
                   loading="lazy"
+                  onerror="this.closest('button').outerHTML='<span class=&quot;inventory-cover-empty&quot;>표지 없음</span>'"
                 >
               </button>`
             : '<span class="inventory-cover-empty">표지 없음</span>'
@@ -3907,11 +4773,27 @@
             <td>${escapeHtml(textbook.instructor_name)}</td>
             <td>${escapeHtml(textbook.department)}</td>
             <td>${escapeHtml(textbook.subject)}</td>
-            <td>${escapeHtml(textbook.textbook_name)}</td>
+            <td>
+              <strong>${escapeHtml(textbook.textbook_name)}</strong>
+              <span class="mobile-subline">
+                ${escapeHtml(textbook.instructor_name)} · ${escapeHtml(textbook.department)} · ${escapeHtml(textbook.subject)}
+              </span>
+              <span class="mobile-subline">
+                배부 ${formatKoreanDate(textbook.lecture_date)} · 만료 ${expirationDateText}
+              </span>
+            </td>
             <td>${formatKoreanDate(textbook.lecture_date)}</td>
 
             <td class="${total === 0 ? 'stock-zero' : 'stock-positive'}">
               ${formatQuantity(total)}
+              <span class="mobile-subline">
+                <span class="expiration-status ${expirationInfo.className}">
+                  ${expirationInfo.label}
+                </span>
+              </span>
+              <span class="mobile-subline">
+                ${restockStatus}
+              </span>
             </td>
 
             <td>${expirationDateText}</td>
@@ -4379,8 +5261,9 @@
       const hasVisibleInventory =
         visibleInventoryItems.length > 0;
 
-      $('#stock-total-quantity').textContent =
-        formatQuantity(total);
+      $('#stock-total-quantity').textContent = hasInventoryRows
+        ? formatQuantity(total)
+        : '배부 전';
 
       list.innerHTML = '';
 
@@ -4536,6 +5419,8 @@
 
     $('#open-initial-stock-modal-button').addEventListener('click', () => {
       $('#initial-stock-form').reset();
+      $('#initial-stock-lecture-date').value =
+        selectedTextbook.lecture_date || getTodayYmd();
       $('#initial-stock-textbook-info').textContent =
         textbookInfoText(selectedTextbook);
 
@@ -4619,6 +5504,9 @@
         $('#initial-stock-location-select').value
       );
 
+      const lectureDate =
+        $('#initial-stock-lecture-date').value || getTodayYmd();
+
       const quantity = Number(
         $('#initial-stock-quantity').value
       );
@@ -4664,7 +5552,8 @@
           p_textbook_id: selectedTextbook.id,
           p_inventory_location_id: locationId,
           p_quantity: quantity,
-          p_memo: memo
+          p_memo: memo,
+          p_lecture_date: lectureDate
         }
       );
 
@@ -4680,11 +5569,17 @@
         return;
       }
 
+      selectedTextbook.lecture_date = lectureDate;
+      $('#stock-detail-textbook-info').textContent =
+        textbookInfoText(selectedTextbook);
+
       closeModal('initial-stock-modal');
 
       await refreshStockDetail();
 
       await searchInventoryTextbooks();
+
+      await loadTextbookManageList();
 
       setTimeout(() => {
         setStatus(
@@ -5257,10 +6152,18 @@
             <td>${escapeHtml(textbook.instructor_name)}</td>
             <td>${escapeHtml(textbook.department)}</td>
             <td>${escapeHtml(textbook.subject)}</td>
-            <td>${escapeHtml(textbook.textbook_name)}</td>
+            <td>
+              <strong>${escapeHtml(textbook.textbook_name)}</strong>
+              <span class="mobile-subline">
+                ${escapeHtml(textbook.instructor_name)} · ${escapeHtml(textbook.department)} · ${escapeHtml(textbook.subject)}
+              </span>
+              <span class="mobile-subline">
+                배부 ${formatKoreanDate(textbook.lecture_date)}
+              </span>
+            </td>
             <td>${formatKoreanDate(textbook.lecture_date)}</td>
             <td class="${total > 0 ? 'stock-positive' : 'stock-zero'}">
-              ${formatQuantity(total)}
+              ${totalMap.has(textbook.id) ? formatQuantity(total) : '배부 전'}
             </td>
             <td>
               <button
@@ -5271,7 +6174,7 @@
                 data-subject="${escapeHtml(textbook.subject)}"
                 data-instructor="${escapeHtml(textbook.instructor_name)}"
                 data-name="${escapeHtml(textbook.textbook_name)}"
-                data-date="${textbook.lecture_date}"
+                data-date="${textbook.lecture_date || ''}"
               >
                 이력 보기
               </button>
@@ -5472,7 +6375,13 @@
 
         return `
           <tr>
-            <td>${formatDateTime(movement.moved_at)}</td>
+            <td>
+              ${formatDateTime(movement.moved_at)}
+              <span class="mobile-subline">
+                ${escapeHtml(fromLocation)} → ${escapeHtml(toLocation)} (${formatQuantity(processedQuantity)})
+              </span>
+              ${movement.memo ? `<span class="mobile-subline">메모: ${escapeHtml(movement.memo)}</span>` : ''}
+            </td>
 
             <td>
               <span class="movement-type ${typeInfo.className}">
