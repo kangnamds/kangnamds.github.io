@@ -800,6 +800,168 @@
       color: #526071;
     }
 
+    /* 재고 위치 층별 2열 그리드 표시 및 모달 버튼형 위치 선택기(방안 B) 스타일 */
+    .location-list {
+      border-top: none;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .location-list li.location-floor-section {
+      display: block;
+      padding: 0;
+      border-bottom: none;
+    }
+
+    .location-floor-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e5eaf1;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .location-floor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .location-group-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 11px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfcfe;
+    }
+
+    .location-group-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 96px;
+      flex-shrink: 0;
+    }
+
+    .location-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+      justify-content: flex-start;
+    }
+
+    .location-chip-button {
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .location-chip-button:hover {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: var(--blue);
+    }
+
+    .location-chip-button.inactive {
+      border-style: dashed;
+      background: #f8fafc;
+      color: var(--muted);
+    }
+
+    .location-picker-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .location-picker-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .location-picker-step[hidden] {
+      display: none !important;
+    }
+
+    .location-picker-step-label {
+      min-width: 58px;
+      padding-top: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .location-picker-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .picker-chip-button {
+      min-height: 32px;
+      padding: 5px 11px;
+      border: 1px solid #d0d7e2;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.12s ease;
+    }
+
+    .picker-chip-button:hover {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: var(--blue);
+    }
+
+    .picker-chip-button.active {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .location-picker-selected {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blue);
+      padding-top: 6px;
+      border-top: 1px dashed #d8e0eb;
+    }
+
+    .location-picker-selected.empty {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    @media (max-width: 720px) {
+      .location-floor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .expiration-status {
       display: inline-block;
       padding: 4px 8px;
@@ -1740,25 +1902,20 @@
 
           <div class="collapsible-body">
             <p class="notice">
-              실제 교재 수량을 세는 창고, 책장, 랙만 등록하세요.
-              교재판매실은 수시 배부 장소이므로 재고 위치로 등록하지 않습니다.
+              실제 교재 수량을 세는 창고, 책장, 랙, 캐비넷만 등록하세요.
+              세부 위치에 <strong>1~4단</strong> 또는 <strong>1~9칸</strong>처럼 입력하면 여러 단·칸이 한 번에 등록됩니다.
             </p>
 
             <form id="location-form">
               <div class="grid" style="margin-top: 18px;">
                 <div>
-                  <label for="location-name">재고 위치</label>
-                  <input id="location-name" placeholder="예: 본관 창고" required />
+                  <label for="location-name">재고 위치 (구역 · 랙 · 캐비넷)</label>
+                  <input id="location-name" placeholder="예: B3-A1랙, 3층-캐비넷" required />
                 </div>
 
                 <div>
-                  <label for="sub-location-name">세부 위치</label>
-                  <input id="sub-location-name" placeholder="예: A구역 2번 랙" required />
-                </div>
-
-                <div class="full">
-                  <label for="location-sort-order">표시 순서</label>
-                  <input id="location-sort-order" type="number" min="0" step="1" value="0" required />
+                  <label for="sub-location-name">세부 위치 (단 · 칸 — 범위 입력 가능)</label>
+                  <input id="sub-location-name" placeholder="예: 1~4단, 1~9칸 또는 1단" required />
                 </div>
               </div>
 
@@ -1779,7 +1936,7 @@
           <div>
             <h2>등록 재고 위치</h2>
             <p class="description">
-              재고 위치를 수정하거나, 더 이상 사용하지 않는 위치를 비활성화할 수 있습니다.
+              랙·캐비넷별로 묶여 표시됩니다. 각 단·칸 버튼을 클릭하면 수정하거나 비활성화할 수 있습니다.
             </p>
           </div>
 
@@ -2141,12 +2298,6 @@
             <input id="edit-sub-location-name" required />
           </div>
 
-          <div class="full">
-            <label for="edit-location-sort-order">표시 순서</label>
-
-            <input id="edit-location-sort-order" type="number" min="0" step="1" required />
-          </div>
-
           <div class="full checkbox-row">
             <input id="edit-location-is-active" type="checkbox" />
 
@@ -2364,11 +2515,10 @@
 
       <form id="initial-stock-form">
         <div class="grid" style="margin-top: 18px;">
-          <div>
-            <label for="initial-stock-location-select">재고 위치</label>
-            <select id="initial-stock-location-select" required>
-              <option value="">재고 위치를 선택하세요</option>
-            </select>
+          <div class="full">
+            <label>재고 위치 선택 (층 → 랙·캐비넷 → 단·칸)</label>
+            <input id="initial-stock-location-select" type="hidden" />
+            <div id="initial-stock-picker" class="location-picker-box"></div>
           </div>
 
           <div>
@@ -2382,7 +2532,7 @@
             <input id="initial-stock-quantity" type="number" min="1" step="1" placeholder="예: 36" required />
           </div>
 
-          <div>
+          <div class="full">
             <label for="initial-stock-memo">메모</label>
 
             <input id="initial-stock-memo" type="text" placeholder="예: 강의 배부 후 잔여 재고" />
@@ -2423,10 +2573,9 @@
           </div>
 
           <div class="full">
-            <label for="transfer-to-select">도착 재고 위치</label>
-            <select id="transfer-to-select" required>
-              <option value="">도착 위치를 선택하세요</option>
-            </select>
+            <label>도착 재고 위치 (층 → 랙·캐비넷 → 단·칸)</label>
+            <input id="transfer-to-select" type="hidden" />
+            <div id="transfer-to-picker" class="location-picker-box"></div>
           </div>
 
           <div>
@@ -2472,13 +2621,9 @@
       <form id="stock-in-form">
         <div class="grid" style="margin-top: 18px;">
           <div class="full">
-            <label for="stock-in-location-select">
-              입고 재고 위치
-            </label>
-
-            <select id="stock-in-location-select" required>
-              <option value="">입고 위치를 선택하세요</option>
-            </select>
+            <label>입고 재고 위치 (층 → 랙·캐비넷 → 단·칸)</label>
+            <input id="stock-in-location-select" type="hidden" />
+            <div id="stock-in-picker" class="location-picker-box"></div>
           </div>
 
           <div>
@@ -4024,6 +4169,103 @@
        03. 재고 위치 관리
        - 위치 등록·조회·수정·활성 상태 관리
        ============================================================ */
+    const koreanNaturalCompare = new Intl.Collator('ko', {
+      numeric: true,
+      sensitivity: 'base'
+    }).compare;
+
+    function compareLocationsNaturally(a, b) {
+      const locDiff = koreanNaturalCompare(
+        a.location_name || '',
+        b.location_name || ''
+      );
+      if (locDiff !== 0) return locDiff;
+
+      return koreanNaturalCompare(
+        a.sub_location_name || '',
+        b.sub_location_name || ''
+      );
+    }
+
+    /* shortcut: 단일 구간당 최대 50개까지 연속 생성, 50개 초과 대량 생성이 필요할 때 상한 확장 */
+    function parseSubLocationInput(rawInput) {
+      const tokens = String(rawInput || '')
+        .split(',')
+        .map((token) => token.trim())
+        .filter(Boolean);
+
+      const results = [];
+
+      for (const token of tokens) {
+        const match = token.match(
+          /^([^\d~,-]*?)(\d+)\s*([^\d~,-]*?)\s*[~-]\s*(\d+)\s*([^\d~,-]*)$/
+        );
+
+        if (match) {
+          const prefix = match[1].trim();
+          const start = Number(match[2]);
+          const midUnit = match[3].trim();
+          const end = Number(match[4]);
+          const endUnit = match[5].trim();
+          const suffix = endUnit || midUnit;
+
+          if (
+            Number.isInteger(start) &&
+            Number.isInteger(end) &&
+            end >= start &&
+            end - start < 50
+          ) {
+            for (let n = start; n <= end; n += 1) {
+              results.push(`${prefix}${n}${suffix}`);
+            }
+            continue;
+          }
+        }
+
+        results.push(token);
+      }
+
+      return Array.from(new Set(results));
+    }
+
+    console.assert(
+      parseSubLocationInput('1~4단').join(',') === '1단,2단,3단,4단' &&
+      parseSubLocationInput('1~3칸').join(',') === '1칸,2칸,3칸',
+      'parseSubLocationInput range check failed'
+    );
+
+    function splitLocationFloorAndRack(locationName) {
+      const trimmed = String(locationName || '').trim();
+      const spaceIndex = trimmed.indexOf(' ');
+
+      if (spaceIndex > 0) {
+        return {
+          floor: trimmed.slice(0, spaceIndex).trim(),
+          rack: trimmed.slice(spaceIndex + 1).trim()
+        };
+      }
+
+      const floorMatch = trimmed.match(/^(B?\d+층)[-\s]+(.+)$/);
+      if (floorMatch) {
+        return {
+          floor: floorMatch[1].trim(),
+          rack: floorMatch[2].trim()
+        };
+      }
+
+      return {
+        floor: trimmed,
+        rack: trimmed
+      };
+    }
+
+    console.assert(
+      splitLocationFloorAndRack('B3층 A-1').floor === 'B3층' &&
+      splitLocationFloorAndRack('B3층 A-1').rack === 'A-1' &&
+      splitLocationFloorAndRack('교무실').floor === '교무실',
+      'splitLocationFloorAndRack check failed'
+    );
+
     async function loadLocations() {
       const list = $('#location-list');
 
@@ -4044,13 +4286,7 @@
           sub_location_name,
           sort_order,
           is_active
-        `)
-        .order('is_active', {
-          ascending: false
-        })
-        .order('sort_order')
-        .order('location_name')
-        .order('sub_location_name');
+        `);
 
       if (!showInactiveLocations) {
         query = query.eq(
@@ -4068,6 +4304,8 @@
         return;
       }
 
+      data.sort(compareLocationsNaturally);
+
       activeLocations = data.filter(
         (location) => location.is_active
       );
@@ -4082,55 +4320,97 @@
 
       emptyMessage.hidden = true;
 
-      list.innerHTML = data.map((location) => `
-        <li>
-          <div>
-            <span class="location-name">
-              ${escapeHtml(location.location_name)}
-            </span>
+      const groupedLocations = new Map();
 
-            <span class="location-sub-name">
-              ${escapeHtml(location.sub_location_name)}
-            </span>
+      data.forEach((location) => {
+        const groupKey = location.location_name;
+        if (!groupedLocations.has(groupKey)) {
+          groupedLocations.set(groupKey, []);
+        }
+        groupedLocations.get(groupKey).push(location);
+      });
 
-            <span class="location-state ${location.is_active ? 'active' : 'inactive'}">
-              ${location.is_active ? '사용 중' : '비활성'}
-            </span>
-          </div>
+      const rawFloorGroups = new Map();
 
-          <div class="location-actions">
-            <span class="location-order">
-              순서 ${location.sort_order}
-            </span>
+      groupedLocations.forEach((locations, groupName) => {
+        const { floor } = splitLocationFloorAndRack(groupName);
+        if (!rawFloorGroups.has(floor)) {
+          rawFloorGroups.set(floor, []);
+        }
+        rawFloorGroups.get(floor).push([groupName, locations]);
+      });
 
-            <button
-              class="secondary small-button edit-location-button"
-              type="button"
-              data-id="${location.id}"
-              data-location-name="${escapeHtml(location.location_name)}"
-              data-sub-location-name="${escapeHtml(location.sub_location_name)}"
-              data-sort-order="${location.sort_order}"
-              data-is-active="${location.is_active}"
-            >
-              수정
-            </button>
-          </div>
-        </li>
-      `).join('');
+      const floorSections = [];
+      const singleFloorEntries = [];
+
+      rawFloorGroups.forEach((entries, floor) => {
+        if (entries.length === 1 && rawFloorGroups.size > 1) {
+          singleFloorEntries.push(entries[0]);
+        } else {
+          floorSections.push({
+            title: floor,
+            entries
+          });
+        }
+      });
+
+      if (singleFloorEntries.length > 0) {
+        floorSections.unshift({
+          title: '층별 캐비넷 · 기타 구역',
+          entries: singleFloorEntries
+        });
+      }
+
+      list.innerHTML = floorSections
+        .map((section) => `
+          <li class="location-floor-section">
+            <div class="location-floor-header">
+              <span>${escapeHtml(section.title)}</span>
+            </div>
+
+            <div class="location-floor-grid">
+              ${section.entries.map(([groupName, locations]) => `
+                <div class="location-group-item">
+                  <div class="location-group-header">
+                    <span class="location-name">
+                      ${escapeHtml(groupName)}
+                    </span>
+                  </div>
+
+                  <div class="location-chip-list">
+                    ${locations.map((location) => `
+                      <button
+                        class="location-chip-button edit-location-button ${location.is_active ? '' : 'inactive'}"
+                        type="button"
+                        data-id="${location.id}"
+                        data-location-name="${escapeHtml(location.location_name)}"
+                        data-sub-location-name="${escapeHtml(location.sub_location_name)}"
+                        data-is-active="${location.is_active}"
+                      >
+                        ${escapeHtml(location.sub_location_name)}${location.is_active ? '' : ' (비활성)'}
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </li>
+        `).join('');
     }
 
     $('#location-form').addEventListener('submit', async (event) => {
       event.preventDefault();
 
+      const form = $('#location-form');
       const locationName = $('#location-name').value.trim();
-      const subLocationName = $('#sub-location-name').value.trim();
-      const sortOrder = Number($('#location-sort-order').value);
+      const subLocationInput = $('#sub-location-name').value.trim();
+      const subLocations = parseSubLocationInput(subLocationInput);
 
       const status = $('#location-form-status');
       const button = $('#location-save-button');
 
-      if (!Number.isInteger(sortOrder) || sortOrder < 0) {
-        setStatus(status, '표시 순서는 0 이상의 정수로 입력하세요.', 'error');
+      if (!locationName || subLocations.length === 0) {
+        setStatus(status, '재고 위치와 세부 위치를 입력하세요.', 'error');
         return;
       }
 
@@ -4146,13 +4426,42 @@
       button.disabled = true;
       setStatus(status, '재고 위치를 등록하고 있습니다.');
 
+      const { data: existingRows, error: fetchError } = await supabaseClient
+        .from('inventory_locations')
+        .select('sub_location_name')
+        .eq('location_name', locationName);
+
+      if (fetchError) {
+        button.disabled = false;
+        setStatus(status, `재고 위치 확인에 실패했습니다: ${fetchError.message}`, 'error');
+        return;
+      }
+
+      const existingSubNames = new Set(
+        (existingRows || []).map((row) => row.sub_location_name)
+      );
+
+      const newRows = subLocations
+        .filter((subName) => !existingSubNames.has(subName))
+        .map((subName) => ({
+          location_name: locationName,
+          sub_location_name: subName,
+          sort_order: 0
+        }));
+
+      if (newRows.length === 0) {
+        button.disabled = false;
+        setStatus(
+          status,
+          '같은 재고 위치와 세부 위치가 이미 등록되어 있습니다.',
+          'error'
+        );
+        return;
+      }
+
       const { error } = await supabaseClient
         .from('inventory_locations')
-        .insert({
-          location_name: locationName,
-          sub_location_name: subLocationName,
-          sort_order: sortOrder
-        });
+        .insert(newRows);
 
       button.disabled = false;
 
@@ -4165,10 +4474,15 @@
         return;
       }
 
-      event.currentTarget.reset();
-      $('#location-sort-order').value = 0;
+      form.reset();
+      $('#location-name').focus();
 
-      setStatus(status, '재고 위치를 등록했습니다.', 'success');
+      const skippedCount = subLocations.length - newRows.length;
+      const resultMessage = newRows.length > 1
+        ? `✓ ${locationName}에 세부 위치 ${newRows.length}곳(${newRows.map((r) => r.sub_location_name).join(', ')})을 등록했습니다.${skippedCount > 0 ? ` (중복 ${skippedCount}곳 제외)` : ''}`
+        : `✓ ${locationName} / ${newRows[0].sub_location_name} 위치를 등록했습니다.`;
+
+      setStatus(status, resultMessage, 'success');
 
       await loadLocations();
     });
@@ -4194,9 +4508,6 @@
 
       $('#edit-sub-location-name').value =
         button.dataset.subLocationName;
-
-      $('#edit-location-sort-order').value =
-        button.dataset.sortOrder;
 
       $('#edit-location-is-active').checked =
         button.dataset.isActive === 'true';
@@ -4249,10 +4560,6 @@
           .value
           .trim();
 
-        const sortOrder = Number(
-          $('#edit-location-sort-order').value
-        );
-
         const isActive = $('#edit-location-is-active')
           .checked;
 
@@ -4262,16 +4569,6 @@
           $('#toggle-location-active-button');
 
         const status = $('#edit-location-status');
-
-        if (!Number.isInteger(sortOrder) || sortOrder < 0) {
-          setStatus(
-            status,
-            '표시 순서는 0 이상의 정수로 입력하세요.',
-            'error'
-          );
-
-          return;
-        }
 
         if (
           locationName.replaceAll(' ', '') === '교재판매실'
@@ -4299,7 +4596,6 @@
           .update({
             location_name: locationName,
             sub_location_name: subLocationName,
-            sort_order: sortOrder,
             is_active: isActive
           })
           .eq(
@@ -5228,12 +5524,12 @@
         throw error;
       }
 
-      return data.sort((a, b) => {
-        const aOrder = a.inventory_locations?.sort_order ?? 0;
-        const bOrder = b.inventory_locations?.sort_order ?? 0;
-
-        return aOrder - bOrder;
-      });
+      return data.sort((a, b) =>
+        compareLocationsNaturally(
+          a.inventory_locations || {},
+          b.inventory_locations || {}
+        )
+      );
     }
 
     function renderStockDetail() {
@@ -5342,18 +5638,204 @@
       }
     }
 
-    function renderLocationOptions(select, placeholder, selectedId = '') {
-      select.innerHTML = `<option value="">${placeholder}</option>`;
+    function buildLocationPickerTree(excludeLocationId = 0) {
+      const availableLocations = activeLocations.filter(
+        (location) => Number(location.id) !== Number(excludeLocationId || 0)
+      );
 
-      select.innerHTML += activeLocations.map((location) => `
-        <option
-          value="${location.id}"
-          ${String(location.id) === String(selectedId) ? 'selected' : ''}
-        >
-          ${escapeHtml(getLocationLabel(location))}
-        </option>
-      `).join('');
+      const floorMap = new Map();
+
+      availableLocations.forEach((location) => {
+        const { floor, rack } = splitLocationFloorAndRack(
+          location.location_name
+        );
+
+        if (!floorMap.has(floor)) {
+          floorMap.set(floor, new Map());
+        }
+
+        const rackMap = floorMap.get(floor);
+
+        if (!rackMap.has(location.location_name)) {
+          rackMap.set(location.location_name, {
+            rackLabel: rack,
+            locations: []
+          });
+        }
+
+        rackMap.get(location.location_name).locations.push(location);
+      });
+
+      return floorMap;
     }
+
+    function updateLocationButtonPickerView(pickerBox) {
+      const state = pickerBox._pickerState;
+      const hiddenInput = pickerBox._hiddenInput;
+      const floorMap = buildLocationPickerTree(state.excludeLocationId);
+
+      if (floorMap.size === 0) {
+        hiddenInput.value = '';
+        pickerBox.innerHTML = `
+          <div class="location-picker-selected empty">
+            선택 가능한 재고 위치가 없습니다.
+          </div>
+        `;
+        return;
+      }
+
+      if (state.floor && !floorMap.has(state.floor)) {
+        state.floor = '';
+        state.groupName = '';
+        state.locationId = '';
+      }
+
+      const rackMap = state.floor ? floorMap.get(state.floor) : null;
+
+      if (rackMap && rackMap.size === 1 && !state.groupName) {
+        state.groupName = Array.from(rackMap.keys())[0];
+      }
+
+      if (state.groupName && (!rackMap || !rackMap.has(state.groupName))) {
+        state.groupName = '';
+        state.locationId = '';
+      }
+
+      const selectedGroupObj =
+        rackMap && state.groupName ? rackMap.get(state.groupName) : null;
+      const subLocations = selectedGroupObj ? selectedGroupObj.locations : [];
+
+      if (subLocations.length === 1 && !state.locationId) {
+        state.locationId = String(subLocations[0].id);
+      }
+
+      if (
+        state.locationId &&
+        !subLocations.some((loc) => String(loc.id) === String(state.locationId))
+      ) {
+        state.locationId = '';
+      }
+
+      hiddenInput.value = state.locationId || '';
+
+      const selectedLocationObj = subLocations.find(
+        (loc) => String(loc.id) === String(state.locationId)
+      );
+
+      const floorButtonsHtml = Array.from(floorMap.keys())
+        .map((floor) => `
+          <button
+            class="picker-chip-button ${state.floor === floor ? 'active' : ''}"
+            type="button"
+            data-picker-step="floor"
+            data-value="${escapeHtml(floor)}"
+          >
+            ${escapeHtml(floor)}
+          </button>
+        `)
+        .join('');
+
+      const rackButtonsHtml = rackMap
+        ? Array.from(rackMap.entries())
+            .map(([groupName, info]) => `
+              <button
+                class="picker-chip-button ${state.groupName === groupName ? 'active' : ''}"
+                type="button"
+                data-picker-step="rack"
+                data-value="${escapeHtml(groupName)}"
+              >
+                ${escapeHtml(info.rackLabel)}
+              </button>
+            `)
+            .join('')
+        : '';
+
+      const subButtonsHtml = subLocations
+        .map((loc) => `
+          <button
+            class="picker-chip-button ${String(state.locationId) === String(loc.id) ? 'active' : ''}"
+            type="button"
+            data-picker-step="sub"
+            data-value="${loc.id}"
+          >
+            ${escapeHtml(loc.sub_location_name)}
+          </button>
+        `)
+        .join('');
+
+      pickerBox.innerHTML = `
+        <div class="location-picker-step">
+          <span class="location-picker-step-label">1. 층·구역</span>
+          <div class="location-picker-buttons">
+            ${floorButtonsHtml}
+          </div>
+        </div>
+
+        <div class="location-picker-step" ${rackMap ? '' : 'hidden'}>
+          <span class="location-picker-step-label">2. 랙·캐비넷</span>
+          <div class="location-picker-buttons">
+            ${rackButtonsHtml}
+          </div>
+        </div>
+
+        <div class="location-picker-step" ${subLocations.length > 0 ? '' : 'hidden'}>
+          <span class="location-picker-step-label">3. 단·칸</span>
+          <div class="location-picker-buttons">
+            ${subButtonsHtml}
+          </div>
+        </div>
+
+        <div class="location-picker-selected ${selectedLocationObj ? '' : 'empty'}">
+          ${selectedLocationObj
+            ? `선택된 위치: ${escapeHtml(getLocationLabel(selectedLocationObj))}`
+            : '층 → 랙·캐비넷 → 단·칸 순서로 버튼을 눌러 선택하세요.'}
+        </div>
+      `;
+    }
+
+    function initLocationButtonPicker(
+      pickerBox,
+      hiddenInput,
+      excludeLocationId = 0
+    ) {
+      pickerBox._hiddenInput = hiddenInput;
+      pickerBox._pickerState = {
+        floor: '',
+        groupName: '',
+        locationId: '',
+        excludeLocationId: Number(excludeLocationId || 0)
+      };
+
+      updateLocationButtonPickerView(pickerBox);
+    }
+
+    [
+      $('#initial-stock-picker'),
+      $('#transfer-to-picker'),
+      $('#stock-in-picker')
+    ].forEach((pickerBox) => {
+      pickerBox.addEventListener('click', (event) => {
+        const button = event.target.closest('.picker-chip-button');
+        if (!button || !pickerBox._pickerState) return;
+
+        const step = button.dataset.pickerStep;
+        const value = button.dataset.value;
+        const state = pickerBox._pickerState;
+
+        if (step === 'floor') {
+          state.floor = value;
+          state.groupName = '';
+          state.locationId = '';
+        } else if (step === 'rack') {
+          state.groupName = value;
+          state.locationId = '';
+        } else if (step === 'sub') {
+          state.locationId = value;
+        }
+
+        updateLocationButtonPickerView(pickerBox);
+      });
+    });
 
     function renderInventorySourceOptions(select, placeholder) {
       const availableItems = currentInventoryItems.filter(
@@ -5424,9 +5906,9 @@
       $('#initial-stock-textbook-info').textContent =
         textbookInfoText(selectedTextbook);
 
-      renderLocationOptions(
-        $('#initial-stock-location-select'),
-        '재고 위치를 선택하세요'
+      initLocationButtonPicker(
+        $('#initial-stock-picker'),
+        $('#initial-stock-location-select')
       );
 
       setStatus($('#initial-stock-status'));
@@ -5444,9 +5926,9 @@
         '출발 위치를 선택하세요'
       );
 
-      renderLocationOptions(
-        $('#transfer-to-select'),
-        '도착 위치를 선택하세요'
+      initLocationButtonPicker(
+        $('#transfer-to-picker'),
+        $('#transfer-to-select')
       );
 
       setStatus($('#transfer-status'));
@@ -5460,9 +5942,9 @@
       $('#stock-in-textbook-info').textContent =
         textbookInfoText(selectedTextbook);
 
-      renderLocationOptions(
-        $('#stock-in-location-select'),
-        '입고 위치를 선택하세요'
+      initLocationButtonPicker(
+        $('#stock-in-picker'),
+        $('#stock-in-location-select')
       );
 
       setStatus($('#stock-in-status'));
@@ -5592,7 +6074,6 @@
 
     $('#transfer-from-select').addEventListener('change', () => {
       const fromSelect = $('#transfer-from-select');
-      const toSelect = $('#transfer-to-select');
 
       const selectedOption =
         fromSelect.options[fromSelect.selectedIndex];
@@ -5607,16 +6088,17 @@
 
       $('#transfer-quantity').max = availableQuantity || '';
 
-      renderLocationOptions(
-        toSelect,
-        '도착 위치를 선택하세요'
-      );
-
-      Array.from(toSelect.options).forEach((option) => {
-        if (Number(option.value) === fromLocationId) {
-          option.remove();
-        }
-      });
+      const transferPicker = $('#transfer-to-picker');
+      if (transferPicker._pickerState) {
+        transferPicker._pickerState.excludeLocationId = fromLocationId;
+        updateLocationButtonPickerView(transferPicker);
+      } else {
+        initLocationButtonPicker(
+          transferPicker,
+          $('#transfer-to-select'),
+          fromLocationId
+        );
+      }
 
       if (availableQuantity > 0) {
         setStatus(
