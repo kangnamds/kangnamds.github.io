@@ -5903,6 +5903,7 @@
       $('#initial-stock-form').reset();
       $('#initial-stock-lecture-date').value =
         selectedTextbook.lecture_date || getTodayYmd();
+      $('#initial-stock-memo').value = '강의 배부 후 재고';
       $('#initial-stock-textbook-info').textContent =
         textbookInfoText(selectedTextbook);
 
@@ -5938,6 +5939,7 @@
 
     $('#open-stock-in-modal-button').addEventListener('click', () => {
       $('#stock-in-form').reset();
+      $('#stock-in-memo').value = '추가입고';
 
       $('#stock-in-textbook-info').textContent =
         textbookInfoText(selectedTextbook);
@@ -5954,6 +5956,7 @@
 
     $('#open-salesroom-modal-button').addEventListener('click', () => {
       $('#salesroom-form').reset();
+      $('#salesroom-memo').value = '교재판매실 배부';
       $('#salesroom-textbook-info').textContent =
         textbookInfoText(selectedTextbook);
 
