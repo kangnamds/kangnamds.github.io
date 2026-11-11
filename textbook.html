@@ -1688,10 +1688,192 @@
         display: none;
       }
     }
+
+    /* 재고 부족 상단 알림 바, 탭 배지, 실시간 토스트 팝업 */
+    .low-stock-alert-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 12px 16px;
+      border: 1px solid #fecdca;
+      border-left: 4px solid var(--red);
+      border-radius: 10px;
+      background: #fffbfa;
+      font-size: 13px;
+    }
+
+    .low-stock-alert-bar[hidden] {
+      display: none !important;
+    }
+
+    .low-stock-alert-text {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+    }
+
+    .low-stock-alert-title {
+      font-weight: 800;
+      color: var(--red);
+    }
+
+    .low-stock-alert-items {
+      color: #475467;
+      font-weight: 600;
+    }
+
+    .low-stock-alert-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab-alert-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      margin-left: 6px;
+      padding: 0 6px;
+      border-radius: 99px;
+      background: var(--red);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .tab-alert-badge[hidden] {
+      display: none !important;
+    }
+
+    .stock-toast-container {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 380px;
+      width: calc(100vw - 36px);
+      pointer-events: none;
+    }
+
+    .stock-toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid #fedf89;
+      border-left: 5px solid var(--orange);
+      background: #fffcf5;
+      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.14);
+      font-size: 13px;
+    }
+
+    .stock-toast.is-zero {
+      border-color: #fecdca;
+      border-left-color: var(--red);
+      background: #fffbfa;
+    }
+
+    .stock-toast-title {
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .stock-toast-body {
+      color: #344054;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .stock-toast-close {
+      min-height: 26px;
+      padding: 2px 7px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .stock-toast-clear-all {
+      pointer-events: auto;
+      align-self: flex-end;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      background: #fff;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(16, 24, 40, 0.1);
+    }
+
+    .alert-history-list {
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      max-height: 420px;
+      overflow-y: auto;
+      background: #fff;
+    }
+
+    .alert-history-list[hidden] {
+      display: none !important;
+    }
+
+    .alert-history-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .alert-history-item:last-child {
+      border-bottom: 0;
+    }
+
+    .alert-history-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .alert-history-title {
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+
+    .alert-history-body {
+      font-weight: 700;
+      color: var(--blue);
+    }
   </style>
 </head>
 
 <body>
+  <div id="stock-toast-container" class="stock-toast-container" aria-live="assertive"></div>
+
   <!-- ============================================================
          애플리케이션 본문
          ============================================================ -->
@@ -1732,10 +1914,36 @@
           <button id="global-instructor-search-reset-button" class="secondary" type="button">
             초기화
           </button>
+
+          <button id="open-alert-history-button" class="secondary" type="button">
+            🔔 지난 알림 내역
+          </button>
         </div>
       </div>
 
       <p id="global-instructor-filter-status" class="filter-summary" aria-live="polite"></p>
+    </section>
+
+    <!-- 재고 부족 상단 요약 알림 바 -->
+    <section id="low-stock-alert-bar" class="low-stock-alert-bar" hidden>
+      <div class="low-stock-alert-text">
+        <span id="low-stock-alert-title" class="low-stock-alert-title"></span>
+        <span id="low-stock-alert-items" class="low-stock-alert-items"></span>
+      </div>
+
+      <div class="low-stock-alert-actions">
+        <button id="enable-desktop-notify-button" class="secondary small-button" type="button" hidden>
+          데스크톱 알림 켜기
+        </button>
+
+        <button id="open-alert-history-bar-button" class="secondary small-button" type="button">
+          지난 알림 내역
+        </button>
+
+        <button id="go-to-low-stock-button" class="small-button" type="button">
+          부족 교재 확인
+        </button>
+      </div>
     </section>
 
     <!-- ============================================================
@@ -1757,6 +1965,7 @@
 
       <button class="tab-button" type="button" data-tab="inspection">
         재고 점검 · 사용만료
+        <span id="inspection-tab-badge" class="tab-alert-badge" hidden>0</span>
       </button>
 
       <button class="tab-button" type="button" data-tab="history">
@@ -2746,6 +2955,39 @@
 
         <p id="adjustment-status" class="status" aria-live="polite"></p>
       </form>
+    </section>
+  </div>
+
+  <!-- 지난 재고 부족 알림 내역 모달 -->
+  <div id="alert-history-modal" class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2>🔔 지난 재고 부족 알림 내역</h2>
+
+        <button class="close-button" type="button" data-close-modal="alert-history-modal" aria-label="알림 내역 창 닫기">
+          ×
+        </button>
+      </div>
+
+      <p class="notice">
+        배부·차감 후 남은 재고가 10권 이하가 되어 발생한 최근 알림 기록입니다. 현재 재고 및 재입고 신청 상태가 함께 표시됩니다.
+      </p>
+
+      <ul id="alert-history-list" class="alert-history-list" hidden></ul>
+
+      <p id="alert-history-empty" class="empty">
+        표시할 지난 알림 내역이 없습니다.
+      </p>
+
+      <div class="actions">
+        <button id="clear-alert-history-button" class="secondary" type="button">
+          브라우저 기록 비우기
+        </button>
+
+        <button id="modal-go-to-inspection-button" type="button">
+          재고 점검 탭으로 이동
+        </button>
+      </div>
     </section>
   </div>
 
@@ -5424,6 +5666,8 @@
 
           await loadInspectionTab();
 
+          await updateLowStockSummaryBar();
+
           return;
         }
 
@@ -6066,6 +6310,12 @@
 
       await loadTextbookManageList();
 
+      await handleMovementLowStockCheck({
+        textbook_id: selectedTextbook.id,
+        movement_type: 'initial_stock',
+        quantity
+      });
+
       setTimeout(() => {
         setStatus(
           $('#stock-empty-message'),
@@ -6244,6 +6494,8 @@
 
       await loadInspectionTab();
 
+      await updateLowStockSummaryBar();
+
       setTimeout(() => {
         setStatus(
           $('#stock-empty-message'),
@@ -6322,6 +6574,12 @@
       await refreshStockDetail();
 
       await searchInventoryTextbooks();
+
+      await handleMovementLowStockCheck({
+        textbook_id: selectedTextbook.id,
+        movement_type: 'salesroom_out',
+        quantity
+      });
     });
 
     function updateAdjustmentLimit() {
@@ -6412,6 +6670,12 @@
       await refreshStockDetail();
 
       await searchInventoryTextbooks();
+
+      await handleMovementLowStockCheck({
+        textbook_id: selectedTextbook.id,
+        movement_type: type === 'out' ? 'adjustment_out' : 'adjustment_in',
+        quantity
+      });
     });
 
 
@@ -7000,9 +7264,15 @@
 
         closeModal('expiration-modal');
 
+        if (expirationDate && expirationDate < getTodayYmd()) {
+          removeAlertHistoryByTextbookId(textbookId);
+        }
+
         await loadTextbookManageList();
 
         await loadInspectionTab();
+
+        await updateLowStockSummaryBar();
       }
     );
 
@@ -7072,11 +7342,485 @@
 
         closeModal('expiration-modal');
 
+        if (!isCurrentlyExpired) {
+          removeAlertHistoryByTextbookId(selectedExpirationTextbook.id);
+        }
+
         await loadTextbookManageList();
 
         await loadInspectionTab();
+
+        await updateLowStockSummaryBar();
       }
     );
+
+
+    /* ============================================================
+       06-2. 실시간 재고 부족 알림 (Supabase Realtime + 토스트 · 브라우저 알림)
+       ============================================================ */
+    const recentMovementAlerts = new Map();
+    const STOCK_ALERT_HISTORY_KEY = 'textbook_stock_alert_logs_v1';
+
+    function formatLowStockMovementMessage(movementType, quantity, remainingTotal) {
+      const actionLabel = getHistoryTypeInfo(movementType).label;
+      return `${actionLabel} ${formatQuantity(quantity)} 후 남은 재고 ${formatQuantity(remainingTotal)}`;
+    }
+
+    console.assert(
+      formatLowStockMovementMessage('salesroom_out', 20, 10) ===
+        '교재판매실 배부 20권 후 남은 재고 10권',
+      'formatLowStockMovementMessage check failed'
+    );
+
+    function loadSavedAlertHistory() {
+      try {
+        const raw = localStorage.getItem(STOCK_ALERT_HISTORY_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function removeAlertHistoryByTextbookId(textbookId) {
+      try {
+        const filtered = loadSavedAlertHistory().filter(
+          (item) => Number(item.textbook_id) !== Number(textbookId)
+        );
+        localStorage.setItem(
+          STOCK_ALERT_HISTORY_KEY,
+          JSON.stringify(filtered)
+        );
+      } catch (err) {
+        console.warn(err);
+      }
+
+      const container = $('#stock-toast-container');
+      if (container) {
+        container
+          .querySelectorAll(`.stock-toast[data-textbook-id="${Number(textbookId)}"]`)
+          .forEach((toast) => toast.remove());
+        syncToastClearAllButton();
+      }
+    }
+
+    function saveAlertToHistory(entry) {
+      try {
+        const list = loadSavedAlertHistory();
+        const deduped = list.filter(
+          (item) =>
+            !(
+              Number(item.textbook_id) === Number(entry.textbook_id) &&
+              item.body === entry.body &&
+              Math.abs(
+                new Date(entry.created_at).getTime() -
+                  new Date(item.created_at).getTime()
+              ) < 10000
+            )
+        );
+        deduped.unshift(entry);
+        localStorage.setItem(
+          STOCK_ALERT_HISTORY_KEY,
+          JSON.stringify(deduped.slice(0, 50))
+        );
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    function updateDesktopNotifyButtonVisibility() {
+      const button = $('#enable-desktop-notify-button');
+      if (!button) return;
+
+      const canRequest =
+        'Notification' in window && Notification.permission === 'default';
+      button.hidden = !canRequest;
+    }
+
+    function syncToastClearAllButton() {
+      const container = $('#stock-toast-container');
+      const toasts = container.querySelectorAll('.stock-toast');
+      let clearAllBtn = container.querySelector('.stock-toast-clear-all');
+
+      if (toasts.length >= 2) {
+        if (!clearAllBtn) {
+          clearAllBtn = document.createElement('button');
+          clearAllBtn.className = 'stock-toast-clear-all';
+          clearAllBtn.type = 'button';
+          clearAllBtn.textContent = '알림 전체 닫기';
+          clearAllBtn.addEventListener('click', () => {
+            container.innerHTML = '';
+          });
+          container.prepend(clearAllBtn);
+        }
+      } else if (clearAllBtn) {
+        clearAllBtn.remove();
+      }
+    }
+
+    function showStockAlertNotification(title, body, isZeroStock = false, textbookId = 0) {
+      const container = $('#stock-toast-container');
+      const toast = document.createElement('div');
+      toast.className = `stock-toast ${isZeroStock ? 'is-zero' : ''}`;
+      toast.dataset.textbookId = String(textbookId || 0);
+      toast.innerHTML = `
+        <div>
+          <div class="stock-toast-title">${escapeHtml(title)}</div>
+          <div class="stock-toast-body">${escapeHtml(body)}</div>
+        </div>
+        <button class="stock-toast-close" type="button" aria-label="알림 닫기">×</button>
+      `;
+
+      toast.querySelector('.stock-toast-close').addEventListener('click', () => {
+        toast.remove();
+        syncToastClearAllButton();
+      });
+
+      container.appendChild(toast);
+      syncToastClearAllButton();
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(title, { body });
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+    }
+
+    async function openAlertHistoryModal() {
+      openModal('alert-history-modal');
+
+      const listEl = $('#alert-history-list');
+      const emptyEl = $('#alert-history-empty');
+
+      listEl.hidden = true;
+      listEl.innerHTML = '';
+      emptyEl.hidden = false;
+      emptyEl.textContent = '지난 알림 내역을 불러오는 중입니다.';
+
+      const today = getTodayYmd();
+
+      const [textbookRes, inventoryRes, movementRes] = await Promise.all([
+        supabaseClient
+          .from('textbooks')
+          .select('id, department, subject, instructor_name, textbook_name, is_expired, expiration_date, restock_requested_at'),
+        supabaseClient
+          .from('textbook_inventory')
+          .select('textbook_id, quantity'),
+        supabaseClient
+          .from('textbook_inventory_movements')
+          .select('id, textbook_id, movement_type, quantity, moved_at')
+          .in('movement_type', ['salesroom_out', 'adjustment_out', 'initial_stock'])
+          .order('moved_at', { ascending: false })
+          .limit(40)
+      ]);
+
+      const textbookMap = new Map();
+      (textbookRes.data || []).forEach((tb) => {
+        textbookMap.set(Number(tb.id), tb);
+      });
+
+      const totalMap = new Map();
+      (inventoryRes.data || []).forEach((row) => {
+        totalMap.set(
+          Number(row.textbook_id),
+          (totalMap.get(Number(row.textbook_id)) || 0) + Number(row.quantity || 0)
+        );
+      });
+
+      const combinedLogs = loadSavedAlertHistory().filter((item) => {
+        const tb = textbookMap.get(Number(item.textbook_id));
+        if (!tb || tb.is_expired) return false;
+        if (tb.expiration_date && tb.expiration_date < today) return false;
+        return true;
+      });
+
+      /* 브라우저 기록이 없더라도 현재 부족 상태인 교재의 최근 차감 이력을 함께 보강 */
+      const seenTextbookIdsInLocal = new Set(
+        combinedLogs.map((item) => Number(item.textbook_id))
+      );
+
+      (movementRes.data || []).forEach((mv) => {
+        const tbId = Number(mv.textbook_id);
+        if (seenTextbookIdsInLocal.has(tbId)) return;
+
+        const tb = textbookMap.get(tbId);
+        if (!tb || tb.is_expired) return;
+        if (tb.expiration_date && tb.expiration_date < today) return;
+
+        const currentTotal = totalMap.get(tbId) ?? 0;
+        if (currentTotal <= LOW_STOCK_THRESHOLD) {
+          seenTextbookIdsInLocal.add(tbId);
+          combinedLogs.push({
+            textbook_id: tbId,
+            instructor_name: tb.instructor_name,
+            department: tb.department,
+            subject: tb.subject,
+            textbook_name: tb.textbook_name,
+            body: formatLowStockMovementMessage(
+              mv.movement_type,
+              mv.quantity,
+              currentTotal
+            ),
+            created_at: mv.moved_at
+          });
+        }
+      });
+
+      combinedLogs.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      if (combinedLogs.length === 0) {
+        emptyEl.textContent = '표시할 지난 알림 내역이 없습니다.';
+        return;
+      }
+
+      emptyEl.hidden = true;
+      listEl.hidden = false;
+
+      listEl.innerHTML = combinedLogs
+        .map((item) => {
+          const tb = textbookMap.get(Number(item.textbook_id));
+          const currentTotal = totalMap.get(Number(item.textbook_id)) ?? 0;
+          const isRestockRequested = Boolean(tb?.restock_requested_at);
+
+          let statusBadgeHtml = '';
+          if (currentTotal > LOW_STOCK_THRESHOLD) {
+            statusBadgeHtml = `<span class="expiration-status expiration-stock-in">입고 완료 (${formatQuantity(currentTotal)})</span>`;
+          } else if (isRestockRequested) {
+            statusBadgeHtml = `<span class="restock-requested-badge">재입고 신청됨 (${formatQuantity(currentTotal)})</span>`;
+          } else if (currentTotal === 0) {
+            statusBadgeHtml = `<span class="expiration-status expiration-past">미조치 · 소진 (0권)</span>`;
+          } else {
+            statusBadgeHtml = `<span class="expiration-status expiration-scheduled">미조치 (${formatQuantity(currentTotal)})</span>`;
+          }
+
+          const titleText = [
+            item.instructor_name || tb?.instructor_name || '-',
+            item.department || tb?.department || '',
+            item.textbook_name || tb?.textbook_name || '-'
+          ]
+            .filter(Boolean)
+            .join(' · ');
+
+          return `
+            <li class="alert-history-item">
+              <div>
+                <div class="alert-history-meta">${escapeHtml(formatDateTime(item.created_at))}</div>
+                <div class="alert-history-title">${escapeHtml(titleText)}</div>
+                <div class="alert-history-body">${escapeHtml(item.body)}</div>
+              </div>
+              <div>
+                ${statusBadgeHtml}
+              </div>
+            </li>
+          `;
+        })
+        .join('');
+    }
+
+    async function updateLowStockSummaryBar() {
+      const bar = $('#low-stock-alert-bar');
+      const titleEl = $('#low-stock-alert-title');
+      const itemsEl = $('#low-stock-alert-items');
+      const tabBadge = $('#inspection-tab-badge');
+
+      const today = getTodayYmd();
+
+      const [textbookRes, inventoryRes] = await Promise.all([
+        supabaseClient
+          .from('textbooks')
+          .select('id, instructor_name, textbook_name, is_expired, expiration_date, restock_requested_at')
+          .eq('is_expired', false)
+          .or(`expiration_date.is.null,expiration_date.gte.${today}`),
+        supabaseClient
+          .from('textbook_inventory')
+          .select('textbook_id, quantity')
+      ]);
+
+      if (textbookRes.error || inventoryRes.error) {
+        return;
+      }
+
+      const totalMap = new Map();
+      const registeredIds = new Set();
+
+      (inventoryRes.data || []).forEach((row) => {
+        registeredIds.add(row.textbook_id);
+        totalMap.set(
+          row.textbook_id,
+          (totalMap.get(row.textbook_id) || 0) + Number(row.quantity || 0)
+        );
+      });
+
+      const allLowStockTextbooks = (textbookRes.data || []).filter((tb) => {
+        if (!registeredIds.has(tb.id)) return false;
+        const total = totalMap.get(tb.id) || 0;
+        return total >= 0 && total <= LOW_STOCK_THRESHOLD;
+      });
+
+      const alertTextbooks = allLowStockTextbooks.filter(
+        (tb) => !tb.restock_requested_at
+      );
+      const requestedCount =
+        allLowStockTextbooks.length - alertTextbooks.length;
+
+      if (alertTextbooks.length === 0) {
+        bar.hidden = true;
+        tabBadge.hidden = true;
+        document.title = '교재 재고 관리';
+        return;
+      }
+
+      const zeroCount = alertTextbooks.filter(
+        (tb) => (totalMap.get(tb.id) || 0) === 0
+      ).length;
+      const lowCount = alertTextbooks.length - zeroCount;
+
+      tabBadge.textContent = String(alertTextbooks.length);
+      tabBadge.hidden = false;
+      document.title = `(⚠️${alertTextbooks.length}) 교재 재고 관리`;
+
+      const requestedNote =
+        requestedCount > 0 ? ` (재입고 신청 완료 ${requestedCount}건 제외)` : '';
+
+      titleEl.textContent = `⚠️ 재고 부족(1~${LOW_STOCK_THRESHOLD}권) ${lowCount}건 · 재고 소진(0권) ${zeroCount}건${requestedNote}`;
+
+      const previewText = alertTextbooks
+        .slice(0, 3)
+        .map(
+          (tb) =>
+            `${tb.instructor_name} · ${tb.textbook_name}(${formatQuantity(totalMap.get(tb.id) || 0)})`
+        )
+        .join(', ');
+
+      itemsEl.textContent =
+        alertTextbooks.length > 3
+          ? `${previewText} 외 ${alertTextbooks.length - 3}건`
+          : previewText;
+
+      updateDesktopNotifyButtonVisibility();
+      bar.hidden = false;
+    }
+
+    async function handleMovementLowStockCheck(movement) {
+      if (!movement || !movement.textbook_id) return;
+
+      await updateLowStockSummaryBar();
+
+      const movementType = movement.movement_type;
+      if (
+        movementType !== 'salesroom_out' &&
+        movementType !== 'adjustment_out' &&
+        movementType !== 'initial_stock'
+      ) {
+        return;
+      }
+
+      const dedupKey = `${movement.textbook_id}:${movementType}:${movement.quantity}`;
+      const now = Date.now();
+      const lastTime = recentMovementAlerts.get(dedupKey) || 0;
+      if (now - lastTime < 4000) {
+        return;
+      }
+      recentMovementAlerts.set(dedupKey, now);
+
+      try {
+        const [tbRes, remainingTotal] = await Promise.all([
+          supabaseClient
+            .from('textbooks')
+            .select('id, department, subject, instructor_name, textbook_name, is_expired, expiration_date, restock_requested_at')
+            .eq('id', movement.textbook_id)
+            .maybeSingle(),
+          loadTextbookCurrentTotal(movement.textbook_id)
+        ]);
+
+        const textbook = tbRes.data;
+        if (!textbook || textbook.is_expired || textbook.restock_requested_at) return;
+        if (textbook.expiration_date && textbook.expiration_date < getTodayYmd()) {
+          return;
+        }
+
+        if (remainingTotal <= LOW_STOCK_THRESHOLD) {
+          const isZero = remainingTotal === 0;
+          const prefix = isZero ? '🚨 [재고 소진]' : '⚠️ [재고 부족]';
+          const title = `${prefix} ${textbook.instructor_name} · ${textbook.textbook_name}`;
+          const body = formatLowStockMovementMessage(
+            movementType,
+            movement.quantity,
+            remainingTotal
+          );
+
+          saveAlertToHistory({
+            textbook_id: textbook.id,
+            instructor_name: textbook.instructor_name,
+            department: textbook.department,
+            subject: textbook.subject,
+            textbook_name: textbook.textbook_name,
+            body,
+            created_at: movement.moved_at || new Date().toISOString()
+          });
+
+          showStockAlertNotification(title, body, isZero, textbook.id);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function initRealtimeStockAlerts() {
+      supabaseClient
+        .channel('realtime-stock-alerts')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'textbook_inventory_movements'
+          },
+          (payload) => {
+            handleMovementLowStockCheck(payload.new);
+          }
+        )
+        .subscribe();
+    }
+
+    $('#go-to-low-stock-button').addEventListener('click', () => {
+      switchTab('inspection');
+      loadInspectionTab();
+    });
+
+    $('#open-alert-history-button').addEventListener('click', () => {
+      openAlertHistoryModal();
+    });
+
+    $('#open-alert-history-bar-button').addEventListener('click', () => {
+      openAlertHistoryModal();
+    });
+
+    $('#clear-alert-history-button').addEventListener('click', () => {
+      localStorage.removeItem(STOCK_ALERT_HISTORY_KEY);
+      openAlertHistoryModal();
+    });
+
+    $('#modal-go-to-inspection-button').addEventListener('click', () => {
+      closeModal('alert-history-modal');
+      switchTab('inspection');
+      loadInspectionTab();
+    });
+
+    $('#enable-desktop-notify-button').addEventListener('click', async () => {
+      if (!('Notification' in window)) return;
+      try {
+        await Notification.requestPermission();
+      } catch (err) {
+        console.warn(err);
+      }
+      updateDesktopNotifyButtonVisibility();
+    });
 
 
     /* ============================================================
@@ -7090,9 +7834,12 @@
 
     updateInactiveLocationsToggle();
 
+    initRealtimeStockAlerts();
+
     Promise.all([
       loadTextbookManageList(),
-      loadLocations()
+      loadLocations(),
+      updateLowStockSummaryBar()
     ]).catch((error) => {
       console.error(error);
     });
